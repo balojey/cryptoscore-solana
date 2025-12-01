@@ -2,12 +2,12 @@
  * AccountDecoder Tests
  */
 
-import { describe, it, expect } from 'vitest'
 import { PublicKey } from '@solana/web3.js'
 import { serialize } from 'borsh'
+import { describe, expect, it } from 'vitest'
 import { AccountDecoder } from '../account-decoder'
 
-describe('AccountDecoder', () => {
+describe('accountDecoder', () => {
   describe('decodeFactory', () => {
     it('should decode factory account data', () => {
       const authority = new PublicKey('11111111111111111111111111111112')

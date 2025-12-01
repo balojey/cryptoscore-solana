@@ -1,6 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import type { Market } from '../types'
+import { useQueryClient } from '@tanstack/react-query'
+import { useCallback, useEffect, useRef } from 'react'
 import { marketToast } from './useRealtimeMarkets'
 
 interface NotificationOptions {
@@ -61,7 +61,8 @@ export function useRealtimeNotifications(options: NotificationOptions = {}) {
    * Detect and notify about new markets
    */
   const detectNewMarkets = useCallback((currentMarkets: Market[], previousMarkets: Market[]) => {
-    if (previousMarkets.length === 0) return // Skip on initial load
+    if (previousMarkets.length === 0)
+      return // Skip on initial load
 
     const previousMap = new Map(previousMarkets.map(m => [m.marketAddress, m]))
     const newMarkets = currentMarkets.filter(m => !previousMap.has(m.marketAddress))
@@ -153,9 +154,10 @@ export function useRealtimeNotifications(options: NotificationOptions = {}) {
   const detectMarketUpdates = useCallback((currentMarkets: Market[], previousMarkets: Market[]) => {
     const previousMap = new Map(previousMarkets.map(m => [m.marketAddress, m]))
     const now = Date.now()
-    
+
     // Only check for updates if enough time has passed since last update
-    if (now - lastUpdateRef.current < 5000) return // Minimum 5 seconds between update notifications
+    if (now - lastUpdateRef.current < 5000)
+      return // Minimum 5 seconds between update notifications
 
     currentMarkets.forEach((current) => {
       const previous = previousMap.get(current.marketAddress)
@@ -192,7 +194,8 @@ export function useRealtimeNotifications(options: NotificationOptions = {}) {
    * Main effect to detect changes and trigger notifications
    */
   useEffect(() => {
-    if (!enabled || markets.length === 0) return
+    if (!enabled || markets.length === 0)
+      return
 
     const previousMarkets = previousMarketsRef.current
     const currentMarkets = markets

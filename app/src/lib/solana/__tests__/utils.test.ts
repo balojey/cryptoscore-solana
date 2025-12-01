@@ -2,11 +2,11 @@
  * Tests for SolanaUtils
  */
 
-import { describe, it, expect } from 'vitest'
 import { PublicKey } from '@solana/web3.js'
+import { describe, expect, it } from 'vitest'
 import { SolanaUtils } from '../utils'
 
-describe('SolanaUtils', () => {
+describe('solanaUtils', () => {
   describe('lamportsToSol', () => {
     it('should convert lamports to SOL (bigint)', () => {
       const lamports = BigInt(1_000_000_000)

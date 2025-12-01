@@ -1,5 +1,5 @@
-import { AlertCircle, Info } from 'lucide-react'
 import type { FeeEstimate } from '../lib/solana/transaction-builder'
+import { AlertCircle, Info } from 'lucide-react'
 import { SolanaUtils } from '../lib/solana/utils'
 
 interface FeeEstimateDisplayProps {
@@ -55,7 +55,9 @@ export function FeeEstimateDisplay({
         </div>
         {showDetails && (
           <span style={{ color: 'var(--text-tertiary)' }} className="text-xs">
-            {feeEstimate.fee.toLocaleString()} lamports
+            {feeEstimate.fee.toLocaleString()}
+            {' '}
+            lamports
           </span>
         )}
       </div>

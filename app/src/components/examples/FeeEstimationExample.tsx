@@ -30,12 +30,12 @@ export function FeeEstimationExample() {
   return (
     <div className="card p-6 space-y-4">
       <h2 className="card-title">Fee Estimation Example</h2>
-      
+
       <div className="space-y-2">
         <p style={{ color: 'var(--text-secondary)' }}>
           This example demonstrates automatic fee estimation before transactions.
         </p>
-        
+
         {/* Display fee estimate */}
         {estimatedFee && (
           <div className="p-4 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
@@ -44,12 +44,14 @@ export function FeeEstimationExample() {
               isEstimating={isLoading}
               showDetails={showFeeDetails}
             />
-            
+
             <button
               onClick={() => setShowFeeDetails(!showFeeDetails)}
               className="btn-secondary btn-sm mt-2"
             >
-              {showFeeDetails ? 'Hide' : 'Show'} Details
+              {showFeeDetails ? 'Hide' : 'Show'}
+              {' '}
+              Details
             </button>
           </div>
         )}

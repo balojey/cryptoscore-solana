@@ -1,5 +1,5 @@
-import { useState } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { shortenAddress } from '../utils/formatters'

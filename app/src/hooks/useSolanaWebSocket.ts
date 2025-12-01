@@ -1,5 +1,5 @@
-import { PublicKey } from '@solana/web3.js'
 import { useConnection } from '@solana/wallet-adapter-react'
+import { PublicKey } from '@solana/web3.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { marketToast } from './useRealtimeMarkets'
 
@@ -58,15 +58,16 @@ export function useSolanaWebSocket(options: WebSocketOptions = {}) {
     if (reconnectAttempts < maxReconnectAttempts && !isReconnectingRef.current) {
       isReconnectingRef.current = true
       const delay = getReconnectDelay(reconnectAttempts)
-      
+
       marketToast.error(`Connection lost. Reconnecting in ${Math.ceil(delay / 1000)}s...`)
-      
+
       reconnectTimeoutRef.current = setTimeout(() => {
         setReconnectAttempts(prev => prev + 1)
         isReconnectingRef.current = false
         // Connection will be re-established by the effect
       }, delay)
-    } else if (reconnectAttempts >= maxReconnectAttempts) {
+    }
+    else if (reconnectAttempts >= maxReconnectAttempts) {
       marketToast.error('Connection failed. Falling back to polling.')
     }
   }, [reconnectAttempts, maxReconnectAttempts, getReconnectDelay, onError])
@@ -76,13 +77,14 @@ export function useSolanaWebSocket(options: WebSocketOptions = {}) {
    */
   const subscribeToAccount = useCallback(async (
     accountAddress: string,
-    accountType: 'factory' | 'market' | 'participant'
+    accountType: 'factory' | 'market' | 'participant',
   ) => {
-    if (!enabled || !connection) return
+    if (!enabled || !connection)
+      return
 
     try {
       const publicKey = new PublicKey(accountAddress)
-      
+
       const subscriptionId = connection.onAccountChange(
         publicKey,
         (accountInfo, context) => {
@@ -104,13 +106,14 @@ export function useSolanaWebSocket(options: WebSocketOptions = {}) {
               rentEpoch: accountInfo.rentEpoch,
               dataLength: accountInfo.data.length,
             }
-          } catch (parseError) {
+          }
+          catch (parseError) {
             console.warn('Failed to parse account data:', parseError)
           }
 
           onAccountChange?.(accountAddress, accountType, parsedData)
         },
-        'confirmed' // Commitment level
+        'confirmed', // Commitment level
       )
 
       const subscription: WebSocketSubscription = {
@@ -121,11 +124,12 @@ export function useSolanaWebSocket(options: WebSocketOptions = {}) {
 
       setSubscriptions(prev => [...prev, subscription])
       subscriptionsRef.current = [...subscriptionsRef.current, subscription]
-      
+
       console.log(`Subscribed to ${accountType} account:`, accountAddress, 'ID:', subscriptionId)
-      
+
       return subscriptionId
-    } catch (error) {
+    }
+    catch (error) {
       console.error(`Failed to subscribe to ${accountType} account:`, error)
       handleConnectionError(error as Error)
       return null
@@ -136,19 +140,22 @@ export function useSolanaWebSocket(options: WebSocketOptions = {}) {
    * Unsubscribe from account changes
    */
   const unsubscribeFromAccount = useCallback(async (accountAddress: string) => {
-    if (!connection) return
+    if (!connection)
+      return
 
     const subscription = subscriptionsRef.current.find(sub => sub.accountAddress === accountAddress)
-    if (!subscription) return
+    if (!subscription)
+      return
 
     try {
       await connection.removeAccountChangeListener(subscription.subscriptionId)
-      
+
       setSubscriptions(prev => prev.filter(sub => sub.accountAddress !== accountAddress))
       subscriptionsRef.current = subscriptionsRef.current.filter(sub => sub.accountAddress !== accountAddress)
-      
+
       console.log(`Unsubscribed from ${subscription.accountType} account:`, accountAddress)
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Failed to unsubscribe from account:', error)
     }
   }, [connection])
@@ -160,10 +167,10 @@ export function useSolanaWebSocket(options: WebSocketOptions = {}) {
     address: string
     type: 'factory' | 'market' | 'participant'
   }>) => {
-    const subscriptionPromises = accounts.map(account => 
-      subscribeToAccount(account.address, account.type)
+    const subscriptionPromises = accounts.map(account =>
+      subscribeToAccount(account.address, account.type),
     )
-    
+
     const subscriptionIds = await Promise.all(subscriptionPromises)
     return subscriptionIds.filter(id => id !== null)
   }, [subscribeToAccount])
@@ -172,19 +179,21 @@ export function useSolanaWebSocket(options: WebSocketOptions = {}) {
    * Unsubscribe from all accounts
    */
   const unsubscribeFromAll = useCallback(async () => {
-    if (!connection) return
+    if (!connection)
+      return
 
     const unsubscribePromises = subscriptionsRef.current.map(async (subscription) => {
       try {
         await connection.removeAccountChangeListener(subscription.subscriptionId)
         console.log(`Unsubscribed from ${subscription.accountType} account:`, subscription.accountAddress)
-      } catch (error) {
+      }
+      catch (error) {
         console.error('Failed to unsubscribe from account:', subscription.accountAddress, error)
       }
     })
 
     await Promise.all(unsubscribePromises)
-    
+
     setSubscriptions([])
     subscriptionsRef.current = []
   }, [connection])
@@ -208,7 +217,7 @@ export function useSolanaWebSocket(options: WebSocketOptions = {}) {
       }
       catch (error) {
         const errorMessage = error?.toString() || ''
-        
+
         // Handle rate limiting specifically
         if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests')) {
           console.warn('RPC rate limit hit, reducing request frequency')
@@ -266,7 +275,7 @@ export function useMarketWebSocketSubscriptions(marketAddresses: string[] = []) 
 
   const handleAccountChange = useCallback((accountAddress: string, accountType: string, data: any) => {
     setAccountChanges(prev => new Map(prev.set(accountAddress, { type: accountType, data, timestamp: Date.now() })))
-    
+
     // Log significant changes
     if (accountType === 'market') {
       console.log('Market account updated:', accountAddress, data)
@@ -284,14 +293,16 @@ export function useMarketWebSocketSubscriptions(marketAddresses: string[] = []) 
 
   // Subscribe to market accounts when addresses change
   useEffect(() => {
-    if (marketAddresses.length === 0) return
+    if (marketAddresses.length === 0)
+      return
 
     // Create a stable key from addresses to detect actual changes
     const addressesKey = marketAddresses.sort().join(',')
-    
+
     // Only subscribe if addresses actually changed
-    if (addressesKey === prevAddressesRef.current) return
-    
+    if (addressesKey === prevAddressesRef.current)
+      return
+
     prevAddressesRef.current = addressesKey
 
     const accounts = marketAddresses.map(address => ({
@@ -339,9 +350,10 @@ export function useFactoryWebSocketSubscription(factoryAddress?: string) {
   // Use ref to track if already subscribed
   const isSubscribedRef = useRef(false)
   const currentAddressRef = useRef<string>('')
-  
+
   useEffect(() => {
-    if (!factoryAddress) return
+    if (!factoryAddress)
+      return
 
     // Only subscribe if not already subscribed or address changed
     if (isSubscribedRef.current && currentAddressRef.current === factoryAddress) {

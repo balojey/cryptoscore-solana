@@ -2,11 +2,11 @@
  * InstructionEncoder Tests
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
 import { PublicKey, SystemProgram } from '@solana/web3.js'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { InstructionEncoder } from '../instruction-encoder'
 
-describe('InstructionEncoder', () => {
+describe('instructionEncoder', () => {
   let encoder: InstructionEncoder
   let programId: PublicKey
   let testAccounts: {
@@ -306,7 +306,7 @@ describe('InstructionEncoder', () => {
           market: testAccounts.market,
           creator: testAccounts.creator,
           systemProgram: SystemProgram.programId,
-        }
+        },
       )
 
       const joinInstruction = encoder.joinMarket(
@@ -316,7 +316,7 @@ describe('InstructionEncoder', () => {
           participant: testAccounts.participant,
           user: testAccounts.user,
           systemProgram: SystemProgram.programId,
-        }
+        },
       )
 
       const resolveInstruction = encoder.resolveMarket(
@@ -324,7 +324,7 @@ describe('InstructionEncoder', () => {
         {
           market: testAccounts.market,
           resolver: testAccounts.resolver,
-        }
+        },
       )
 
       const withdrawInstruction = encoder.withdraw({

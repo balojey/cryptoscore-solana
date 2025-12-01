@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect } from 'react'
-import { Transaction, PublicKey } from '@solana/web3.js'
-import { useSolanaConnection } from './useSolanaConnection'
-import { SolanaUtils } from '../lib/solana/utils'
+import type { PublicKey, Transaction } from '@solana/web3.js'
 import type { FeeEstimate } from '../lib/solana/transaction-builder'
+import { useCallback, useEffect, useState } from 'react'
+import { SolanaUtils } from '../lib/solana/utils'
+import { useSolanaConnection } from './useSolanaConnection'
 
 export interface UseFeeEstimationOptions {
   enabled?: boolean
@@ -17,7 +17,7 @@ export interface UseFeeEstimationOptions {
 export function useFeeEstimation(options: UseFeeEstimationOptions = {}) {
   const { enabled = true, autoRefresh = false, refreshInterval = 30000 } = options
   const { connection, publicKey } = useSolanaConnection()
-  
+
   const [feeEstimate, setFeeEstimate] = useState<FeeEstimate | null>(null)
   const [isEstimating, setIsEstimating] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)

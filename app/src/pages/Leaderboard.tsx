@@ -1,6 +1,6 @@
+import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -222,14 +222,14 @@ export function Leaderboard() {
                         )}
                         {activeTab === 'earnings' && (
                           <div>
-                            <div 
-                              className="font-bold text-lg" 
+                            <div
+                              className="font-bold text-lg"
                               style={{ color: netProfitSOL >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}
                             >
-                              <AnimatedNumber 
-                                value={netProfitSOL} 
-                                decimals={2} 
-                                suffix=" SOL" 
+                              <AnimatedNumber
+                                value={netProfitSOL}
+                                decimals={2}
+                                suffix=" SOL"
                               />
                             </div>
                             <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>

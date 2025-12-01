@@ -1,17 +1,15 @@
 /**
  * DEPRECATED: This hook uses Anchor framework which has been removed.
- * 
+ *
  * This hook is kept for backward compatibility but will not function correctly
  * without Anchor. Consider implementing an Anchor-free version using:
  * - lib/solana/account-decoder.ts for decoding UserStats accounts
  * - Connection.getProgramAccounts() for fetching all UserStats
  */
 
-import { useCallback, useRef } from 'react'
-import { PublicKey } from '@solana/web3.js'
 import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import { useQuery } from '@tanstack/react-query'
-import { DASHBOARD_PROGRAM_ID } from '../config/programs'
+import { useCallback, useRef } from 'react'
 
 export interface UserStatsData {
   address: string
@@ -52,7 +50,7 @@ export function useLeaderboard(options: { enabled?: boolean } = {}) {
     staleTime: 30000, // 30 seconds
     refetchInterval: 60000, // Refetch every minute
     retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   })
 }
 

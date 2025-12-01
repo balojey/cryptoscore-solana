@@ -1,6 +1,6 @@
 /**
  * DEPRECATED: This hook uses Anchor framework which has been removed.
- * 
+ *
  * Use hooks/useMarketData.ts (useAllMarkets) for Anchor-free market fetching.
  */
 
@@ -39,7 +39,7 @@ export function useAllMarketsQuery(options: {
     staleTime: 10000, // 10 seconds
     refetchInterval: 15000, // Refetch every 15 seconds
     retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   })
 }
 

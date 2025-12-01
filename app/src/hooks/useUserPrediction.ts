@@ -1,12 +1,11 @@
 /**
  * DEPRECATED: This hook uses Anchor framework which has been removed.
- * 
+ *
  * Use hooks/useParticipantData.ts for Anchor-free participant data fetching.
  */
 
-import { useQuery } from '@tanstack/react-query'
-import { PublicKey } from '@solana/web3.js'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { useQuery } from '@tanstack/react-query'
 
 /**
  * @deprecated Use useParticipantData instead

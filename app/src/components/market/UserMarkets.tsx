@@ -1,13 +1,13 @@
+import type { Market } from '../../types'
+import { useWallet } from '@solana/wallet-adapter-react'
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { useWallet } from '@solana/wallet-adapter-react'
-import type { Market } from '../../types'
-import EnhancedMarketCard, { EnhancedMarketCardSkeleton } from '../cards/EnhancedMarketCard'
 import { useUserMarkets } from '../../hooks/useMarketData'
+import EnhancedMarketCard, { EnhancedMarketCardSkeleton } from '../cards/EnhancedMarketCard'
 
 export function UserMarkets() {
   const { publicKey, connected } = useWallet()
-  
+
   // Fetch user's markets
   const { data: marketDataList, isLoading } = useUserMarkets(publicKey?.toString())
 

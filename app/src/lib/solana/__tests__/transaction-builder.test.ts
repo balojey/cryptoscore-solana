@@ -2,11 +2,11 @@
  * TransactionBuilder Tests
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
-import { Connection, PublicKey, SystemProgram, TransactionInstruction } from '@solana/web3.js'
+import { Connection, PublicKey, SystemProgram } from '@solana/web3.js'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { TransactionBuilder } from '../transaction-builder'
 
-describe('TransactionBuilder', () => {
+describe('transactionBuilder', () => {
   let connection: Connection
   let builder: TransactionBuilder
 

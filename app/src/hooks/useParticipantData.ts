@@ -1,15 +1,15 @@
 /**
  * useParticipantData - Hook for fetching participant data for a market
- * 
+ *
  * Fetches and decodes participant account data for the connected user.
  */
 
-import { useQuery } from '@tanstack/react-query'
 import { PublicKey } from '@solana/web3.js'
-import { useSolanaConnection } from './useSolanaConnection'
+import { useQuery } from '@tanstack/react-query'
+import { MARKET_PROGRAM_ID } from '../config/programs'
 import { AccountDecoder } from '../lib/solana/account-decoder'
 import { PDAUtils } from '../lib/solana/pda-utils'
-import { MARKET_PROGRAM_ID } from '../config/programs'
+import { useSolanaConnection } from './useSolanaConnection'
 
 export interface ParticipantData {
   market: string
@@ -21,13 +21,13 @@ export interface ParticipantData {
 
 /**
  * Hook for fetching participant data for a specific market and user
- * 
+ *
  * @param marketAddress - Market address
  * @param userAddress - User address (optional, defaults to connected wallet)
  */
 export function useParticipantData(marketAddress?: string, userAddress?: string) {
   const { connection, publicKey } = useSolanaConnection()
-  
+
   // Use provided userAddress or connected wallet
   const effectiveUserAddress = userAddress || publicKey?.toString()
 
@@ -66,7 +66,8 @@ export function useParticipantData(marketAddress?: string, userAddress?: string)
           hasWithdrawn: participant.hasWithdrawn,
           joinedAt: Number(participant.joinedAt),
         }
-      } catch (error) {
+      }
+      catch (error) {
         console.error('Error fetching participant data:', error)
         return null
       }

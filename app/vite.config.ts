@@ -17,7 +17,8 @@ export default defineConfig({
         manualChunks: {
           // Separate vendor chunks for better caching
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'wagmi-vendor': ['wagmi', 'viem', '@tanstack/react-query'],
+          'solana-vendor': ['@solana/web3.js', '@solana/wallet-adapter-react', '@solana/wallet-adapter-react-ui', '@solana/wallet-adapter-wallets'],
+          'query-vendor': ['@tanstack/react-query'],
           'recharts-vendor': ['recharts'],
         },
       },

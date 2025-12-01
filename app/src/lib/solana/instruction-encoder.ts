@@ -1,15 +1,15 @@
 /**
  * InstructionEncoder - Encodes instruction data using Borsh serialization
- * 
+ *
  * Provides methods for encoding all program instructions with proper discriminators.
  * Each instruction is prefixed with an 8-byte discriminator for identification.
- * 
+ *
  * @module instruction-encoder
- * 
+ *
  * @example
  * ```typescript
  * const encoder = new InstructionEncoder(programId)
- * 
+ *
  * const createMarketIx = encoder.createMarket(
  *   { matchId: 'MATCH_123', entryFee: BigInt(1e9), ... },
  *   { factory, market, creator, systemProgram }
@@ -17,26 +17,26 @@
  * ```
  */
 
-import { PublicKey, TransactionInstruction } from '@solana/web3.js'
-import { serialize, Schema } from 'borsh'
+import type { PublicKey } from '@solana/web3.js'
+import type { CreateMarketParams, JoinMarketParams, ResolveMarketParams } from './borsh-schemas'
+import { TransactionInstruction } from '@solana/web3.js'
+import { serialize } from 'borsh'
 import {
-  CreateMarketSchema,
-  JoinMarketSchema,
-  ResolveMarketSchema,
-  WithdrawSchema,
   CreateMarketData,
+
+  CreateMarketSchema,
   JoinMarketData,
+
+  JoinMarketSchema,
   ResolveMarketData,
-  WithdrawData,
-  type CreateMarketParams,
-  type JoinMarketParams,
-  type ResolveMarketParams,
+
+  ResolveMarketSchema,
 } from './borsh-schemas'
 
 /**
  * Instruction discriminators (8-byte identifiers)
  * These must match the discriminators in the on-chain program
- * 
+ *
  * @constant DISCRIMINATORS
  */
 const DISCRIMINATORS = {
@@ -48,7 +48,7 @@ const DISCRIMINATORS = {
 
 /**
  * InstructionEncoder class for encoding program instructions
- * 
+ *
  * @class InstructionEncoder
  */
 export class InstructionEncoder {
@@ -56,7 +56,7 @@ export class InstructionEncoder {
 
   /**
    * Create a new InstructionEncoder
-   * 
+   *
    * @param {PublicKey} programId - Program ID for the target program
    */
   constructor(programId: PublicKey) {
@@ -65,15 +65,15 @@ export class InstructionEncoder {
 
   /**
    * Encode CreateMarket instruction
-   * 
+   *
    * @param {CreateMarketParams} params - Market creation parameters
-   * @param {Object} accounts - Required accounts for the instruction
+   * @param {object} accounts - Required accounts for the instruction
    * @param {PublicKey} accounts.factory - Factory PDA
    * @param {PublicKey} accounts.market - Market PDA (to be created)
    * @param {PublicKey} accounts.creator - Market creator (signer)
    * @param {PublicKey} accounts.systemProgram - System program ID
    * @returns {TransactionInstruction} Encoded instruction
-   * 
+   *
    * @example
    * ```typescript
    * const ix = encoder.createMarket(
@@ -95,7 +95,7 @@ export class InstructionEncoder {
       market: PublicKey
       creator: PublicKey
       systemProgram: PublicKey
-    }
+    },
   ): TransactionInstruction {
     const instructionData = new CreateMarketData(params)
     const data = Buffer.concat([
@@ -117,15 +117,15 @@ export class InstructionEncoder {
 
   /**
    * Encode JoinMarket instruction
-   * 
+   *
    * @param {JoinMarketParams} params - Join market parameters
-   * @param {Object} accounts - Required accounts for the instruction
+   * @param {object} accounts - Required accounts for the instruction
    * @param {PublicKey} accounts.market - Market PDA
    * @param {PublicKey} accounts.participant - Participant PDA (to be created)
    * @param {PublicKey} accounts.user - User wallet (signer)
    * @param {PublicKey} accounts.systemProgram - System program ID
    * @returns {TransactionInstruction} Encoded instruction
-   * 
+   *
    * @example
    * ```typescript
    * const ix = encoder.joinMarket(
@@ -141,7 +141,7 @@ export class InstructionEncoder {
       participant: PublicKey
       user: PublicKey
       systemProgram: PublicKey
-    }
+    },
   ): TransactionInstruction {
     const instructionData = new JoinMarketData(params)
     const data = Buffer.concat([
@@ -163,13 +163,13 @@ export class InstructionEncoder {
 
   /**
    * Encode ResolveMarket instruction
-   * 
+   *
    * @param {ResolveMarketParams} params - Market resolution parameters
-   * @param {Object} accounts - Required accounts for the instruction
+   * @param {object} accounts - Required accounts for the instruction
    * @param {PublicKey} accounts.market - Market PDA
    * @param {PublicKey} accounts.resolver - Resolver wallet (signer, must be creator)
    * @returns {TransactionInstruction} Encoded instruction
-   * 
+   *
    * @example
    * ```typescript
    * const ix = encoder.resolveMarket(
@@ -183,7 +183,7 @@ export class InstructionEncoder {
     accounts: {
       market: PublicKey
       resolver: PublicKey
-    }
+    },
   ): TransactionInstruction {
     const instructionData = new ResolveMarketData(params)
     const data = Buffer.concat([
@@ -203,16 +203,16 @@ export class InstructionEncoder {
 
   /**
    * Encode Withdraw instruction
-   * 
+   *
    * Note: Withdraw has no parameters, only the discriminator is sent
-   * 
-   * @param {Object} accounts - Required accounts for the instruction
+   *
+   * @param {object} accounts - Required accounts for the instruction
    * @param {PublicKey} accounts.market - Market PDA
    * @param {PublicKey} accounts.participant - Participant PDA
    * @param {PublicKey} accounts.user - User wallet (signer)
    * @param {PublicKey} accounts.systemProgram - System program ID
    * @returns {TransactionInstruction} Encoded instruction
-   * 
+   *
    * @example
    * ```typescript
    * const ix = encoder.withdraw({

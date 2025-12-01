@@ -2,10 +2,10 @@
  * SolanaErrorHandler Tests
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { SolanaErrorHandler } from '../error-handler'
 
-describe('SolanaErrorHandler', () => {
+describe('solanaErrorHandler', () => {
   describe('parseError', () => {
     it('should parse program error from logs', () => {
       const error = {

@@ -1,8 +1,8 @@
 import type { Match } from '../../types'
-import { useEffect, useMemo, useState } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { getRandomApiKey } from '../../utils/apiKey'
+import { useEffect, useMemo, useState } from 'react'
 import { useAllMarkets } from '../../hooks/useMarketData'
+import { getRandomApiKey } from '../../utils/apiKey'
 import { Market } from './Market'
 
 const COMPETITIONS = [

@@ -1,15 +1,16 @@
-import { useCallback, useState } from 'react'
-import { toast } from 'react-hot-toast'
+import type { FeeEstimate } from '../lib/solana/transaction-builder'
 import { PublicKey, SystemProgram } from '@solana/web3.js'
 import { useQueryClient } from '@tanstack/react-query'
-import { useSolanaConnection } from './useSolanaConnection'
-import { TransactionBuilder, type FeeEstimate } from '../lib/solana/transaction-builder'
+import { useCallback, useState } from 'react'
+import { toast } from 'react-hot-toast'
+import { FACTORY_PROGRAM_ID, MARKET_PROGRAM_ID } from '../config/programs'
+import { SolanaErrorHandler } from '../lib/solana/error-handler'
 import { InstructionEncoder } from '../lib/solana/instruction-encoder'
 import { PDAUtils } from '../lib/solana/pda-utils'
-import { SolanaErrorHandler } from '../lib/solana/error-handler'
+import { TransactionBuilder } from '../lib/solana/transaction-builder'
 import { SolanaUtils } from '../lib/solana/utils'
-import { FACTORY_PROGRAM_ID, MARKET_PROGRAM_ID } from '../config/programs'
-import { PredictionChoice, MatchOutcome } from '../types/solana-program-types'
+import { MatchOutcome, PredictionChoice } from '../types/solana-program-types'
+import { useSolanaConnection } from './useSolanaConnection'
 
 export type MatchOutcomeType = 'Home' | 'Draw' | 'Away'
 
@@ -55,10 +56,10 @@ export function useMarketActions() {
    */
   const simulateBeforeSend = useCallback(async (
     transaction: any,
-    operationName: string
+    operationName: string,
   ): Promise<boolean> => {
     console.log(`Simulating ${operationName} transaction...`)
-    
+
     const simulation = await SolanaUtils.simulateTransaction(connection, transaction)
     setSimulationResult(simulation)
 
@@ -74,14 +75,14 @@ export function useMarketActions() {
       if (simulation.logs && simulation.logs.length > 0) {
         console.error('Simulation logs:', simulation.logs)
       }
-      
+
       // Warn user about simulation failure
       const shouldProceed = window.confirm(
-        `Transaction simulation failed: ${simulation.error}\n\n` +
-        'This transaction may fail on-chain. Do you want to proceed anyway?\n\n' +
-        'Click OK to proceed or Cancel to abort.'
+        `Transaction simulation failed: ${simulation.error}\n\n`
+        + 'This transaction may fail on-chain. Do you want to proceed anyway?\n\n'
+        + 'Click OK to proceed or Cancel to abort.',
       )
-      
+
       return shouldProceed
     }
   }, [connection])
@@ -101,11 +102,11 @@ export function useMarketActions() {
     try {
       const factoryProgramId = new PublicKey(FACTORY_PROGRAM_ID)
       const marketProgramId = new PublicKey(MARKET_PROGRAM_ID)
-      
+
       // Derive Factory and Market PDAs using PDAUtils
       const factoryPdaUtils = new PDAUtils(factoryProgramId)
       const marketPdaUtils = new PDAUtils(marketProgramId)
-      
+
       const { pda: factoryPda } = await factoryPdaUtils.findFactoryPDA()
       const { pda: marketPda } = await marketPdaUtils.findMarketPDA(factoryPda, params.matchId)
 
@@ -127,7 +128,7 @@ export function useMarketActions() {
           market: marketPda,
           creator: publicKey,
           systemProgram: SystemProgram.programId,
-        }
+        },
       )
 
       // Build transaction using TransactionBuilder
@@ -135,7 +136,7 @@ export function useMarketActions() {
         computeUnitLimit: 200000,
         computeUnitPrice: 1,
       })
-      
+
       builder.addInstruction(createMarketInstruction)
 
       // Estimate fee before building final transaction
@@ -167,17 +168,17 @@ export function useMarketActions() {
 
       // Confirm transaction with retry logic
       const confirmed = await SolanaUtils.confirmTransaction(connection, signature)
-      
+
       if (!confirmed) {
         throw new Error('Transaction confirmation failed')
       }
 
       setTxSignature(signature)
-      
+
       // Handle success with toast notification and cache invalidation
       toast.success('Market created successfully!')
       queryClient.invalidateQueries({ queryKey: ['markets'] })
-      
+
       return signature
     }
     catch (error: any) {
@@ -215,10 +216,10 @@ export function useMarketActions() {
       console.log('Participant PDA:', participantPda.toString())
 
       // Convert prediction to enum value
-      const predictionValue = params.prediction === 'Home' 
-        ? PredictionChoice.Home 
-        : params.prediction === 'Draw' 
-          ? PredictionChoice.Draw 
+      const predictionValue = params.prediction === 'Home'
+        ? PredictionChoice.Home
+        : params.prediction === 'Draw'
+          ? PredictionChoice.Draw
           : PredictionChoice.Away
 
       // Build instruction using InstructionEncoder
@@ -230,7 +231,7 @@ export function useMarketActions() {
           participant: participantPda,
           user: publicKey,
           systemProgram: SystemProgram.programId,
-        }
+        },
       )
 
       // Build and send transaction
@@ -238,7 +239,7 @@ export function useMarketActions() {
         computeUnitLimit: 200000,
         computeUnitPrice: 1,
       })
-      
+
       builder.addInstruction(joinMarketInstruction)
 
       // Estimate fee before building final transaction
@@ -267,18 +268,18 @@ export function useMarketActions() {
       console.log('Transaction sent:', signature)
 
       const confirmed = await SolanaUtils.confirmTransaction(connection, signature)
-      
+
       if (!confirmed) {
         throw new Error('Transaction confirmation failed')
       }
 
       setTxSignature(signature)
-      
+
       // Handle success and errors appropriately
       toast.success('Joined market successfully!')
       queryClient.invalidateQueries({ queryKey: ['markets'] })
       queryClient.invalidateQueries({ queryKey: ['market', 'details', params.marketAddress] })
-      
+
       return signature
     }
     catch (error: any) {
@@ -309,10 +310,10 @@ export function useMarketActions() {
       const marketProgramId = new PublicKey(MARKET_PROGRAM_ID)
 
       // Convert outcome to enum value
-      const outcomeValue = params.outcome === 'Home' 
-        ? MatchOutcome.Home 
-        : params.outcome === 'Draw' 
-          ? MatchOutcome.Draw 
+      const outcomeValue = params.outcome === 'Home'
+        ? MatchOutcome.Home
+        : params.outcome === 'Draw'
+          ? MatchOutcome.Draw
           : MatchOutcome.Away
 
       // Build instruction using InstructionEncoder
@@ -322,7 +323,7 @@ export function useMarketActions() {
         {
           market: marketPubkey,
           resolver: publicKey,
-        }
+        },
       )
 
       // Build and send transaction
@@ -330,7 +331,7 @@ export function useMarketActions() {
         computeUnitLimit: 200000,
         computeUnitPrice: 1,
       })
-      
+
       builder.addInstruction(resolveMarketInstruction)
 
       // Estimate fee before building final transaction
@@ -359,18 +360,18 @@ export function useMarketActions() {
       console.log('Transaction sent:', signature)
 
       const confirmed = await SolanaUtils.confirmTransaction(connection, signature)
-      
+
       if (!confirmed) {
         throw new Error('Transaction confirmation failed')
       }
 
       setTxSignature(signature)
-      
+
       // Handle success and errors appropriately
       toast.success('Market resolved successfully!')
       queryClient.invalidateQueries({ queryKey: ['markets'] })
       queryClient.invalidateQueries({ queryKey: ['market', 'details', params.marketAddress] })
-      
+
       return signature
     }
     catch (error: any) {
@@ -420,7 +421,7 @@ export function useMarketActions() {
         computeUnitLimit: 200000,
         computeUnitPrice: 1,
       })
-      
+
       builder.addInstruction(withdrawInstruction)
 
       // Estimate fee before building final transaction
@@ -449,19 +450,19 @@ export function useMarketActions() {
       console.log('Transaction sent:', signature)
 
       const confirmed = await SolanaUtils.confirmTransaction(connection, signature)
-      
+
       if (!confirmed) {
         throw new Error('Transaction confirmation failed')
       }
 
       setTxSignature(signature)
-      
+
       // Handle success with celebration and cache invalidation
       toast.success('🎉 Rewards withdrawn successfully!')
       queryClient.invalidateQueries({ queryKey: ['markets'] })
       queryClient.invalidateQueries({ queryKey: ['market', 'details', marketAddress] })
       queryClient.invalidateQueries({ queryKey: ['user'] })
-      
+
       return signature
     }
     catch (error: any) {

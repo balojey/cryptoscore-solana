@@ -26,11 +26,7 @@ export function TradingTerminal() {
   const maxRetries = 3
 
   // Fetch all markets for chart data from Solana Dashboard program
-  const { data: marketsData, isLoading: isLoadingMarkets, error: fetchError, refetch } = useAllMarkets({
-    offset: 0,
-    limit: 1000,
-    publicOnly: false,
-  })
+  const { data: marketsData, isLoading: isLoadingMarkets, error: fetchError, refetch } = useAllMarkets()
 
   // Markets are already in the correct format from useAllMarkets
   const markets: Market[] = useMemo(() => {
@@ -70,7 +66,7 @@ export function TradingTerminal() {
   const realtimeStatus = useSimpleRealtimeMarkets(
     displayMarkets,
     DASHBOARD_PROGRAM_ID,
-    false // Disable WebSocket until programs deployed
+    false, // Disable WebSocket until programs deployed
   )
 
   // Trigger refetch when real-time updates are received

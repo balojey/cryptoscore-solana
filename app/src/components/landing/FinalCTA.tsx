@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { Link } from 'react-router-dom'
 import Connect from '../Connect'
 
 export default function FinalCTA() {

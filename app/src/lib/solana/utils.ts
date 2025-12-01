@@ -1,37 +1,38 @@
 /**
  * SolanaUtils - Common utility functions for Solana operations
- * 
+ *
  * Provides helper functions for conversions, formatting, and transaction handling.
- * 
+ *
  * @module utils
- * 
+ *
  * @example
  * ```typescript
  * // Convert lamports to SOL
  * const sol = SolanaUtils.lamportsToSol(1_000_000_000) // 1.0
- * 
+ *
  * // Shorten address
  * const short = SolanaUtils.shortenAddress(publicKey) // "5Fwq...3xYz"
- * 
+ *
  * // Get explorer URL
  * const url = SolanaUtils.getExplorerUrl(signature, 'devnet')
  * ```
  */
 
-import { Connection, PublicKey, Transaction, TransactionSignature, Commitment } from '@solana/web3.js'
+import type { Commitment, Connection, Transaction, TransactionSignature } from '@solana/web3.js'
+import { PublicKey } from '@solana/web3.js'
 
 /**
  * SolanaUtils class with static utility methods
- * 
+ *
  * @class SolanaUtils
  */
 export class SolanaUtils {
   /**
    * Convert lamports to SOL
-   * 
+   *
    * @param {bigint | number} lamports - Amount in lamports
    * @returns {number} Amount in SOL
-   * 
+   *
    * @example
    * ```typescript
    * const sol = SolanaUtils.lamportsToSol(1_000_000_000) // 1.0
@@ -45,10 +46,10 @@ export class SolanaUtils {
 
   /**
    * Convert SOL to lamports
-   * 
+   *
    * @param {number} sol - Amount in SOL
    * @returns {bigint} Amount in lamports
-   * 
+   *
    * @example
    * ```typescript
    * const lamports = SolanaUtils.solToLamports(1.5) // 1_500_000_000n
@@ -60,11 +61,11 @@ export class SolanaUtils {
 
   /**
    * Shorten address for display
-   * 
+   *
    * @param {PublicKey | string} address - Public key or base58 string
-   * @param {number} [chars=4] - Number of characters to show on each end
+   * @param {number} [chars] - Number of characters to show on each end
    * @returns {string} Shortened address (e.g., "5Fwq...3xYz")
-   * 
+   *
    * @example
    * ```typescript
    * const short = SolanaUtils.shortenAddress(publicKey) // "5Fwq...3xYz"
@@ -83,7 +84,7 @@ export class SolanaUtils {
     connection: Connection,
     signature: TransactionSignature,
     commitment: Commitment = 'confirmed',
-    maxRetries = 3
+    maxRetries = 3,
   ): Promise<boolean> {
     let retries = 0
 
@@ -117,7 +118,7 @@ export class SolanaUtils {
    */
   static async simulateTransaction(
     connection: Connection,
-    transaction: Transaction
+    transaction: Transaction,
   ): Promise<{ success: boolean, logs?: string[], error?: string }> {
     try {
       const simulation = await connection.simulateTransaction(transaction)
@@ -148,7 +149,7 @@ export class SolanaUtils {
    */
   static async getRecentBlockhash(
     connection: Connection,
-    commitment: Commitment = 'confirmed'
+    commitment: Commitment = 'confirmed',
   ): Promise<string> {
     const { blockhash } = await connection.getLatestBlockhash(commitment)
     return blockhash
@@ -156,11 +157,11 @@ export class SolanaUtils {
 
   /**
    * Get Solana Explorer URL for transaction
-   * 
+   *
    * @param {string} signature - Transaction signature
-   * @param {string} [cluster='devnet'] - Network cluster
+   * @param {string} [cluster] - Network cluster
    * @returns {string} Explorer URL
-   * 
+   *
    * @example
    * ```typescript
    * const url = SolanaUtils.getExplorerUrl(signature, 'devnet')
@@ -169,7 +170,7 @@ export class SolanaUtils {
    */
   static getExplorerUrl(
     signature: string,
-    cluster: 'mainnet-beta' | 'testnet' | 'devnet' | 'localnet' = 'devnet'
+    cluster: 'mainnet-beta' | 'testnet' | 'devnet' | 'localnet' = 'devnet',
   ): string {
     const clusterParam = cluster === 'mainnet-beta' ? '' : `?cluster=${cluster}`
     return `https://explorer.solana.com/tx/${signature}${clusterParam}`
@@ -177,11 +178,11 @@ export class SolanaUtils {
 
   /**
    * Get Solana Explorer URL for address
-   * 
+   *
    * @param {PublicKey | string} address - Public key or base58 string
-   * @param {string} [cluster='devnet'] - Network cluster
+   * @param {string} [cluster] - Network cluster
    * @returns {string} Explorer URL
-   * 
+   *
    * @example
    * ```typescript
    * const url = SolanaUtils.getExplorerAddressUrl(marketPDA, 'devnet')
@@ -190,7 +191,7 @@ export class SolanaUtils {
    */
   static getExplorerAddressUrl(
     address: PublicKey | string,
-    cluster: 'mainnet-beta' | 'testnet' | 'devnet' | 'localnet' = 'devnet'
+    cluster: 'mainnet-beta' | 'testnet' | 'devnet' | 'localnet' = 'devnet',
   ): string {
     const addressStr = typeof address === 'string' ? address : address.toBase58()
     const clusterParam = cluster === 'mainnet-beta' ? '' : `?cluster=${cluster}`
@@ -199,11 +200,11 @@ export class SolanaUtils {
 
   /**
    * Format SOL amount for display
-   * 
+   *
    * @param {bigint | number} lamports - Amount in lamports
-   * @param {number} [decimals=4] - Number of decimal places
+   * @param {number} [decimals] - Number of decimal places
    * @returns {string} Formatted SOL amount
-   * 
+   *
    * @example
    * ```typescript
    * const formatted = SolanaUtils.formatSol(1_500_000_000) // "1.5000"
@@ -217,10 +218,10 @@ export class SolanaUtils {
 
   /**
    * Check if public key string is valid
-   * 
+   *
    * @param {string} address - Base58 encoded public key
    * @returns {boolean} True if valid
-   * 
+   *
    * @example
    * ```typescript
    * if (SolanaUtils.isValidPublicKey(addressString)) {
@@ -240,10 +241,10 @@ export class SolanaUtils {
 
   /**
    * Sleep utility for delays
-   * 
+   *
    * @param {number} ms - Milliseconds to sleep
    * @returns {Promise<void>}
-   * 
+   *
    * @example
    * ```typescript
    * await SolanaUtils.sleep(1000) // Wait 1 second
@@ -256,7 +257,7 @@ export class SolanaUtils {
   /**
    * Estimate transaction fee with retry logic
    * Handles network condition changes by retrying with fresh blockhash
-   * 
+   *
    * @param connection - Solana connection instance
    * @param transaction - Transaction to estimate fee for
    * @param maxRetries - Maximum number of retry attempts
@@ -265,7 +266,7 @@ export class SolanaUtils {
   static async estimateTransactionFee(
     connection: Connection,
     transaction: Transaction,
-    maxRetries = 2
+    maxRetries = 2,
   ): Promise<number | null> {
     let retries = 0
 
@@ -304,7 +305,7 @@ export class SolanaUtils {
 
   /**
    * Format fee estimate for display
-   * 
+   *
    * @param lamports - Fee in lamports
    * @param includeSymbol - Whether to include SOL symbol
    * @returns Formatted fee string

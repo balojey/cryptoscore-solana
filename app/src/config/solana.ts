@@ -6,13 +6,13 @@ export const SOLANA_NETWORK: WalletAdapterNetwork = (import.meta.env.VITE_SOLANA
 
 // Multiple RPC endpoints for fallback and load balancing
 export const RPC_ENDPOINTS = {
-  devnet: [
+  'devnet': [
     import.meta.env.VITE_SOLANA_RPC_URL || clusterApiUrl('devnet'),
     'https://api.devnet.solana.com',
     'https://devnet.helius-rpc.com/?api-key=demo', // Free tier
     'https://rpc.ankr.com/solana_devnet', // Free tier
   ],
-  testnet: [
+  'testnet': [
     import.meta.env.VITE_SOLANA_RPC_URL || clusterApiUrl('testnet'),
     'https://api.testnet.solana.com',
   ],
@@ -44,7 +44,7 @@ export function getNextConnection(): Connection {
   const endpoints = getCurrentRPCEndpoints()
   currentEndpointIndex = (currentEndpointIndex + 1) % endpoints.length
   const endpoint = endpoints[currentEndpointIndex]
-  
+
   return new Connection(endpoint, {
     commitment: 'confirmed',
     confirmTransactionInitialTimeout: 60000,
@@ -55,14 +55,14 @@ export function getNextConnection(): Connection {
 // Get connection with automatic fallback
 export async function getHealthyConnection(): Promise<Connection> {
   const endpoints = getCurrentRPCEndpoints()
-  
+
   for (const endpoint of endpoints) {
     try {
       const testConnection = new Connection(endpoint, {
         commitment: 'confirmed',
         disableRetryOnRateLimit: false,
       })
-      
+
       // Test connection health
       await testConnection.getLatestBlockhash('confirmed')
       return testConnection
@@ -72,7 +72,7 @@ export async function getHealthyConnection(): Promise<Connection> {
       continue
     }
   }
-  
+
   // If all fail, return the primary connection
   console.error('All RPC endpoints failed, using primary')
   return connection

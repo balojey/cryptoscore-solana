@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import type { Market } from '../types'
-import { useRealtimeMarkets, marketToast } from './useRealtimeMarkets'
-import { useMarketWebSocketSubscriptions, useFactoryWebSocketSubscription } from './useSolanaWebSocket'
+import { useQueryClient } from '@tanstack/react-query'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { marketToast, useRealtimeMarkets } from './useRealtimeMarkets'
+import { useFactoryWebSocketSubscription, useMarketWebSocketSubscriptions } from './useSolanaWebSocket'
 
 interface EnhancedRealtimeOptions {
   enabled?: boolean
@@ -39,11 +39,11 @@ export function useEnhancedRealtimeMarkets(options: EnhancedRealtimeOptions = {}
 
   // WebSocket subscriptions
   const marketWebSocket = useMarketWebSocketSubscriptions(
-    webSocketEnabled ? marketAddresses : []
+    webSocketEnabled ? marketAddresses : [],
   )
-  
+
   const factoryWebSocket = useFactoryWebSocketSubscription(
-    webSocketEnabled ? factoryAddress : undefined
+    webSocketEnabled ? factoryAddress : undefined,
   )
 
   // Fallback polling mechanism
@@ -63,13 +63,14 @@ export function useEnhancedRealtimeMarkets(options: EnhancedRealtimeOptions = {}
    */
   const handleWebSocketAccountChange = useCallback((accountAddress: string, accountType: string, data: any) => {
     console.log(`WebSocket account change: ${accountType} ${accountAddress}`, data)
-    
+
     // Invalidate relevant queries
     if (accountType === 'market') {
       queryClient.invalidateQueries({ queryKey: ['market', 'details', accountAddress] })
       queryClient.invalidateQueries({ queryKey: ['markets'] })
       onMarketUpdate?.(accountAddress)
-    } else if (accountType === 'factory') {
+    }
+    else if (accountType === 'factory') {
       queryClient.invalidateQueries({ queryKey: ['markets'] })
     }
 
@@ -85,7 +86,7 @@ export function useEnhancedRealtimeMarkets(options: EnhancedRealtimeOptions = {}
       if (newStatus !== connectionStatus) {
         setConnectionStatus(newStatus)
         onConnectionStatusChange?.(newStatus)
-        
+
         if (statusReportedRef.current !== newStatus) {
           marketToast.webSocketFallback()
           statusReportedRef.current = newStatus
@@ -102,9 +103,11 @@ export function useEnhancedRealtimeMarkets(options: EnhancedRealtimeOptions = {}
 
     if (isMarketConnected && isFactoryConnected && !hasHighReconnectAttempts) {
       newStatus = 'connected'
-    } else if (hasHighReconnectAttempts) {
+    }
+    else if (hasHighReconnectAttempts) {
       newStatus = 'fallback'
-    } else {
+    }
+    else {
       newStatus = 'disconnected'
     }
 
@@ -148,7 +151,8 @@ export function useEnhancedRealtimeMarkets(options: EnhancedRealtimeOptions = {}
    * Monitor WebSocket account changes
    */
   useEffect(() => {
-    if (connectionStatus !== 'connected') return
+    if (connectionStatus !== 'connected')
+      return
 
     // Process market account changes
     marketWebSocket.accountChanges.forEach((change, address) => {
@@ -171,7 +175,8 @@ export function useEnhancedRealtimeMarkets(options: EnhancedRealtimeOptions = {}
    * Health check for WebSocket connections
    */
   useEffect(() => {
-    if (!webSocketEnabled || connectionStatus === 'fallback') return
+    if (!webSocketEnabled || connectionStatus === 'fallback')
+      return
 
     const healthCheckInterval = setInterval(() => {
       const now = Date.now()
@@ -240,9 +245,9 @@ export function useEnhancedRealtimeMarkets(options: EnhancedRealtimeOptions = {}
  * Simplified hook for components that just need basic real-time functionality
  */
 export function useSimpleRealtimeMarkets(
-  markets: Market[] = [], 
+  markets: Market[] = [],
   factoryAddress?: string,
-  webSocketEnabled: boolean = false // Disabled by default until programs deployed
+  webSocketEnabled: boolean = false, // Disabled by default until programs deployed
 ) {
   const enhanced = useEnhancedRealtimeMarkets({
     markets,

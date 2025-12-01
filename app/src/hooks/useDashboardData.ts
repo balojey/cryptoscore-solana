@@ -1,6 +1,6 @@
 /**
  * DEPRECATED: This hook uses Anchor framework which has been removed.
- * 
+ *
  * This hook is kept for backward compatibility but will not function correctly
  * without Anchor. Consider implementing an Anchor-free version using:
  * - lib/solana/account-decoder.ts for decoding accounts
@@ -9,11 +9,9 @@
  */
 
 import type { Market, MarketDashboardInfo } from '../types'
-import { PublicKey } from '@solana/web3.js'
 import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useRef } from 'react'
-import { DASHBOARD_PROGRAM_ID } from '../config/programs'
 
 export interface DashboardData {
   createdMarkets: MarketDashboardInfo[]
@@ -53,7 +51,7 @@ export function useDashboardData(userAddress?: string): DashboardData {
     staleTime: 10000, // 10 seconds
     refetchInterval: 10000, // Refetch every 10 seconds for real-time updates
     retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   })
 
   // Combine and deduplicate markets
@@ -118,7 +116,7 @@ export function useAllMarkets(options: {
     staleTime: 15000, // 15 seconds
     refetchInterval: 30000, // Refetch every 30 seconds
     retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   })
 }
 
@@ -148,7 +146,7 @@ export function useFactoryMarkets(options: { enabled?: boolean } = {}) {
     staleTime: 15000,
     refetchInterval: 30000,
     retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   })
 }
 
@@ -177,6 +175,6 @@ export function useMarketDetails(marketAddresses: string[], options: { enabled?:
     enabled: enabled && marketAddresses.length > 0,
     staleTime: 15000,
     retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   })
 }

@@ -1,6 +1,6 @@
 import type { Market } from '../../types'
-import { Link } from 'react-router-dom'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import {
@@ -8,9 +8,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { useMatchData } from '../../hooks/useMatchData'
 import { useMarketData } from '../../hooks/useMarketData'
-import { shortenAddress, formatSOL } from '../../utils/formatters'
+import { useMatchData } from '../../hooks/useMatchData'
+import { formatSOL, shortenAddress } from '../../utils/formatters'
 
 interface EnhancedMarketCardProps {
   market: Market
@@ -60,7 +60,7 @@ export function EnhancedMarketCardSkeleton() {
 // Calculate prediction distribution from participants
 function usePredictionDistribution(marketAddress: string): PredictionDistribution {
   const { data: marketData } = useMarketData(marketAddress)
-  
+
   if (!marketData) {
     return { home: 0, draw: 0, away: 0, total: 0 }
   }
@@ -186,7 +186,7 @@ export default function EnhancedMarketCard({ market }: EnhancedMarketCardProps) 
 
   // Check if user has joined this market
   const hasJoined = marketData?.participants?.some(
-    p => p.user === userAddress?.toString()
+    p => p.user === userAddress?.toString(),
   ) || false
 
   if (loading) {
@@ -297,7 +297,9 @@ export default function EnhancedMarketCard({ market }: EnhancedMarketCardProps) 
                     <span>Pool Size</span>
                   </div>
                   <div className="info-value font-mono">
-                    {formatSOL(poolSize * 1_000_000_000, 2)} {/* Convert back to lamports for formatting */}
+                    {formatSOL(poolSize * 1_000_000_000, 2)}
+                    {' '}
+                    {/* Convert back to lamports for formatting */}
                   </div>
                 </div>
               </TooltipTrigger>

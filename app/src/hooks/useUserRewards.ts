@@ -1,13 +1,12 @@
 /**
  * DEPRECATED: This hook uses Anchor framework which has been removed.
- * 
+ *
  * Use hooks/useParticipantData.ts combined with hooks/useMarketData.ts
  * for Anchor-free reward checking.
  */
 
-import { useQuery } from '@tanstack/react-query'
-import { PublicKey } from '@solana/web3.js'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { useQuery } from '@tanstack/react-query'
 
 /**
  * @deprecated Use useParticipantData and useMarketData instead

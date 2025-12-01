@@ -1,8 +1,8 @@
 import type { MarketProps } from '../../types'
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -84,7 +84,7 @@ export function Market({ match, userHasMarket, marketAddress, refetchMarkets }: 
 
     try {
       setTransactionStatus({ type: 'info', message: 'Initializing market...' })
-      
+
       const entryFeeLamports = Math.floor(Number(entryFee) * LAMPORTS_PER_SOL)
       const kickoffTime = Math.floor(new Date(match.utcDate).getTime() / 1000)
       const endTime = kickoffTime + (2 * 60 * 60) // 2 hours after kickoff
@@ -230,7 +230,10 @@ export function Market({ match, userHasMarket, marketAddress, refetchMarkets }: 
                     </p>
                     {Number(entryFee) > 0 && (
                       <p className="text-xs font-mono" style={{ color: 'var(--accent-cyan)' }}>
-                        ≈ ${(Number(entryFee) * 100).toFixed(2)} USD
+                        ≈ $
+                        {(Number(entryFee) * 100).toFixed(2)}
+                        {' '}
+                        USD
                       </p>
                     )}
                   </div>
@@ -250,11 +253,14 @@ export function Market({ match, userHasMarket, marketAddress, refetchMarkets }: 
 
                 {/* Status Messages */}
                 {error && (
-                  <div className="text-xs text-center p-3 rounded-lg" style={{ 
-                    background: 'rgba(255, 51, 102, 0.1)', 
-                    border: '1px solid var(--accent-red)',
-                    color: 'var(--accent-red)' 
-                  }}>
+                  <div
+                    className="text-xs text-center p-3 rounded-lg"
+                    style={{
+                      background: 'rgba(255, 51, 102, 0.1)',
+                      border: '1px solid var(--accent-red)',
+                      color: 'var(--accent-red)',
+                    }}
+                  >
                     <div className="flex items-center justify-center gap-2">
                       <span className="icon-[mdi--alert-circle-outline] w-4 h-4" />
                       <p>{error}</p>
@@ -262,24 +268,24 @@ export function Market({ match, userHasMarket, marketAddress, refetchMarkets }: 
                   </div>
                 )}
                 {transactionStatus && (
-                  <div 
+                  <div
                     className="text-xs text-center p-3 rounded-lg space-y-2"
                     style={{
-                      background: transactionStatus.type === 'success' 
-                        ? 'rgba(0, 255, 136, 0.1)' 
+                      background: transactionStatus.type === 'success'
+                        ? 'rgba(0, 255, 136, 0.1)'
                         : transactionStatus.type === 'error'
                           ? 'rgba(255, 51, 102, 0.1)'
                           : 'rgba(0, 212, 255, 0.1)',
-                      border: `1px solid ${transactionStatus.type === 'success' 
-                        ? 'var(--accent-green)' 
+                      border: `1px solid ${transactionStatus.type === 'success'
+                        ? 'var(--accent-green)'
                         : transactionStatus.type === 'error'
                           ? 'var(--accent-red)'
                           : 'var(--accent-cyan)'}`,
-                      color: transactionStatus.type === 'success' 
-                        ? 'var(--accent-green)' 
+                      color: transactionStatus.type === 'success'
+                        ? 'var(--accent-green)'
                         : transactionStatus.type === 'error'
                           ? 'var(--accent-red)'
-                          : 'var(--accent-cyan)'
+                          : 'var(--accent-cyan)',
                     }}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -300,10 +306,13 @@ export function Market({ match, userHasMarket, marketAddress, refetchMarkets }: 
                           <span className="icon-[mdi--open-in-new] w-3 h-3" />
                           View on Solana Explorer
                         </a>
-                        <div className="mt-1 p-2 rounded font-mono text-xs break-all" style={{ 
-                          background: 'var(--bg-secondary)',
-                          color: 'var(--text-tertiary)'
-                        }}>
+                        <div
+                          className="mt-1 p-2 rounded font-mono text-xs break-all"
+                          style={{
+                            background: 'var(--bg-secondary)',
+                            color: 'var(--text-tertiary)',
+                          }}
+                        >
                           {transactionStatus.signature}
                         </div>
                       </div>
@@ -328,12 +337,11 @@ export function Market({ match, userHasMarket, marketAddress, refetchMarkets }: 
                   {isLoading && <span className="icon-[mdi--loading] animate-spin w-4 h-4" />}
                   {transactionStatus?.type === 'success' && <span className="icon-[mdi--check-circle-outline] w-4 h-4" />}
                   <span>
-                    {isLoading 
-                      ? 'Creating Market...' 
+                    {isLoading
+                      ? 'Creating Market...'
                       : transactionStatus?.type === 'success'
                         ? 'Market Created!'
-                        : 'Create Market'
-                    }
+                        : 'Create Market'}
                   </span>
                 </Button>
               </DialogFooter>

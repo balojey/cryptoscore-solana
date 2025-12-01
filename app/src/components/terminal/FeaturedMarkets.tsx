@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { useMatchData } from '../../hooks/useMatchData'
-import { formatSOL } from '../../utils/formatters'
 
 type BadgeType = 'hot' | 'ending-soon' | 'popular'
 

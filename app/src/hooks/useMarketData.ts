@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
 import { PublicKey } from '@solana/web3.js'
-import { useSolanaConnection } from './useSolanaConnection'
-import { AccountDecoder } from '../lib/solana/account-decoder'
+import { useQuery } from '@tanstack/react-query'
 import { MARKET_PROGRAM_ID } from '../config/programs'
+import { AccountDecoder } from '../lib/solana/account-decoder'
 import { PDAUtils } from '../lib/solana/pda-utils'
+import { useSolanaConnection } from './useSolanaConnection'
 
 export interface Participant {
   user: string
@@ -66,10 +66,10 @@ export function useMarketData(marketAddress?: string) {
 
       try {
         const marketPubkey = new PublicKey(marketAddress)
-        
+
         // Fetch market account using connection.getAccountInfo
         const accountInfo = await connection.getAccountInfo(marketPubkey)
-        
+
         // Handle account not found
         if (!accountInfo || !accountInfo.data) {
           console.warn('Market account not found:', marketAddress)
@@ -95,7 +95,8 @@ export function useMarketData(marketAddress?: string) {
           awayCount: Number(market.awayCount),
           isPublic: market.isPublic,
         }
-      } catch (error) {
+      }
+      catch (error) {
         console.error('Error fetching market details:', error)
         return null
       }
@@ -117,7 +118,7 @@ export function useAllMarkets() {
     queryFn: async (): Promise<MarketData[]> => {
       try {
         const marketProgramId = new PublicKey(MARKET_PROGRAM_ID)
-        
+
         // Fetch all market accounts using connection.getProgramAccounts
         const accounts = await connection.getProgramAccounts(marketProgramId, {
           filters: [
@@ -130,11 +131,11 @@ export function useAllMarkets() {
 
         // Decode each account using AccountDecoder
         const markets: MarketData[] = []
-        
+
         for (const { pubkey, account } of accounts) {
           try {
             const market = AccountDecoder.decodeMarket(account.data)
-            
+
             markets.push({
               marketAddress: pubkey.toString(),
               creator: market.creator.toString(),
@@ -151,7 +152,8 @@ export function useAllMarkets() {
               awayCount: Number(market.awayCount),
               isPublic: market.isPublic,
             })
-          } catch (decodeError) {
+          }
+          catch (decodeError) {
             console.warn('Failed to decode market account:', pubkey.toString(), decodeError)
             // Skip accounts that fail to decode
           }
@@ -161,7 +163,8 @@ export function useAllMarkets() {
         markets.sort((a, b) => b.kickoffTime - a.kickoffTime)
 
         return markets
-      } catch (error) {
+      }
+      catch (error) {
         console.error('Error fetching all markets:', error)
         return []
       }
@@ -187,7 +190,7 @@ export function useUserMarkets(userAddress?: string) {
       try {
         const userPubkey = new PublicKey(userAddress)
         const marketProgramId = new PublicKey(MARKET_PROGRAM_ID)
-        
+
         // Fetch all market accounts
         const accounts = await connection.getProgramAccounts(marketProgramId, {
           filters: [
@@ -199,11 +202,11 @@ export function useUserMarkets(userAddress?: string) {
 
         // Decode and filter markets where user is creator or participant
         const userMarkets: MarketData[] = []
-        
+
         for (const { pubkey, account } of accounts) {
           try {
             const market = AccountDecoder.decodeMarket(account.data)
-            
+
             // Check if user is the creator
             if (market.creator.equals(userPubkey)) {
               userMarkets.push({
@@ -223,7 +226,8 @@ export function useUserMarkets(userAddress?: string) {
                 isPublic: market.isPublic,
               })
             }
-          } catch (decodeError) {
+          }
+          catch (decodeError) {
             console.warn('Failed to decode market account:', pubkey.toString(), decodeError)
           }
         }
@@ -232,7 +236,8 @@ export function useUserMarkets(userAddress?: string) {
         userMarkets.sort((a, b) => b.kickoffTime - a.kickoffTime)
 
         return userMarkets
-      } catch (error) {
+      }
+      catch (error) {
         console.error('Error fetching user markets:', error)
         return []
       }
@@ -259,14 +264,14 @@ export function useUserStats(userAddress?: string) {
       try {
         const userPubkey = new PublicKey(userAddress)
         const marketProgramId = new PublicKey(MARKET_PROGRAM_ID)
-        
+
         // Derive UserStats PDA
         const pdaUtils = new PDAUtils(marketProgramId)
         const { pda: userStatsPda } = await pdaUtils.findUserStatsPDA(userPubkey)
-        
+
         // Fetch UserStats account
         const accountInfo = await connection.getAccountInfo(userStatsPda)
-        
+
         if (!accountInfo || !accountInfo.data) {
           // Return null if account doesn't exist yet (user hasn't participated in any markets)
           return null
@@ -282,7 +287,8 @@ export function useUserStats(userAddress?: string) {
           totalEarnings: Number(userStats.totalEarnings),
           currentStreak: Number(userStats.currentStreak),
         }
-      } catch (error) {
+      }
+      catch (error) {
         console.error('Error fetching user stats:', error)
         return null
       }

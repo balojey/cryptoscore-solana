@@ -1,6 +1,6 @@
 /**
  * DEPRECATED: This hook uses Anchor framework which has been removed.
- * 
+ *
  * Consider implementing an Anchor-free version by fetching and aggregating
  * market data using hooks/useMarketData.ts (useAllMarkets).
  */
@@ -22,7 +22,6 @@ export interface MarketStats {
  * Uses the getMarketStats instruction which returns AggregatedStats
  */
 export function useMarketStats() {
-
   return useQuery({
     queryKey: ['dashboard', 'stats'],
     queryFn: async (): Promise<MarketStats> => {
@@ -40,6 +39,6 @@ export function useMarketStats() {
     staleTime: 10000, // 10 seconds
     refetchInterval: 10000, // Refetch every 10 seconds for real-time updates
     retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   })
 }

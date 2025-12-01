@@ -1,6 +1,6 @@
+import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { memo, useMemo } from 'react'
 import { useMarketStats } from '../../hooks/useMarketStats'
-import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import AnimatedNumber from '../ui/AnimatedNumber'
 
 interface MetricCardProps {

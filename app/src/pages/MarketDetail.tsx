@@ -1,8 +1,7 @@
 import type { Match } from '../types'
+import { useWallet } from '@solana/wallet-adapter-react'
 import React, { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useWallet } from '@solana/wallet-adapter-react'
-import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import PoolTrendChart from '../components/charts/PoolTrendChart'
@@ -10,13 +9,13 @@ import PredictionDistributionChart from '../components/charts/PredictionDistribu
 import MarketComments from '../components/MarketComments'
 import SharePrediction from '../components/SharePrediction'
 import Confetti from '../components/ui/Confetti'
-import { useMatchData } from '../hooks/useMatchData'
-import { useMarketData } from '../hooks/useMarketData'
+import { getAccountExplorerUrl } from '../config/programs'
 import { useMarketActions } from '../hooks/useMarketActions'
+import { useMarketData } from '../hooks/useMarketData'
+import { useMatchData } from '../hooks/useMatchData'
 import { useUserPrediction } from '../hooks/useUserPrediction'
 import { useUserRewards } from '../hooks/useUserRewards'
-import { shortenAddress, formatSOL } from '../utils/formatters'
-import { getAccountExplorerUrl } from '../config/programs'
+import { formatSOL, shortenAddress } from '../utils/formatters'
 
 // --- SUB-COMPONENTS ---
 
@@ -447,13 +446,13 @@ export function MarketDetail() {
   const { data: marketData, isLoading: isLoadingMarket, error: marketError, refetch: refetchMarket } = useMarketData(marketAddress)
 
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null)
-  const [actionStatus, setActionStatus] = useState<{ 
+  const [actionStatus, setActionStatus] = useState<{
     type: 'info' | 'success' | 'error'
     message: string
-    signature?: string 
+    signature?: string
   } | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
-  
+
   // Extract match data from market data
   const { data: matchData, loading: isLoadingMatch, error: matchError } = useMatchData(
     marketData ? Number(marketData.matchId) : 0,
@@ -485,10 +484,10 @@ export function MarketDetail() {
   // Update action status based on transaction state
   useEffect(() => {
     if (txSignature) {
-      setActionStatus({ 
-        type: 'success', 
+      setActionStatus({
+        type: 'success',
         message: 'Transaction successful!',
-        signature: txSignature
+        signature: txSignature,
       })
       // Refetch market data after successful transaction
       refetchMarket()
@@ -513,10 +512,10 @@ export function MarketDetail() {
     try {
       const signature = await action()
       if (signature) {
-        setActionStatus({ 
-          type: 'success', 
+        setActionStatus({
+          type: 'success',
           message: 'Transaction successful!',
-          signature 
+          signature,
         })
       }
     }
@@ -539,7 +538,7 @@ export function MarketDetail() {
     const prediction = selectedTeam === 1 ? 'Home' : selectedTeam === 2 ? 'Away' : 'Draw'
     return await joinMarket({
       marketAddress,
-      prediction: prediction as 'Home' | 'Draw' | 'Away'
+      prediction: prediction as 'Home' | 'Draw' | 'Away',
     })
   }, 'Failed to join market.')
 
@@ -559,12 +558,12 @@ export function MarketDetail() {
       outcome = 'Home'
     else if (winnerTag === 'AWAY_TEAM')
       outcome = 'Away'
-    else 
+    else
       outcome = 'Draw'
 
     return await resolveMarket({
       marketAddress,
-      outcome
+      outcome,
     })
   }, 'Failed to resolve market.')
 
@@ -718,33 +717,37 @@ export function MarketDetail() {
 
             {/* Data Visualizations */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <PredictionDistributionChart markets={marketData ? [{
-                marketAddress: marketAddress!,
-                matchId: BigInt(marketData.matchId),
-                creator: marketData.creator,
-                entryFee: BigInt(marketData.entryFee),
-                isPublic: marketData.isPublic,
-                startTime: BigInt(marketData.kickoffTime),
-                resolved: marketData.status === 'Resolved',
-                participantsCount: BigInt(marketData.participantCount),
-                homeCount: BigInt(marketData.homeCount),
-                awayCount: BigInt(marketData.awayCount),
-                drawCount: BigInt(marketData.drawCount),
-              }] : []}
+              <PredictionDistributionChart markets={marketData
+                ? [{
+                    marketAddress: marketAddress!,
+                    matchId: BigInt(marketData.matchId),
+                    creator: marketData.creator,
+                    entryFee: BigInt(marketData.entryFee),
+                    isPublic: marketData.isPublic,
+                    startTime: BigInt(marketData.kickoffTime),
+                    resolved: marketData.status === 'Resolved',
+                    participantsCount: BigInt(marketData.participantCount),
+                    homeCount: BigInt(marketData.homeCount),
+                    awayCount: BigInt(marketData.awayCount),
+                    drawCount: BigInt(marketData.drawCount),
+                  }]
+                : []}
               />
-              <PoolTrendChart markets={marketData ? [{
-                marketAddress: marketAddress!,
-                matchId: BigInt(marketData.matchId),
-                creator: marketData.creator,
-                entryFee: BigInt(marketData.entryFee),
-                isPublic: marketData.isPublic,
-                startTime: BigInt(marketData.kickoffTime),
-                resolved: marketData.status === 'Resolved',
-                participantsCount: BigInt(marketData.participantCount),
-                homeCount: BigInt(marketData.homeCount),
-                awayCount: BigInt(marketData.awayCount),
-                drawCount: BigInt(marketData.drawCount),
-              }] : []}
+              <PoolTrendChart markets={marketData
+                ? [{
+                    marketAddress: marketAddress!,
+                    matchId: BigInt(marketData.matchId),
+                    creator: marketData.creator,
+                    entryFee: BigInt(marketData.entryFee),
+                    isPublic: marketData.isPublic,
+                    startTime: BigInt(marketData.kickoffTime),
+                    resolved: marketData.status === 'Resolved',
+                    participantsCount: BigInt(marketData.participantCount),
+                    homeCount: BigInt(marketData.homeCount),
+                    awayCount: BigInt(marketData.awayCount),
+                    drawCount: BigInt(marketData.drawCount),
+                  }]
+                : []}
               />
             </div>
 

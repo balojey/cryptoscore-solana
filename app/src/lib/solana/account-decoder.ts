@@ -1,11 +1,11 @@
 /**
  * AccountDecoder - Deserializes account data from on-chain state
- * 
+ *
  * Provides methods for decoding all program account types using Borsh deserialization.
  * Each account type has a discriminator byte at position 0 for type identification.
- * 
+ *
  * @module account-decoder
- * 
+ *
  * @example
  * ```typescript
  * const accountInfo = await connection.getAccountInfo(marketPDA)
@@ -22,7 +22,7 @@ import { deserialize } from 'borsh'
 /**
  * Account discriminators (first byte of account data)
  * These must match the discriminators in the on-chain program
- * 
+ *
  * @constant DISCRIMINATORS
  */
 const DISCRIMINATORS = {
@@ -86,7 +86,7 @@ const UserStatsSchema = {
 
 /**
  * Factory account data structure
- * 
+ *
  * @interface Factory
  * @property {PublicKey} authority - Factory authority
  * @property {bigint} marketCount - Total number of markets created
@@ -100,7 +100,7 @@ export interface Factory {
 
 /**
  * Market account data structure
- * 
+ *
  * @interface Market
  * @property {PublicKey} factory - Factory PDA that created this market
  * @property {PublicKey} creator - Market creator's public key
@@ -136,7 +136,7 @@ export interface Market {
 
 /**
  * Participant account data structure
- * 
+ *
  * @interface Participant
  * @property {PublicKey} market - Market PDA
  * @property {PublicKey} user - Participant's public key
@@ -154,7 +154,7 @@ export interface Participant {
 
 /**
  * UserStats account data structure
- * 
+ *
  * @interface UserStats
  * @property {PublicKey} user - User's public key
  * @property {bigint} totalMarkets - Total markets participated in
@@ -172,9 +172,9 @@ export interface UserStats {
 
 /**
  * AccountDecoder class for deserializing account data
- * 
+ *
  * @class AccountDecoder
- * 
+ *
  * @example
  * ```typescript
  * const accountInfo = await connection.getAccountInfo(marketPDA)
@@ -186,11 +186,11 @@ export interface UserStats {
 export class AccountDecoder {
   /**
    * Decode Factory account data
-   * 
+   *
    * @param {Buffer} data - Raw account data from Solana
    * @returns {Factory} Decoded factory account
    * @throws {Error} If deserialization fails
-   * 
+   *
    * @example
    * ```typescript
    * const factory = AccountDecoder.decodeFactory(accountInfo.data)
@@ -208,11 +208,11 @@ export class AccountDecoder {
 
   /**
    * Decode Market account data
-   * 
+   *
    * @param {Buffer} data - Raw account data from Solana
    * @returns {Market} Decoded market account
    * @throws {Error} If deserialization fails
-   * 
+   *
    * @example
    * ```typescript
    * const market = AccountDecoder.decodeMarket(accountInfo.data)
@@ -243,11 +243,11 @@ export class AccountDecoder {
 
   /**
    * Decode Participant account data
-   * 
+   *
    * @param {Buffer} data - Raw account data from Solana
    * @returns {Participant} Decoded participant account
    * @throws {Error} If deserialization fails
-   * 
+   *
    * @example
    * ```typescript
    * const participant = AccountDecoder.decodeParticipant(accountInfo.data)
@@ -268,11 +268,11 @@ export class AccountDecoder {
 
   /**
    * Decode UserStats account data
-   * 
+   *
    * @param {Buffer} data - Raw account data from Solana
    * @returns {UserStats} Decoded user stats account
    * @throws {Error} If deserialization fails
-   * 
+   *
    * @example
    * ```typescript
    * const stats = AccountDecoder.decodeUserStats(accountInfo.data)
@@ -293,11 +293,11 @@ export class AccountDecoder {
 
   /**
    * Verify account discriminator matches expected type
-   * 
+   *
    * @param {Buffer} data - Raw account data
    * @param {keyof typeof DISCRIMINATORS} expectedType - Expected account type
    * @returns {boolean} True if discriminator matches
-   * 
+   *
    * @example
    * ```typescript
    * if (AccountDecoder.verifyDiscriminator(data, 'MARKET')) {

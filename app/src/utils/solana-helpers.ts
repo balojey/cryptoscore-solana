@@ -1,18 +1,18 @@
 /**
  * Solana Program Helper Utilities
  * Provides type-safe wrappers for interacting with CryptoScore Solana programs
- * 
+ *
  * NOTE: This file contains legacy Anchor-based helpers.
  * For new code, use the Anchor-free utilities in lib/solana/
  */
 
+import type { Market, MarketDashboardInfo } from '../types'
 import { PublicKey } from '@solana/web3.js'
 import {
+  DASHBOARD_PROGRAM_ID,
   FACTORY_PROGRAM_ID,
   MARKET_PROGRAM_ID,
-  DASHBOARD_PROGRAM_ID,
 } from '../config/programs'
-import type { Market, MarketDashboardInfo } from '../types'
 
 /**
  * Market Status enum matching Solana program
@@ -54,7 +54,7 @@ export enum SortOption {
 export function getFactoryPDA(): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
     [Buffer.from('factory')],
-    new PublicKey(FACTORY_PROGRAM_ID)
+    new PublicKey(FACTORY_PROGRAM_ID),
   )
 }
 
@@ -68,7 +68,7 @@ export function getMarketPDA(factory: PublicKey, marketCount: number): [PublicKe
       factory.toBuffer(),
       Buffer.from(marketCount.toString()),
     ],
-    new PublicKey(MARKET_PROGRAM_ID)
+    new PublicKey(MARKET_PROGRAM_ID),
   )
 }
 
@@ -82,7 +82,7 @@ export function getMarketRegistryPDA(factory: PublicKey, marketAddress: PublicKe
       factory.toBuffer(),
       marketAddress.toBuffer(),
     ],
-    new PublicKey(FACTORY_PROGRAM_ID)
+    new PublicKey(FACTORY_PROGRAM_ID),
   )
 }
 
@@ -96,7 +96,7 @@ export function getParticipantPDA(market: PublicKey, user: PublicKey): [PublicKe
       market.toBuffer(),
       user.toBuffer(),
     ],
-    new PublicKey(MARKET_PROGRAM_ID)
+    new PublicKey(MARKET_PROGRAM_ID),
   )
 }
 
@@ -109,7 +109,7 @@ export function getUserStatsPDA(user: PublicKey): [PublicKey, number] {
       Buffer.from('user_stats'),
       user.toBuffer(),
     ],
-    new PublicKey(DASHBOARD_PROGRAM_ID)
+    new PublicKey(DASHBOARD_PROGRAM_ID),
   )
 }
 
@@ -178,7 +178,7 @@ export function calculatePoolSize(entryFee: bigint, participantCount: bigint): n
  */
 export function calculateDistribution(homeCount: bigint, drawCount: bigint, awayCount: bigint) {
   const total = Number(homeCount) + Number(drawCount) + Number(awayCount)
-  
+
   if (total === 0) {
     return { homePercent: 0, drawPercent: 0, awayPercent: 0 }
   }
@@ -212,9 +212,12 @@ export function isMarketLive(market: Market): boolean {
  * Get market status string
  */
 export function getMarketStatusString(market: Market): string {
-  if (market.resolved) return 'Resolved'
-  if (isMarketLive(market)) return 'Live'
-  if (isMarketOpen(market)) return 'Open'
+  if (market.resolved)
+    return 'Resolved'
+  if (isMarketLive(market))
+    return 'Live'
+  if (isMarketOpen(market))
+    return 'Open'
   return 'Unknown'
 }
 

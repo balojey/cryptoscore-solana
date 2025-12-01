@@ -1,9 +1,9 @@
 import type { Market } from '../types'
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { useMarketWebSocketSubscriptions, useFactoryWebSocketSubscription } from './useSolanaWebSocket'
 import { useRealtimeNotifications } from './useRealtimeNotifications'
+import { useFactoryWebSocketSubscription, useMarketWebSocketSubscriptions } from './useSolanaWebSocket'
 
 interface RealtimeOptions {
   enabled?: boolean
@@ -15,13 +15,13 @@ interface RealtimeOptions {
 }
 
 export function useRealtimeMarkets(options: RealtimeOptions = {}) {
-  const { 
-    enabled = true, 
-    interval = 10000, 
-    onUpdate, 
-    markets = [], 
+  const {
+    enabled = true,
+    interval = 10000,
+    onUpdate,
+    markets = [],
     useWebSocket = true,
-    factoryAddress 
+    factoryAddress,
   } = options
   const queryClient = useQueryClient()
   const [isWebSocketFallback, setIsWebSocketFallback] = useState(false)
@@ -31,11 +31,11 @@ export function useRealtimeMarkets(options: RealtimeOptions = {}) {
 
   // WebSocket subscriptions for real-time updates
   const marketWebSocket = useMarketWebSocketSubscriptions(
-    useWebSocket && !isWebSocketFallback ? marketAddresses : []
+    useWebSocket && !isWebSocketFallback ? marketAddresses : [],
   )
-  
+
   const factoryWebSocket = useFactoryWebSocketSubscription(
-    useWebSocket && !isWebSocketFallback ? factoryAddress : undefined
+    useWebSocket && !isWebSocketFallback ? factoryAddress : undefined,
   )
 
   // Real-time notifications for market events
@@ -66,12 +66,13 @@ export function useRealtimeMarkets(options: RealtimeOptions = {}) {
    */
   const handleWebSocketUpdate = useCallback((accountAddress: string, accountType: string) => {
     console.log(`WebSocket update received for ${accountType}:`, accountAddress)
-    
+
     // Invalidate specific queries based on account type
     if (accountType === 'market') {
       queryClient.invalidateQueries({ queryKey: ['market', 'details', accountAddress] })
       queryClient.invalidateQueries({ queryKey: ['markets'] })
-    } else if (accountType === 'factory') {
+    }
+    else if (accountType === 'factory') {
       queryClient.invalidateQueries({ queryKey: ['markets'] })
     }
 
@@ -83,7 +84,8 @@ export function useRealtimeMarkets(options: RealtimeOptions = {}) {
    * Monitor WebSocket account changes for cache invalidation
    */
   useEffect(() => {
-    if (!useWebSocket || isWebSocketFallback) return
+    if (!useWebSocket || isWebSocketFallback)
+      return
 
     // Check for market account changes
     marketWebSocket.accountChanges.forEach((change, address) => {
@@ -95,12 +97,12 @@ export function useRealtimeMarkets(options: RealtimeOptions = {}) {
       handleWebSocketUpdate(factoryAddress || '', 'factory')
     }
   }, [
-    marketWebSocket.accountChanges, 
-    factoryWebSocket.factoryData, 
-    handleWebSocketUpdate, 
-    useWebSocket, 
+    marketWebSocket.accountChanges,
+    factoryWebSocket.factoryData,
+    handleWebSocketUpdate,
+    useWebSocket,
     isWebSocketFallback,
-    factoryAddress
+    factoryAddress,
   ])
 
   /**
@@ -108,10 +110,11 @@ export function useRealtimeMarkets(options: RealtimeOptions = {}) {
    */
   useEffect(() => {
     // Enable polling if WebSocket is disabled or has failed
-    const shouldPoll = !enabled || !useWebSocket || isWebSocketFallback || 
-                      (!marketWebSocket.isConnected && marketAddresses.length > 0)
+    const shouldPoll = !enabled || !useWebSocket || isWebSocketFallback
+      || (!marketWebSocket.isConnected && marketAddresses.length > 0)
 
-    if (!shouldPoll) return
+    if (!shouldPoll)
+      return
 
     const intervalId = setInterval(() => {
       // Invalidate all market-related queries to trigger refetch
@@ -124,33 +127,35 @@ export function useRealtimeMarkets(options: RealtimeOptions = {}) {
 
     return () => clearInterval(intervalId)
   }, [
-    enabled, 
-    interval, 
-    queryClient, 
-    onUpdate, 
-    useWebSocket, 
-    isWebSocketFallback, 
+    enabled,
+    interval,
+    queryClient,
+    onUpdate,
+    useWebSocket,
+    isWebSocketFallback,
     marketWebSocket.isConnected,
-    marketAddresses.length
+    marketAddresses.length,
   ])
 
   /**
    * Monitor WebSocket connection status and fallback to polling if needed
    */
   useEffect(() => {
-    if (!useWebSocket) return
+    if (!useWebSocket)
+      return
 
     // If WebSocket fails to connect or has too many reconnect attempts, fallback to polling
-    const shouldFallback = (marketAddresses.length > 0 && !marketWebSocket.isConnected && 
-                           marketWebSocket.reconnectAttempts >= 5) ||
-                          (factoryAddress && !factoryWebSocket.isConnected && 
-                           factoryWebSocket.reconnectAttempts >= 5)
+    const shouldFallback = (marketAddresses.length > 0 && !marketWebSocket.isConnected
+      && marketWebSocket.reconnectAttempts >= 5)
+    || (factoryAddress && !factoryWebSocket.isConnected
+      && factoryWebSocket.reconnectAttempts >= 5)
 
     if (shouldFallback && !isWebSocketFallback) {
       console.warn('WebSocket connection failed, falling back to polling')
       setIsWebSocketFallback(true)
       marketToast.error('Real-time updates unavailable. Using polling fallback.')
-    } else if (!shouldFallback && isWebSocketFallback) {
+    }
+    else if (!shouldFallback && isWebSocketFallback) {
       // Reset fallback if WebSocket reconnects successfully
       setIsWebSocketFallback(false)
       console.log('WebSocket reconnected, disabling polling fallback')
@@ -163,10 +168,8 @@ export function useRealtimeMarkets(options: RealtimeOptions = {}) {
     factoryAddress,
     factoryWebSocket.isConnected,
     factoryWebSocket.reconnectAttempts,
-    isWebSocketFallback
+    isWebSocketFallback,
   ])
-
-
 
   return {
     isPolling: enabled && (!useWebSocket || isWebSocketFallback || !marketWebSocket.isConnected),

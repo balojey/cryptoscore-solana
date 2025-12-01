@@ -1,14 +1,14 @@
 /**
  * useAccountSubscription - Hook for subscribing to account changes via WebSocket
- * 
+ *
  * Subscribes to market account changes and updates React Query cache in real-time.
  */
 
-import { useEffect, useRef } from 'react'
 import { PublicKey } from '@solana/web3.js'
 import { useQueryClient } from '@tanstack/react-query'
-import { useSolanaConnection } from './useSolanaConnection'
+import { useEffect, useRef } from 'react'
 import { AccountDecoder } from '../lib/solana/account-decoder'
+import { useSolanaConnection } from './useSolanaConnection'
 
 export interface UseAccountSubscriptionOptions {
   accountAddress?: string
@@ -18,7 +18,7 @@ export interface UseAccountSubscriptionOptions {
 
 /**
  * Hook for subscribing to market account changes
- * 
+ *
  * @param options - Subscription options
  */
 export function useAccountSubscription(options: UseAccountSubscriptionOptions) {
@@ -45,7 +45,8 @@ export function useAccountSubscription(options: UseAccountSubscriptionOptions) {
         const subscriptionId = connection.onAccountChange(
           publicKey,
           (accountInfo, context) => {
-            if (!isSubscribed) return
+            if (!isSubscribed)
+              return
 
             try {
               // Decode updated account data using AccountDecoder
@@ -55,7 +56,8 @@ export function useAccountSubscription(options: UseAccountSubscriptionOptions) {
 
               // Update React Query cache when changes detected
               queryClient.setQueryData(['market', 'details', accountAddress], (oldData: any) => {
-                if (!oldData) return oldData
+                if (!oldData)
+                  return oldData
 
                 return {
                   ...oldData,
@@ -82,16 +84,18 @@ export function useAccountSubscription(options: UseAccountSubscriptionOptions) {
               if (onUpdate) {
                 onUpdate(market)
               }
-            } catch (error) {
+            }
+            catch (error) {
               console.error('Error decoding account update:', error)
             }
           },
-          'confirmed'
+          'confirmed',
         )
 
         subscriptionIdRef.current = subscriptionId
         console.log('Subscribed to account:', accountAddress, 'ID:', subscriptionId)
-      } catch (error) {
+      }
+      catch (error) {
         console.error('Error subscribing to account:', error)
 
         // Handle WebSocket disconnections and reconnections

@@ -2,11 +2,11 @@
  * PDAUtils Tests
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
 import { PublicKey } from '@solana/web3.js'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { PDAUtils } from '../pda-utils'
 
-describe('PDAUtils', () => {
+describe('pDAUtils', () => {
   let pdaUtils: PDAUtils
   let programId: PublicKey
 
@@ -91,7 +91,7 @@ describe('PDAUtils', () => {
     it('should handle long match IDs within limits', async () => {
       const factory = new PublicKey('11111111111111111111111111111112')
       // Use a reasonable length match ID (Solana has max seed length of 32 bytes per seed)
-      const longMatchId = 'match_' + 'a'.repeat(20)
+      const longMatchId = `match_${'a'.repeat(20)}`
 
       const result = await pdaUtils.findMarketPDA(factory, longMatchId)
 
@@ -180,7 +180,7 @@ describe('PDAUtils', () => {
     })
   })
 
-  describe('PDA determinism', () => {
+  describe('pDA determinism', () => {
     it('should always derive the same PDAs for the same inputs', async () => {
       const factory = new PublicKey('11111111111111111111111111111112')
       const market = new PublicKey('11111111111111111111111111111113')

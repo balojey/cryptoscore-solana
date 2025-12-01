@@ -1,9 +1,8 @@
 import type { MarketDashboardInfo } from '../../types'
+import { useWallet } from '@solana/wallet-adapter-react'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { useWallet } from '@solana/wallet-adapter-react'
 import { Card, CardContent } from '@/components/ui/card'
-import { useMarketData } from '../../hooks/useMarketData'
 import { formatSOL } from '../../utils/formatters'
 
 interface PortfolioSummaryProps {
@@ -67,7 +66,7 @@ export default function PortfolioSummary({ userAddress, joinedMarkets = [] }: Po
 
     // Calculate total invested (entry fees for all participated markets) - convert from lamports to SOL
     const totalInvested = joinedMarkets.reduce((sum, m) => {
-      return sum + (m.entryFee / 1_000_000_000) // Convert lamports to SOL
+      return sum + (Number(m.entryFee) / 1_000_000_000) // Convert lamports to SOL
     }, 0)
 
     // Calculate total claimable rewards (not yet withdrawn) - convert from lamports to SOL
@@ -112,7 +111,7 @@ export default function PortfolioSummary({ userAddress, joinedMarkets = [] }: Po
     // Active positions value = entry fees for unresolved markets
     const activePositionsValue = joinedMarkets
       .filter(m => !m.resolved)
-      .reduce((sum, m) => sum + (m.entryFee / 1_000_000_000), 0) // Convert lamports to SOL
+      .reduce((sum, m) => sum + (Number(m.entryFee) / 1_000_000_000), 0) // Convert lamports to SOL
 
     const totalValue = activePositionsValue + totalClaimableRewards
 

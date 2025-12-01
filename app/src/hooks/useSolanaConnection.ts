@@ -1,11 +1,11 @@
 /**
  * useSolanaConnection - Hook for managing Solana connection and wallet state
- * 
+ *
  * Provides connection, wallet, and signing methods without Anchor dependencies.
  */
 
-import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import type { Connection, PublicKey, Transaction } from '@solana/web3.js'
+import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 
 export interface UseSolanaConnectionReturn {
   connection: Connection
@@ -19,7 +19,7 @@ export interface UseSolanaConnectionReturn {
 
 /**
  * Hook for accessing Solana connection and wallet state
- * 
+ *
  * @returns Connection, wallet, publicKey, isConnected, and signing methods
  */
 export function useSolanaConnection(): UseSolanaConnectionReturn {

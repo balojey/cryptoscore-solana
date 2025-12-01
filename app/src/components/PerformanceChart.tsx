@@ -1,8 +1,7 @@
 import type { MarketDashboardInfo } from '../types'
-import { useMemo } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useMarketData } from '../hooks/useMarketData'
 
 interface PerformanceChartProps {
   markets: MarketDashboardInfo[]
@@ -29,14 +28,14 @@ export default function PerformanceChart({ markets }: PerformanceChartProps) {
     // Calculate actual wins and losses
     // TODO: After Solana program deployment, fetch user predictions from market accounts
     // For now, we'll use a simplified calculation based on available data
-    let wins = 0
-    let losses = 0
+    const wins = 0
+    const losses = 0
 
     resolvedMarkets.forEach((market) => {
       // TODO: Fetch user prediction from Solana market account
       // const marketData = await program.account.market.fetch(marketPubkey)
       // const userPrediction = marketData.participants.find(p => p.user.equals(publicKey))
-      
+
       // For now, we can't determine user predictions without the program data
       // This will be implemented after program deployment
       const winner = market.winner

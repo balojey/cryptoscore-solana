@@ -1,7 +1,7 @@
 import type { Market } from '../../types'
 import type { FilterOptions } from './MarketFilters'
-import { useMemo, useState } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { useMemo, useState } from 'react'
 import { useFilteredMarkets } from '../../hooks/useFilteredMarkets'
 import { useAllMarkets } from '../../hooks/useMarketData'
 import EnhancedMarketCard, { EnhancedMarketCardSkeleton } from '../cards/EnhancedMarketCard'
@@ -19,7 +19,7 @@ export default function PublicMarkets() {
   })
 
   // Get all markets from Solana Dashboard program
-  const { data: allMarketsData, isLoading, isError, error, refetch } = useAllMarkets(currentPage, PAGE_SIZE)
+  const { data: allMarketsData, isLoading, isError, error, refetch } = useAllMarkets()
 
   // Filter public markets and exclude user's own markets
   const markets = useMemo(() => {
@@ -29,11 +29,13 @@ export default function PublicMarkets() {
     return allMarketsData
       .filter((marketData) => {
         // Only show public markets
-        if (!marketData.isPublic) return false
-        
+        if (!marketData.isPublic)
+          return false
+
         // Exclude user's own markets
-        if (publicKey && marketData.creator === publicKey.toString()) return false
-        
+        if (publicKey && marketData.creator === publicKey.toString())
+          return false
+
         return true
       })
       .map((marketData): Market => ({

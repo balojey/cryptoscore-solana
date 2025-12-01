@@ -2,7 +2,6 @@ import type { Market } from '../../types'
 import { useMemo, useState } from 'react'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ErrorBoundary } from '../ErrorBoundary'
-import { formatSOL } from '../../utils/formatters'
 
 type ChartType = 'tvl' | 'volume' | 'participants'
 type Timeframe = '24h' | '7d' | '30d' | 'all'

@@ -1,6 +1,6 @@
 /**
  * Solana Program Types - TypeScript interfaces for program accounts
- * 
+ *
  * Defines all types used in the Solana program integration.
  */
 

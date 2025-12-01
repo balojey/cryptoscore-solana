@@ -1,6 +1,6 @@
 /**
  * End-to-End Test: WebSocket Real-Time Updates
- * 
+ *
  * Tests the complete WebSocket subscription flow including:
  * - Subscribing to market account changes
  * - Detecting account updates
@@ -9,14 +9,14 @@
  * - Multiple account subscriptions
  */
 
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
-import { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js'
+import { Connection, Keypair, PublicKey } from '@solana/web3.js'
 import { QueryClient } from '@tanstack/react-query'
-import { PDAUtils } from '../../lib/solana/pda-utils'
-import { AccountDecoder } from '../../lib/solana/account-decoder'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { FACTORY_PROGRAM_ID, MARKET_PROGRAM_ID, RPC_URL } from '../../config/programs'
+import { AccountDecoder } from '../../lib/solana/account-decoder'
+import { PDAUtils } from '../../lib/solana/pda-utils'
 
-describe('WebSocket Real-Time Updates E2E Flow', () => {
+describe('webSocket Real-Time Updates E2E Flow', () => {
   let connection: Connection
   let testWallet: Keypair
   let factoryProgramId: PublicKey
@@ -26,13 +26,13 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
   beforeAll(async () => {
     // Connect to devnet
     connection = new Connection(RPC_URL, 'confirmed')
-    
+
     // Create a test wallet
     testWallet = Keypair.generate()
-    
+
     factoryProgramId = new PublicKey(FACTORY_PROGRAM_ID)
     marketProgramId = new PublicKey(MARKET_PROGRAM_ID)
-    
+
     // Create a query client for cache testing
     queryClient = new QueryClient({
       defaultOptions: {
@@ -51,17 +51,17 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
     queryClient.clear()
   })
 
-  describe('WebSocket Connection', () => {
+  describe('webSocket Connection', () => {
     it('should establish WebSocket connection to Solana', async () => {
       // Test connection by getting recent blockhash
       const blockhash = await connection.getLatestBlockhash('confirmed')
-      
+
       expect(blockhash).toBeDefined()
       expect(blockhash.blockhash).toBeDefined()
       expect(blockhash.lastValidBlockHeight).toBeGreaterThan(0)
-      
+
       console.log('✓ WebSocket connection established')
-      console.log('  Latest blockhash:', blockhash.blockhash.substring(0, 16) + '...')
+      console.log('  Latest blockhash:', `${blockhash.blockhash.substring(0, 16)}...`)
       console.log('  Block height:', blockhash.lastValidBlockHeight)
     })
 
@@ -71,18 +71,18 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
       expect(connection.removeAccountChangeListener).toBeDefined()
       expect(typeof connection.onAccountChange).toBe('function')
       expect(typeof connection.removeAccountChangeListener).toBe('function')
-      
+
       console.log('✓ Connection supports account subscriptions')
     })
   })
 
-  describe('Account Subscription Setup', () => {
+  describe('account Subscription Setup', () => {
     it('should subscribe to market account changes', async () => {
       const factoryPdaUtils = new PDAUtils(factoryProgramId)
       const marketPdaUtils = new PDAUtils(marketProgramId)
-      
+
       const { pda: factoryPda } = await factoryPdaUtils.findFactoryPDA()
-      const testMatchId = 'test-match-' + Date.now()
+      const testMatchId = `test-match-${Date.now()}`
       const { pda: marketPda } = await marketPdaUtils.findMarketPDA(factoryPda, testMatchId)
 
       let subscriptionId: number | null = null
@@ -99,13 +99,13 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
             dataLength: accountInfo.data.length,
           })
         },
-        'confirmed'
+        'confirmed',
       )
 
       expect(subscriptionId).toBeDefined()
       expect(typeof subscriptionId).toBe('number')
       expect(subscriptionId).toBeGreaterThanOrEqual(0)
-      
+
       console.log('✓ Subscribed to market account')
       console.log('  Market PDA:', marketPda.toString())
       console.log('  Subscription ID:', subscriptionId)
@@ -120,14 +120,14 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
     it('should subscribe to multiple market accounts simultaneously', async () => {
       const factoryPdaUtils = new PDAUtils(factoryProgramId)
       const marketPdaUtils = new PDAUtils(marketProgramId)
-      
+
       const { pda: factoryPda } = await factoryPdaUtils.findFactoryPDA()
-      
+
       // Create 3 different market PDAs
       const markets = [
-        { matchId: 'test-match-1-' + Date.now(), pda: null as PublicKey | null, subId: null as number | null },
-        { matchId: 'test-match-2-' + Date.now(), pda: null as PublicKey | null, subId: null as number | null },
-        { matchId: 'test-match-3-' + Date.now(), pda: null as PublicKey | null, subId: null as number | null },
+        { matchId: `test-match-1-${Date.now()}`, pda: null as PublicKey | null, subId: null as number | null },
+        { matchId: `test-match-2-${Date.now()}`, pda: null as PublicKey | null, subId: null as number | null },
+        { matchId: `test-match-3-${Date.now()}`, pda: null as PublicKey | null, subId: null as number | null },
       ]
 
       // Derive PDAs
@@ -144,7 +144,7 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
             (accountInfo, context) => {
               console.log(`  Update for ${market.matchId}:`, context.slot)
             },
-            'confirmed'
+            'confirmed',
           )
         }
       }
@@ -152,10 +152,10 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
       // Verify all subscriptions
       const allSubscribed = markets.every(m => m.subId !== null && typeof m.subId === 'number')
       expect(allSubscribed).toBe(true)
-      
+
       console.log('✓ Subscribed to', markets.length, 'market accounts')
       markets.forEach((m, i) => {
-        console.log(`  Market ${i + 1}:`, m.pda?.toString().substring(0, 16) + '...', 'ID:', m.subId)
+        console.log(`  Market ${i + 1}:`, `${m.pda?.toString().substring(0, 16)}...`, 'ID:', m.subId)
       })
 
       // Clean up all subscriptions
@@ -170,9 +170,9 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
     it('should handle subscription to non-existent account', async () => {
       const factoryPdaUtils = new PDAUtils(factoryProgramId)
       const marketPdaUtils = new PDAUtils(marketProgramId)
-      
+
       const { pda: factoryPda } = await factoryPdaUtils.findFactoryPDA()
-      const testMatchId = 'non-existent-' + Date.now()
+      const testMatchId = `non-existent-${Date.now()}`
       const { pda: marketPda } = await marketPdaUtils.findMarketPDA(factoryPda, testMatchId)
 
       // Verify account doesn't exist
@@ -185,12 +185,12 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
         (accountInfo, context) => {
           console.log('  Unexpected update for non-existent account')
         },
-        'confirmed'
+        'confirmed',
       )
 
       expect(subscriptionId).toBeDefined()
       expect(typeof subscriptionId).toBe('number')
-      
+
       console.log('✓ Subscribed to non-existent account (no error)')
       console.log('  Subscription ID:', subscriptionId)
 
@@ -199,13 +199,13 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
     })
   })
 
-  describe('Account Update Detection', () => {
+  describe('account Update Detection', () => {
     it('should detect account data changes', async () => {
       const factoryPdaUtils = new PDAUtils(factoryProgramId)
       const marketPdaUtils = new PDAUtils(marketProgramId)
-      
+
       const { pda: factoryPda } = await factoryPdaUtils.findFactoryPDA()
-      const testMatchId = 'test-match-' + Date.now()
+      const testMatchId = `test-match-${Date.now()}`
       const { pda: marketPda } = await marketPdaUtils.findMarketPDA(factoryPda, testMatchId)
 
       let updateCount = 0
@@ -223,7 +223,7 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
           }
           console.log('  Update detected:', lastUpdate)
         },
-        'confirmed'
+        'confirmed',
       )
 
       expect(subscriptionId).toBeDefined()
@@ -236,7 +236,8 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
       console.log('  Updates received:', updateCount)
       if (updateCount > 0) {
         console.log('  Last update:', lastUpdate)
-      } else {
+      }
+      else {
         console.log('  No updates (expected if account not modified)')
       }
 
@@ -247,9 +248,9 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
     it('should decode updated account data when changes occur', async () => {
       const factoryPdaUtils = new PDAUtils(factoryProgramId)
       const marketPdaUtils = new PDAUtils(marketProgramId)
-      
+
       const { pda: factoryPda } = await factoryPdaUtils.findFactoryPDA()
-      const testMatchId = 'test-match-' + Date.now()
+      const testMatchId = `test-match-${Date.now()}`
       const { pda: marketPda } = await marketPdaUtils.findMarketPDA(factoryPda, testMatchId)
 
       let decodedData: any = null
@@ -263,17 +264,18 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
             const market = AccountDecoder.decodeMarket(accountInfo.data)
             decodedData = market
             console.log('  Decoded market data:', {
-              creator: market.creator.toString().substring(0, 16) + '...',
+              creator: `${market.creator.toString().substring(0, 16)}...`,
               matchId: market.matchId,
               status: market.status,
               participantCount: Number(market.participantCount),
             })
-          } catch (error) {
+          }
+          catch (error) {
             decodeError = error
             console.log('  Decode error (expected if account empty):', error)
           }
         },
-        'confirmed'
+        'confirmed',
       )
 
       expect(subscriptionId).toBeDefined()
@@ -285,7 +287,8 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
       if (decodedData) {
         console.log('  Successfully decoded account data')
         expect(decodedData).toBeDefined()
-      } else {
+      }
+      else {
         console.log('  No data decoded (expected if no updates or account empty)')
       }
 
@@ -294,13 +297,13 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
     })
   })
 
-  describe('React Query Cache Integration', () => {
+  describe('react Query Cache Integration', () => {
     it('should update React Query cache when account changes', async () => {
       const factoryPdaUtils = new PDAUtils(factoryProgramId)
       const marketPdaUtils = new PDAUtils(marketProgramId)
-      
+
       const { pda: factoryPda } = await factoryPdaUtils.findFactoryPDA()
-      const testMatchId = 'test-match-' + Date.now()
+      const testMatchId = `test-match-${Date.now()}`
       const { pda: marketPda } = await marketPdaUtils.findMarketPDA(factoryPda, testMatchId)
 
       // Set initial cache data
@@ -319,11 +322,12 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
         (accountInfo, context) => {
           try {
             const market = AccountDecoder.decodeMarket(accountInfo.data)
-            
+
             // Update React Query cache
             queryClient.setQueryData(['market', 'details', marketPda.toString()], (oldData: any) => {
-              if (!oldData) return oldData
-              
+              if (!oldData)
+                return oldData
+
               cacheUpdated = true
               return {
                 ...oldData,
@@ -333,12 +337,13 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
               }
             })
 
-            console.log('  Cache updated for market:', marketPda.toString().substring(0, 16) + '...')
-          } catch (error) {
+            console.log('  Cache updated for market:', `${marketPda.toString().substring(0, 16)}...`)
+          }
+          catch (error) {
             // Expected if account doesn't exist or has no data
           }
         },
-        'confirmed'
+        'confirmed',
       )
 
       expect(subscriptionId).toBeDefined()
@@ -356,7 +361,8 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
         console.log('  Cache was updated from WebSocket')
         const updatedCache = queryClient.getQueryData(['market', 'details', marketPda.toString()])
         console.log('  Updated cache:', updatedCache)
-      } else {
+      }
+      else {
         console.log('  Cache not updated (no account changes)')
       }
 
@@ -367,14 +373,14 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
     it('should invalidate related queries when account changes', async () => {
       const factoryPdaUtils = new PDAUtils(factoryProgramId)
       const marketPdaUtils = new PDAUtils(marketProgramId)
-      
+
       const { pda: factoryPda } = await factoryPdaUtils.findFactoryPDA()
-      const testMatchId = 'test-match-' + Date.now()
+      const testMatchId = `test-match-${Date.now()}`
       const { pda: marketPda } = await marketPdaUtils.findMarketPDA(factoryPda, testMatchId)
 
       // Set up cache with markets list
       queryClient.setQueryData(['markets'], [
-        { marketAddress: marketPda.toString(), status: 'Open' }
+        { marketAddress: marketPda.toString(), status: 'Open' },
       ])
 
       let invalidationCount = 0
@@ -387,7 +393,7 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
           invalidationCount++
           console.log('  Invalidated markets query')
         },
-        'confirmed'
+        'confirmed',
       )
 
       expect(subscriptionId).toBeDefined()
@@ -403,13 +409,13 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
     })
   })
 
-  describe('Reconnection Handling', () => {
+  describe('reconnection Handling', () => {
     it('should handle subscription cleanup on unmount', async () => {
       const factoryPdaUtils = new PDAUtils(factoryProgramId)
       const marketPdaUtils = new PDAUtils(marketProgramId)
-      
+
       const { pda: factoryPda } = await factoryPdaUtils.findFactoryPDA()
-      const testMatchId = 'test-match-' + Date.now()
+      const testMatchId = `test-match-${Date.now()}`
       const { pda: marketPda } = await marketPdaUtils.findMarketPDA(factoryPda, testMatchId)
 
       // Subscribe
@@ -418,7 +424,7 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
         (accountInfo, context) => {
           console.log('  Update received')
         },
-        'confirmed'
+        'confirmed',
       )
 
       expect(subscriptionId).toBeDefined()
@@ -436,9 +442,9 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
     it('should support resubscription after disconnect', async () => {
       const factoryPdaUtils = new PDAUtils(factoryProgramId)
       const marketPdaUtils = new PDAUtils(marketProgramId)
-      
+
       const { pda: factoryPda } = await factoryPdaUtils.findFactoryPDA()
-      const testMatchId = 'test-match-' + Date.now()
+      const testMatchId = `test-match-${Date.now()}`
       const { pda: marketPda } = await marketPdaUtils.findMarketPDA(factoryPda, testMatchId)
 
       // First subscription
@@ -447,7 +453,7 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
         (accountInfo, context) => {
           console.log('  Update on subscription 1')
         },
-        'confirmed'
+        'confirmed',
       )
 
       expect(subscriptionId1).toBeDefined()
@@ -466,7 +472,7 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
         (accountInfo, context) => {
           console.log('  Update on subscription 2')
         },
-        'confirmed'
+        'confirmed',
       )
 
       expect(subscriptionId2).toBeDefined()
@@ -485,23 +491,23 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
       const reconnectAttempts: number[] = []
 
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        const delay = Math.min(baseDelay * Math.pow(2, attempt), 30000)
+        const delay = Math.min(baseDelay * 2 ** attempt, 30000)
         reconnectAttempts.push(delay)
       }
 
       expect(reconnectAttempts).toHaveLength(maxAttempts)
-      expect(reconnectAttempts[0]).toBe(1000)   // 1s
-      expect(reconnectAttempts[1]).toBe(2000)   // 2s
-      expect(reconnectAttempts[2]).toBe(4000)   // 4s
-      expect(reconnectAttempts[3]).toBe(8000)   // 8s
-      expect(reconnectAttempts[4]).toBe(16000)  // 16s
+      expect(reconnectAttempts[0]).toBe(1000) // 1s
+      expect(reconnectAttempts[1]).toBe(2000) // 2s
+      expect(reconnectAttempts[2]).toBe(4000) // 4s
+      expect(reconnectAttempts[3]).toBe(8000) // 8s
+      expect(reconnectAttempts[4]).toBe(16000) // 16s
 
       console.log('✓ Exponential backoff pattern validated')
       console.log('  Reconnection delays:', reconnectAttempts.map(d => `${d / 1000}s`).join(', '))
     })
   })
 
-  describe('Error Handling', () => {
+  describe('error Handling', () => {
     it('should handle invalid public key gracefully', async () => {
       let errorCaught = false
 
@@ -510,9 +516,10 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
         connection.onAccountChange(
           invalidKey,
           (accountInfo, context) => {},
-          'confirmed'
+          'confirmed',
         )
-      } catch (error) {
+      }
+      catch (error) {
         errorCaught = true
         console.log('  Error caught (expected):', error)
       }
@@ -524,9 +531,9 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
     it('should handle subscription errors without crashing', async () => {
       const factoryPdaUtils = new PDAUtils(factoryProgramId)
       const marketPdaUtils = new PDAUtils(marketProgramId)
-      
+
       const { pda: factoryPda } = await factoryPdaUtils.findFactoryPDA()
-      const testMatchId = 'test-match-' + Date.now()
+      const testMatchId = `test-match-${Date.now()}`
       const { pda: marketPda } = await marketPdaUtils.findMarketPDA(factoryPda, testMatchId)
 
       let errorHandled = false
@@ -537,12 +544,13 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
           try {
             // Intentionally cause an error
             throw new Error('Simulated error in callback')
-          } catch (error) {
+          }
+          catch (error) {
             errorHandled = true
             console.log('  Error in callback handled:', error)
           }
         },
-        'confirmed'
+        'confirmed',
       )
 
       expect(subscriptionId).toBeDefined()
@@ -553,13 +561,13 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
     })
   })
 
-  describe('Performance and Optimization', () => {
+  describe('performance and Optimization', () => {
     it('should handle multiple rapid subscriptions efficiently', async () => {
       const factoryPdaUtils = new PDAUtils(factoryProgramId)
       const marketPdaUtils = new PDAUtils(marketProgramId)
-      
+
       const { pda: factoryPda } = await factoryPdaUtils.findFactoryPDA()
-      
+
       const startTime = Date.now()
       const subscriptions: number[] = []
 
@@ -567,11 +575,11 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
       for (let i = 0; i < 10; i++) {
         const testMatchId = `test-match-${i}-${Date.now()}`
         const { pda: marketPda } = await marketPdaUtils.findMarketPDA(factoryPda, testMatchId)
-        
+
         const subId = connection.onAccountChange(
           marketPda,
           (accountInfo, context) => {},
-          'confirmed'
+          'confirmed',
         )
         subscriptions.push(subId)
       }
@@ -580,7 +588,7 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
 
       expect(subscriptions).toHaveLength(10)
       expect(duration).toBeLessThan(5000) // Should complete in under 5 seconds
-      
+
       console.log('✓ Created 10 subscriptions in', duration, 'ms')
       console.log('  Average per subscription:', Math.round(duration / 10), 'ms')
 
@@ -594,7 +602,7 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
     it('should verify subscription IDs are unique', async () => {
       const factoryPdaUtils = new PDAUtils(factoryProgramId)
       const marketPdaUtils = new PDAUtils(marketProgramId)
-      
+
       const { pda: factoryPda } = await factoryPdaUtils.findFactoryPDA()
       const subscriptions: number[] = []
 
@@ -602,11 +610,11 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
       for (let i = 0; i < 5; i++) {
         const testMatchId = `test-match-${i}-${Date.now()}`
         const { pda: marketPda } = await marketPdaUtils.findMarketPDA(factoryPda, testMatchId)
-        
+
         const subId = connection.onAccountChange(
           marketPda,
           (accountInfo, context) => {},
-          'confirmed'
+          'confirmed',
         )
         subscriptions.push(subId)
       }
@@ -614,7 +622,7 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
       // Verify all IDs are unique
       const uniqueIds = new Set(subscriptions)
       expect(uniqueIds.size).toBe(subscriptions.length)
-      
+
       console.log('✓ All subscription IDs are unique')
       console.log('  IDs:', subscriptions.join(', '))
 
@@ -625,7 +633,7 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
     })
   })
 
-  describe('Integration Summary', () => {
+  describe('integration Summary', () => {
     it('should summarize the complete WebSocket flow', () => {
       console.log('\n=== WebSocket Real-Time Updates Flow Summary ===')
       console.log('1. ✓ WebSocket connection to Solana')
@@ -651,7 +659,7 @@ describe('WebSocket Real-Time Updates E2E Flow', () => {
       console.log('  - Deployed program with market accounts')
       console.log('  - Multiple wallets/browsers for testing')
       console.log('================================================\n')
-      
+
       expect(true).toBe(true)
     })
   })

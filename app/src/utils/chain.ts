@@ -1,7 +1,7 @@
 // Solana network utilities
 // This file replaces the old Polkadot chain switching utilities
 
-import { Connection } from '@solana/web3.js'
+import type { Connection } from '@solana/web3.js'
 import { currentNetwork, getHealthyConnection } from '../config/solana'
 
 /**
@@ -12,10 +12,10 @@ export async function ensureSolanaNetwork(): Promise<Connection> {
   try {
     // Get a healthy connection with automatic fallback
     const connection = await getHealthyConnection()
-    
+
     // Verify connection is working
     await connection.getLatestBlockhash('confirmed')
-    
+
     console.log(`Connected to ${currentNetwork.name}`)
     return connection
   }

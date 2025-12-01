@@ -3,7 +3,6 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { useMatchData } from '../../hooks/useMatchData'
-import { formatSOL } from '../../utils/formatters'
 
 type ChangeMetric = 'pool' | 'participants' | 'distribution'
 type ChangeDirection = 'up' | 'down'
