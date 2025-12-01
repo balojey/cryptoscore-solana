@@ -30,7 +30,7 @@
   - Add thousand separator formatting for NGN
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.2, 4.3, 5.3, 5.4, 5.5_
 
-- [-] 5. Build CurrencySelector component
+- [x] 5. Build CurrencySelector component
   - Create CurrencySelector component with dropdown menu UI
   - Add currency options (SOL, USD, NGN) with symbols and icons
   - Display current exchange rates in dropdown
