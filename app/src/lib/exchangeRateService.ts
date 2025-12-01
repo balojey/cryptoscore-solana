@@ -15,13 +15,19 @@ export class ExchangeRateService {
   private static readonly MAX_RETRIES = 3
   private static readonly RETRY_DELAYS = [1000, 2000, 4000] // Exponential backoff
 
-  // CoinGecko Free API (no auth required)
-  private static readonly COINGECKO_URL = 
-    'https://corsproxy.io/?https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd,ngn'
+  // CoinGecko API (supports both free and pro with API key)
+  private static readonly COINGECKO_API_KEY = import.meta.env.VITE_COINGECKO_API_KEY || ''
+  private static readonly COINGECKO_URL = this.COINGECKO_API_KEY
+    ? `https://corsproxy.io/?https://pro-api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd,ngn&x_cg_pro_api_key=${this.COINGECKO_API_KEY}`
+    : 'https://corsproxy.io/?https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd,ngn'
   
   // CryptoCompare fallback API
   private static readonly CRYPTOCOMPARE_URL = 
     'https://corsproxy.io/?https://min-api.cryptocompare.com/data/price?fsym=SOL&tsyms=USD,NGN'
+  
+  // Jupiter Price API (Solana-native, no auth required)
+  private static readonly JUPITER_URL = 
+    'https://price.jup.ag/v4/price?ids=SOL'
 
   /**
    * Fetch current exchange rates from API
@@ -52,9 +58,18 @@ export class ExchangeRateService {
       this.cacheRates(rates)
       return rates
     } catch (error) {
-      // Both APIs failed, throw the last error
+      lastError = error as Error
+    }
+
+    // Try Jupiter as final fallback
+    try {
+      const rates = await this.fetchFromJupiter()
+      this.cacheRates(rates)
+      return rates
+    } catch (error) {
+      // All APIs failed, throw the last error
       throw new Error(
-        `Failed to fetch exchange rates: ${lastError?.message || 'Unknown error'}`
+        `Failed to fetch exchange rates from all providers: ${lastError?.message || 'Unknown error'}`
       )
     }
   }
@@ -101,6 +116,36 @@ export class ExchangeRateService {
     return {
       SOL_USD: data.USD,
       SOL_NGN: data.NGN,
+      lastUpdated: Date.now()
+    }
+  }
+
+  /**
+   * Fetch rates from Jupiter Price API (Solana-native fallback)
+   */
+  private static async fetchFromJupiter(): Promise<ExchangeRates> {
+    const response = await fetch(this.JUPITER_URL)
+    
+    if (!response.ok) {
+      throw new Error(`Jupiter API error: ${response.status} ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    
+    if (!data.data?.SOL?.price) {
+      throw new Error('Invalid response format from Jupiter')
+    }
+
+    const solUsd = data.data.SOL.price
+    
+    // Jupiter doesn't provide NGN directly, so we need to calculate it
+    // Using approximate USD to NGN rate (you may want to fetch this separately)
+    const usdToNgn = 1650 // Approximate rate, consider fetching this separately
+    const solNgn = solUsd * usdToNgn
+
+    return {
+      SOL_USD: solUsd,
+      SOL_NGN: solNgn,
       lastUpdated: Date.now()
     }
   }

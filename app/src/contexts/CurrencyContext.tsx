@@ -95,10 +95,10 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     // Fetch immediately on mount
     fetchRates()
 
-    // Set up 60-second interval for rate updates
+    // Set up 5-minute interval for rate updates (reduced API calls)
     const intervalId = setInterval(() => {
       fetchRates()
-    }, 60000) // 60 seconds
+    }, 300000) // 5 minutes (matches STALE_THRESHOLD)
 
     return () => clearInterval(intervalId)
   }, [fetchRates])
