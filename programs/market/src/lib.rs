@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("94CjfuYYswDbcjasA1PTUmHhsqFsBQC4JnsiKB8nKJhQ");
+declare_id!("3yLMsy3gJRoYP2RNXgnrXsoFWcqVu6QeTXPejvpcCf1F");
 
 #[program]
 pub mod cryptoscore_market {

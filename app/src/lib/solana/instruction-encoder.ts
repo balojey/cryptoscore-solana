@@ -34,16 +34,39 @@ import {
 } from './borsh-schemas'
 
 /**
+ * Synchronous discriminator calculation using pre-computed values
+ * Anchor uses the first 8 bytes of SHA256("global:snake_case_name")
+ * Note: Even though IDL uses camelCase, discriminators are based on Rust snake_case
+ */
+function getDiscriminator(name: string): Buffer {
+  // Pre-computed discriminators to avoid async crypto in browser
+  const discriminators: Record<string, number[]> = {
+    initialize_market: [35, 35, 189, 193, 155, 48, 170, 203],
+    join_market: [141, 113, 87, 152, 182, 213, 41, 202],
+    resolve_market: [155, 23, 80, 173, 46, 74, 23, 239],
+    withdraw_rewards: [10, 214, 219, 139, 205, 22, 251, 21],
+  }
+  
+  const disc = discriminators[name]
+  if (!disc) {
+    throw new Error(`Unknown instruction: ${name}`)
+  }
+  
+  return Buffer.from(disc)
+}
+
+/**
  * Instruction discriminators (8-byte identifiers)
  * These must match the discriminators in the on-chain program
+ * Anchor generates these from the Rust function name (snake_case)
  *
  * @constant DISCRIMINATORS
  */
 const DISCRIMINATORS = {
-  CREATE_MARKET: Buffer.from([0, 0, 0, 0, 0, 0, 0, 0]),
-  JOIN_MARKET: Buffer.from([1, 0, 0, 0, 0, 0, 0, 0]),
-  RESOLVE_MARKET: Buffer.from([2, 0, 0, 0, 0, 0, 0, 0]),
-  WITHDRAW: Buffer.from([3, 0, 0, 0, 0, 0, 0, 0]),
+  CREATE_MARKET: getDiscriminator('initialize_market'),
+  JOIN_MARKET: getDiscriminator('join_market'),
+  RESOLVE_MARKET: getDiscriminator('resolve_market'),
+  WITHDRAW: getDiscriminator('withdraw_rewards'),
 }
 
 /**
@@ -103,10 +126,12 @@ export class InstructionEncoder {
       Buffer.from(serialize(CreateMarketSchema, instructionData)),
     ])
 
+    // Account order must match the Rust struct:
+    // 1. market, 2. factory, 3. creator, 4. system_program
     return new TransactionInstruction({
       keys: [
-        { pubkey: accounts.factory, isSigner: false, isWritable: true },
         { pubkey: accounts.market, isSigner: false, isWritable: true },
+        { pubkey: accounts.factory, isSigner: false, isWritable: false },
         { pubkey: accounts.creator, isSigner: true, isWritable: true },
         { pubkey: accounts.systemProgram, isSigner: false, isWritable: false },
       ],
@@ -167,14 +192,14 @@ export class InstructionEncoder {
    * @param {ResolveMarketParams} params - Market resolution parameters
    * @param {object} accounts - Required accounts for the instruction
    * @param {PublicKey} accounts.market - Market PDA
-   * @param {PublicKey} accounts.resolver - Resolver wallet (signer, must be creator)
+   * @param {PublicKey} accounts.creator - Creator wallet (signer, must be market creator)
    * @returns {TransactionInstruction} Encoded instruction
    *
    * @example
    * ```typescript
    * const ix = encoder.resolveMarket(
    *   { outcome: 0 }, // 0 = HOME, 1 = DRAW, 2 = AWAY
-   *   { market, resolver }
+   *   { market, creator }
    * )
    * ```
    */
@@ -182,7 +207,7 @@ export class InstructionEncoder {
     params: ResolveMarketParams,
     accounts: {
       market: PublicKey
-      resolver: PublicKey
+      creator: PublicKey
     },
   ): TransactionInstruction {
     const instructionData = new ResolveMarketData(params)
@@ -191,10 +216,11 @@ export class InstructionEncoder {
       Buffer.from(serialize(ResolveMarketSchema, instructionData)),
     ])
 
+    // Account order: 1. market, 2. creator
     return new TransactionInstruction({
       keys: [
         { pubkey: accounts.market, isSigner: false, isWritable: true },
-        { pubkey: accounts.resolver, isSigner: true, isWritable: false },
+        { pubkey: accounts.creator, isSigner: true, isWritable: false },
       ],
       programId: this.programId,
       data,

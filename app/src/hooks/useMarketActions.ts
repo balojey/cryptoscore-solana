@@ -322,7 +322,7 @@ export function useMarketActions() {
         { outcome: outcomeValue },
         {
           market: marketPubkey,
-          resolver: publicKey,
+          creator: publicKey,
         },
       )
 
