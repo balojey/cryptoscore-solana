@@ -1,6 +1,5 @@
 import type { ThemePreset } from '@/contexts/ThemeContext'
 import { Menu } from 'lucide-react'
-import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,13 +12,10 @@ import {
 import { themePresets, useTheme } from '@/contexts/ThemeContext'
 import Connect from '../Connect'
 import CurrencySelector from '../CurrencySelector'
-import SearchBar from '../SearchBar'
 import ThemeSwitcher from '../ThemeSwitcher'
 
 export default function Header() {
-  const [showSearch, setShowSearch] = useState(false)
   const location = useLocation()
-  const isMarketsPage = location.pathname === '/markets' || location.pathname.startsWith('/markets/')
   const { theme, setTheme } = useTheme()
   return (
     <header
@@ -81,31 +77,8 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Center - Search (Desktop only, on markets page) */}
-          {isMarketsPage && (
-            <div className="hidden md:block flex-1 max-w-md mx-8">
-              <SearchBar placeholder="Search markets by team, competition..." />
-            </div>
-          )}
-
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              asChild
-              style={{
-                background: location.pathname === '/' ? 'var(--accent-cyan)' : undefined,
-                color: location.pathname === '/' ? 'var(--text-inverse)' : undefined,
-                borderColor: location.pathname === '/' ? 'var(--accent-cyan)' : undefined,
-              }}
-            >
-              <Link to="/">
-                <span className="icon-[mdi--home] w-4 h-4" />
-                <span>Home</span>
-              </Link>
-            </Button>
-
             <Button
               variant="outline"
               size="sm"
@@ -154,22 +127,6 @@ export default function Header() {
               </Link>
             </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-              asChild
-              style={{
-                background: location.pathname === '/leaderboard' ? 'var(--accent-cyan)' : undefined,
-                color: location.pathname === '/leaderboard' ? 'var(--text-inverse)' : undefined,
-                borderColor: location.pathname === '/leaderboard' ? 'var(--accent-cyan)' : undefined,
-              }}
-            >
-              <Link to="/leaderboard">
-                <span className="icon-[mdi--trophy] w-4 h-4" />
-                <span>Leaderboard</span>
-              </Link>
-            </Button>
-
             <CurrencySelector />
 
             <ThemeSwitcher />
@@ -194,36 +151,6 @@ export default function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              {isMarketsPage && (
-                <>
-                  <DropdownMenuItem
-                    onClick={() => setShowSearch(!showSearch)}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <span className="icon-[mdi--magnify] w-4 h-4" />
-                    <span>{showSearch ? 'Hide Search' : 'Show Search'}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-
-              <DropdownMenuItem asChild>
-                <Link
-                  to="/"
-                  className="flex items-center gap-2 cursor-pointer"
-                  style={{
-                    color: location.pathname === '/' ? 'var(--accent-cyan)' : undefined,
-                    background: location.pathname === '/' ? 'var(--bg-hover)' : undefined,
-                  }}
-                >
-                  <span className="icon-[mdi--home] w-4 h-4" />
-                  <span>Home</span>
-                  {location.pathname === '/' && (
-                    <span className="icon-[mdi--check] w-4 h-4 ml-auto" />
-                  )}
-                </Link>
-              </DropdownMenuItem>
-
               <DropdownMenuItem asChild>
                 <Link
                   to="/markets"
@@ -270,23 +197,6 @@ export default function Header() {
                   <span className="icon-[mdi--view-dashboard-outline] w-4 h-4" />
                   <span>Dashboard</span>
                   {location.pathname === '/dashboard' && (
-                    <span className="icon-[mdi--check] w-4 h-4 ml-auto" />
-                  )}
-                </Link>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem asChild>
-                <Link
-                  to="/leaderboard"
-                  className="flex items-center gap-2 cursor-pointer"
-                  style={{
-                    color: location.pathname === '/leaderboard' ? 'var(--accent-cyan)' : undefined,
-                    background: location.pathname === '/leaderboard' ? 'var(--bg-hover)' : undefined,
-                  }}
-                >
-                  <span className="icon-[mdi--trophy] w-4 h-4" />
-                  <span>Leaderboard</span>
-                  {location.pathname === '/leaderboard' && (
                     <span className="icon-[mdi--check] w-4 h-4 ml-auto" />
                   )}
                 </Link>
@@ -341,13 +251,6 @@ export default function Header() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-
-        {/* Mobile Search Bar */}
-        {isMarketsPage && showSearch && (
-          <div className="md:hidden pb-4">
-            <SearchBar placeholder="Search markets..." />
-          </div>
-        )}
       </div>
     </header>
   )

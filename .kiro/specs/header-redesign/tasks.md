@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. Update Header component to remove redundant navigation elements
+- [x] 1. Update Header component to remove redundant navigation elements
   - Remove SearchBar import and all related code
   - Remove Home navigation link from desktop navigation
   - Remove Leaderboard navigation link from desktop navigation
