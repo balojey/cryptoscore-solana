@@ -37,7 +37,7 @@
   - Clean up any unused imports
   - _Requirements: 1.5_
 
-- [ ] 5. Integrate SearchBar into Markets page
+- [x] 5. Integrate SearchBar into Markets page
   - Open Markets.tsx component
   - Import SearchBar component
   - Add SearchBar at the top of the Markets component layout

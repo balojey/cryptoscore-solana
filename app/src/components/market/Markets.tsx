@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAllMarkets } from '../../hooks/useMarketData'
 import { getRandomApiKey } from '../../utils/apiKey'
 import { Market } from './Market'
+import SearchBar from '../SearchBar'
 
 const COMPETITIONS = [
   { code: 'PL', name: 'Premier League' },
@@ -76,6 +77,7 @@ export function Markets() {
   const [dateFilter, setDateFilter] = useState('today')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const { publicKey: userAddress } = useWallet()
 
@@ -97,6 +99,22 @@ export function Markets() {
     })
     return marketMap
   }, [allMarketsData, userAddress])
+
+  // Filter matches based on search query
+  const filteredMatches = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return matches
+    }
+
+    const query = searchQuery.toLowerCase()
+    return matches.filter((match) => {
+      const homeTeam = match.homeTeam?.name?.toLowerCase() || ''
+      const awayTeam = match.awayTeam?.name?.toLowerCase() || ''
+      const competition = match.competition?.name?.toLowerCase() || ''
+
+      return homeTeam.includes(query) || awayTeam.includes(query) || competition.includes(query)
+    })
+  }, [matches, searchQuery])
 
   useEffect(() => {
     const fetchMatches = async () => {
@@ -153,6 +171,14 @@ export function Markets() {
 
   return (
     <div className="space-y-8">
+      {/* Search Bar */}
+      <div className="max-w-2xl">
+        <SearchBar
+          placeholder="Search markets by team, competition..."
+          onSearch={setSearchQuery}
+        />
+      </div>
+
       {/* Filters */}
       <div className="space-y-4">
         <div>
@@ -211,20 +237,20 @@ export function Markets() {
             <span className="block text-sm">{error}</span>
           </div>
         )}
-        {!loading && !error && matches.length === 0 && (
+        {!loading && !error && filteredMatches.length === 0 && (
           <div className="text-center py-16">
             <span className="icon-[mdi--calendar-remove-outline] w-16 h-16 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
             <p className="mt-4 font-sans text-lg" style={{ color: 'var(--text-secondary)' }}>
-              No scheduled matches found.
+              {searchQuery ? 'No matches found for your search.' : 'No scheduled matches found.'}
             </p>
             <p className="font-sans text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              Please adjust the filters or check back later.
+              {searchQuery ? 'Try a different search term.' : 'Please adjust the filters or check back later.'}
             </p>
           </div>
         )}
-        {!loading && !error && matches.length > 0 && (
+        {!loading && !error && filteredMatches.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {matches.map((match) => {
+            {filteredMatches.map((match) => {
               const userMarketInfo = userMarketsByMatchId.get(match.id)
               return (
                 <Market
