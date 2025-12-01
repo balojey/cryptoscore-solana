@@ -1,5 +1,5 @@
-import { Buffer } from 'buffer'
 import type { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
+import { Buffer } from 'buffer'
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react'
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
 import {

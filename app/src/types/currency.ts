@@ -1,6 +1,6 @@
 /**
  * Currency Types
- * 
+ *
  * Type definitions for currency display and exchange rate management
  */
 

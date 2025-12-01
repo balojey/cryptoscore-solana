@@ -1,5 +1,5 @@
-import { createContext, use, useEffect, useState, useCallback, useMemo } from 'react'
-import type { Currency, ExchangeRates, CurrencyContextType, FormatOptions } from '@/types/currency'
+import type { Currency, CurrencyContextType, ExchangeRates, FormatOptions } from '@/types/currency'
+import { createContext, use, useCallback, useEffect, useMemo, useState } from 'react'
 import { ExchangeRateService } from '@/lib/exchangeRateService'
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined)
@@ -68,22 +68,24 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     try {
       const rates = await ExchangeRateService.fetchRates()
       setExchangeRates(rates)
-    } catch (error) {
+    }
+    catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch exchange rates'
       setRatesError(errorMessage)
-      
+
       // Try to use cached rates as fallback
       const cached = ExchangeRateService.getCachedRates()
       if (cached && !exchangeRates) {
         setExchangeRates(cached)
       }
-      
+
       // If no cached rates available and user is on USD/NGN, switch to SOL
       if (!cached && !exchangeRates && currency !== 'SOL') {
         setCurrencyState('SOL')
         localStorage.setItem('cryptoscore-currency', 'SOL')
       }
-    } finally {
+    }
+    finally {
       setIsLoadingRates(false)
     }
   }, [exchangeRates, currency])
@@ -137,7 +139,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
           return sol
       }
     },
-    [currency, exchangeRates]
+    [currency, exchangeRates],
   )
 
   /**
@@ -180,7 +182,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
 
       return result
     },
-    [currency, convertFromLamports]
+    [currency, convertFromLamports],
   )
 
   const value = useMemo(
@@ -203,7 +205,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
       convertFromLamports,
       formatCurrency,
       fetchRates,
-    ]
+    ],
   )
 
   return <CurrencyContext value={value}>{children}</CurrencyContext>

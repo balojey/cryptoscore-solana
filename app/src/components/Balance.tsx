@@ -71,7 +71,10 @@ export default function Balance() {
       {solEquivalent && (
         <div className="flex items-baseline gap-1">
           <span className="font-mono text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            ◎{solEquivalent} SOL
+            ◎
+            {solEquivalent}
+            {' '}
+            SOL
           </span>
         </div>
       )}

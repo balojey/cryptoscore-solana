@@ -1,14 +1,14 @@
 import type { MarketDashboardInfo } from '../../types'
-import { PublicKey } from '@solana/web3.js'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { PublicKey } from '@solana/web3.js'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { MARKET_PROGRAM_ID } from '../../config/programs'
+import { useCurrency } from '../../hooks/useCurrency'
+import { useSolanaConnection } from '../../hooks/useSolanaConnection'
 import { AccountDecoder } from '../../lib/solana/account-decoder'
 import { PDAUtils } from '../../lib/solana/pda-utils'
-import { useSolanaConnection } from '../../hooks/useSolanaConnection'
-import { useCurrency } from '../../hooks/useCurrency'
 
 interface PortfolioSummaryProps {
   userAddress?: string
@@ -84,7 +84,7 @@ export default function PortfolioSummary({ userAddress, joinedMarkets = [], allM
                     : Number(market.drawCount)
 
                 const totalPool = market.totalPool ? Number(market.totalPool) : 0
-                
+
                 console.log(`[PortfolioSummary] Winner! totalPool=${totalPool}, winnerCount=${winnerCount}`)
 
                 // Calculate reward: totalPool / winnerCount
@@ -128,7 +128,7 @@ export default function PortfolioSummary({ userAddress, joinedMarkets = [], allM
   const stats = useMemo(() => {
     console.log('[PortfolioSummary] Computing stats...')
     console.log('[PortfolioSummary] Portfolio Data:', portfolioData)
-    
+
     if (!walletAddress) {
       console.log('[PortfolioSummary] No wallet address')
       return {
@@ -143,7 +143,7 @@ export default function PortfolioSummary({ userAddress, joinedMarkets = [], allM
     }
 
     const userMarketData = portfolioData?.userMarketData || []
-    
+
     console.log('[PortfolioSummary] User market data count:', userMarketData.length)
 
     // Active positions = markets user participated in that are still open (not resolved)
@@ -176,11 +176,12 @@ export default function PortfolioSummary({ userAddress, joinedMarkets = [], allM
         // Check if user's prediction matches the winner
         if (prediction === winningPrediction) {
           totalWins++
-          
+
           // Track rewards
           if (hasWithdrawn) {
             totalWithdrawnRewardsLamports += reward
-          } else {
+          }
+          else {
             totalClaimableRewardsLamports += reward
           }
         }
@@ -284,7 +285,7 @@ export default function PortfolioSummary({ userAddress, joinedMarkets = [], allM
   // Format portfolio value with SOL equivalent
   const portfolioValueLamports = stats.totalValue * 1_000_000_000
   const portfolioValueFormatted = formatCurrency(portfolioValueLamports, { showSymbol: true })
-  const portfolioValueSubtitle = currency !== 'SOL' 
+  const portfolioValueSubtitle = currency !== 'SOL'
     ? formatCurrency(portfolioValueLamports, { targetCurrency: 'SOL', showSymbol: true })
     : 'Invested + profits'
 

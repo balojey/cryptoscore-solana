@@ -48,7 +48,7 @@ function AppContent() {
           Skip to main content
         </a>
         <Header />
-        
+
         <main id="main-content" className="flex-grow" role="main">
           <Suspense fallback={<PageLoader />}>
             <Routes>

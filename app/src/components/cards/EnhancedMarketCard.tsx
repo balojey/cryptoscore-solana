@@ -8,10 +8,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { useCurrency } from '@/hooks/useCurrency'
 import { useMarketData, useUserParticipantMarkets } from '../../hooks/useMarketData'
 import { useMatchData } from '../../hooks/useMatchData'
-import { formatSOL, shortenAddress, formatCurrency, formatWithSOLEquivalent } from '../../utils/formatters'
-import { useCurrency } from '@/hooks/useCurrency'
+import { formatCurrency, formatSOL, formatWithSOLEquivalent, shortenAddress } from '../../utils/formatters'
 
 interface EnhancedMarketCardProps {
   market: Market

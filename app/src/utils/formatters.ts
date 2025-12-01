@@ -141,7 +141,7 @@ function formatWithThousandSeparators(value: number, decimals: number): string {
 function convertLamportsToAmount(
   lamports: number,
   targetCurrency: 'SOL' | 'USD' | 'NGN',
-  exchangeRates: { SOL_USD: number; SOL_NGN: number } | null
+  exchangeRates: { SOL_USD: number, SOL_NGN: number } | null,
 ): number {
   // Convert lamports to SOL first
   const sol = lamports / 1_000_000_000
@@ -179,11 +179,11 @@ function convertLamportsToAmount(
 export function formatCurrency(
   lamports: number,
   currency: 'SOL' | 'USD' | 'NGN',
-  exchangeRates: { SOL_USD: number; SOL_NGN: number } | null,
+  exchangeRates: { SOL_USD: number, SOL_NGN: number } | null,
   options: {
     showSymbol?: boolean
     decimals?: number
-  } = {}
+  } = {},
 ): string {
   const { showSymbol = true, decimals } = options
 
@@ -213,7 +213,8 @@ export function formatCurrency(
   let formatted: string
   if (currency === 'NGN') {
     formatted = formatWithThousandSeparators(amount, currencyDecimals)
-  } else {
+  }
+  else {
     formatted = amount.toFixed(currencyDecimals)
   }
 
@@ -231,8 +232,8 @@ export function formatCurrency(
 export function formatWithSOLEquivalent(
   lamports: number,
   currency: 'SOL' | 'USD' | 'NGN',
-  exchangeRates: { SOL_USD: number; SOL_NGN: number } | null
-): { primary: string; equivalent: string } {
+  exchangeRates: { SOL_USD: number, SOL_NGN: number } | null,
+): { primary: string, equivalent: string } {
   const primary = formatCurrency(lamports, currency, exchangeRates)
 
   // If already in SOL, no equivalent needed

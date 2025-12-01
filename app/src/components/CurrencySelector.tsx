@@ -1,3 +1,4 @@
+import type { Currency } from '@/types/currency'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -9,7 +10,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useCurrency } from '@/hooks/useCurrency'
 import { ExchangeRateService } from '@/lib/exchangeRateService'
-import type { Currency } from '@/types/currency'
 
 interface CurrencyOption {
   value: Currency
@@ -45,7 +45,7 @@ const currencyOptions: CurrencyOption[] = [
 export default function CurrencySelector() {
   const { currency, setCurrency, exchangeRates, isLoadingRates } = useCurrency()
 
-  const currentOption = currencyOptions.find((opt) => opt.value === currency)
+  const currentOption = currencyOptions.find(opt => opt.value === currency)
   const isStale = exchangeRates ? ExchangeRateService.isStale(exchangeRates) : false
   const rateAge = exchangeRates ? ExchangeRateService.formatRateAge(exchangeRates) : null
 
@@ -64,25 +64,25 @@ export default function CurrencySelector() {
           )}
           <span className="text-base leading-none">{currentOption?.symbol}</span>
           <span className="hidden sm:inline">{currentOption?.value}</span>
-          
+
           {/* Loading indicator */}
           {isLoadingRates && (
-            <span 
-              className="icon-[mdi--loading] w-4 h-4 animate-spin" 
+            <span
+              className="icon-[mdi--loading] w-4 h-4 animate-spin"
               aria-label="Loading exchange rates"
             />
           )}
-          
+
           {/* Stale rate indicator */}
           {!isLoadingRates && isStale && (
-            <span 
-              className="icon-[mdi--alert-circle-outline] w-4 h-4" 
+            <span
+              className="icon-[mdi--alert-circle-outline] w-4 h-4"
               style={{ color: 'var(--accent-amber)' }}
               aria-label="Exchange rates may be outdated"
               title="Exchange rates may be outdated"
             />
           )}
-          
+
           <span className="icon-[mdi--chevron-down] w-4 h-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -102,10 +102,10 @@ export default function CurrencySelector() {
 
         {currencyOptions.map((option) => {
           const isActive = currency === option.value
-          const isDisabled = 
-            option.value !== 'SOL' && 
-            !exchangeRates && 
-            !isLoadingRates
+          const isDisabled
+            = option.value !== 'SOL'
+              && !exchangeRates
+              && !isLoadingRates
 
           return (
             <DropdownMenuItem
@@ -129,11 +129,11 @@ export default function CurrencySelector() {
                 )}
                 <span className="text-lg leading-none">{option.symbol}</span>
               </div>
-              
+
               <div className="flex-1">
                 <div className="font-medium">{option.value}</div>
-                <div 
-                  className="text-xs" 
+                <div
+                  className="text-xs"
                   style={{ color: 'var(--text-tertiary)' }}
                 >
                   {isDisabled ? 'Unavailable' : option.name}
@@ -142,7 +142,7 @@ export default function CurrencySelector() {
 
               {/* Show exchange rate for non-SOL currencies */}
               {option.value !== 'SOL' && exchangeRates && (
-                <div 
+                <div
                   className="text-xs text-right flex-shrink-0"
                   style={{ color: 'var(--text-tertiary)' }}
                 >
@@ -169,7 +169,7 @@ export default function CurrencySelector() {
 
               {/* Show unavailable indicator for disabled options */}
               {isDisabled && (
-                <span 
+                <span
                   className="icon-[mdi--lock-outline] w-4 h-4 flex-shrink-0"
                   style={{ color: 'var(--text-disabled)' }}
                   aria-hidden="true"
@@ -177,7 +177,7 @@ export default function CurrencySelector() {
               )}
 
               {isActive && !isDisabled && (
-                <span 
+                <span
                   className="icon-[mdi--check] w-5 h-5 flex-shrink-0"
                   aria-hidden="true"
                 />
@@ -196,9 +196,9 @@ export default function CurrencySelector() {
           >
             Exchange Rates
           </p>
-          
+
           {isLoadingRates && (
-            <div 
+            <div
               className="text-xs flex items-center gap-2"
               style={{ color: 'var(--text-secondary)' }}
             >
@@ -208,7 +208,7 @@ export default function CurrencySelector() {
           )}
 
           {!isLoadingRates && exchangeRates && (
-            <div 
+            <div
               className="text-xs"
               style={{ color: isStale ? 'var(--accent-amber)' : 'var(--text-secondary)' }}
             >
@@ -218,12 +218,15 @@ export default function CurrencySelector() {
                   <span>Rates may be outdated</span>
                 </div>
               )}
-              <div>Last updated: {rateAge}</div>
+              <div>
+                Last updated:
+                {rateAge}
+              </div>
             </div>
           )}
 
           {!isLoadingRates && !exchangeRates && (
-            <div 
+            <div
               className="text-xs"
               style={{ color: 'var(--text-tertiary)' }}
             >

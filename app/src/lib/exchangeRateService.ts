@@ -1,16 +1,16 @@
 /**
  * Exchange Rate Service
- * 
+ *
  * Fetches and caches SOL exchange rates from external APIs
  * Supports CoinGecko (primary) and CryptoCompare (fallback)
  */
 
-import type { ExchangeRates, CachedExchangeRates } from '@/types/currency'
+import type { CachedExchangeRates, ExchangeRates } from '@/types/currency'
 
 export class ExchangeRateService {
   private static readonly CACHE_KEY = 'cryptoscore-exchange-rates'
   private static readonly CACHE_VERSION = 1
-//   private static readonly UPDATE_INTERVAL = 60000 // 60 seconds
+  //   private static readonly UPDATE_INTERVAL = 60000 // 60 seconds
   private static readonly STALE_THRESHOLD = 300000 // 5 minutes
   private static readonly MAX_RETRIES = 3
   private static readonly RETRY_DELAYS = [1000, 2000, 4000] // Exponential backoff
@@ -20,14 +20,14 @@ export class ExchangeRateService {
   private static readonly COINGECKO_URL = this.COINGECKO_API_KEY
     ? `https://corsproxy.io/?https://pro-api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd,ngn&x_cg_pro_api_key=${this.COINGECKO_API_KEY}`
     : 'https://corsproxy.io/?https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd,ngn'
-  
+
   // CryptoCompare fallback API
-  private static readonly CRYPTOCOMPARE_URL = 
-    'https://corsproxy.io/?https://min-api.cryptocompare.com/data/price?fsym=SOL&tsyms=USD,NGN'
-  
+  private static readonly CRYPTOCOMPARE_URL
+    = 'https://corsproxy.io/?https://min-api.cryptocompare.com/data/price?fsym=SOL&tsyms=USD,NGN'
+
   // Jupiter Price API (Solana-native, no auth required)
-  private static readonly JUPITER_URL = 
-    'https://price.jup.ag/v4/price?ids=SOL'
+  private static readonly JUPITER_URL
+    = 'https://price.jup.ag/v4/price?ids=SOL'
 
   /**
    * Fetch current exchange rates from API
@@ -42,9 +42,10 @@ export class ExchangeRateService {
         const rates = await this.fetchFromCoinGecko()
         this.cacheRates(rates)
         return rates
-      } catch (error) {
+      }
+      catch (error) {
         lastError = error as Error
-        
+
         // Wait before retry (except on last attempt)
         if (attempt < this.MAX_RETRIES - 1) {
           await this.delay(this.RETRY_DELAYS[attempt])
@@ -57,7 +58,8 @@ export class ExchangeRateService {
       const rates = await this.fetchFromCryptoCompare()
       this.cacheRates(rates)
       return rates
-    } catch (error) {
+    }
+    catch (error) {
       lastError = error as Error
     }
 
@@ -66,10 +68,11 @@ export class ExchangeRateService {
       const rates = await this.fetchFromJupiter()
       this.cacheRates(rates)
       return rates
-    } catch (error) {
+    }
+    catch (error) {
       // All APIs failed, throw the last error
       throw new Error(
-        `Failed to fetch exchange rates from all providers: ${lastError?.message || 'Unknown error'}`
+        `Failed to fetch exchange rates from all providers: ${lastError?.message || 'Unknown error'}`,
       )
     }
   }
@@ -79,13 +82,13 @@ export class ExchangeRateService {
    */
   private static async fetchFromCoinGecko(): Promise<ExchangeRates> {
     const response = await fetch(this.COINGECKO_URL)
-    
+
     if (!response.ok) {
       throw new Error(`CoinGecko API error: ${response.status} ${response.statusText}`)
     }
 
     const data = await response.json()
-    
+
     if (!data.solana || !data.solana.usd || !data.solana.ngn) {
       throw new Error('Invalid response format from CoinGecko')
     }
@@ -93,7 +96,7 @@ export class ExchangeRateService {
     return {
       SOL_USD: data.solana.usd,
       SOL_NGN: data.solana.ngn,
-      lastUpdated: Date.now()
+      lastUpdated: Date.now(),
     }
   }
 
@@ -102,13 +105,13 @@ export class ExchangeRateService {
    */
   private static async fetchFromCryptoCompare(): Promise<ExchangeRates> {
     const response = await fetch(this.CRYPTOCOMPARE_URL)
-    
+
     if (!response.ok) {
       throw new Error(`CryptoCompare API error: ${response.status} ${response.statusText}`)
     }
 
     const data = await response.json()
-    
+
     if (!data.USD || !data.NGN) {
       throw new Error('Invalid response format from CryptoCompare')
     }
@@ -116,7 +119,7 @@ export class ExchangeRateService {
     return {
       SOL_USD: data.USD,
       SOL_NGN: data.NGN,
-      lastUpdated: Date.now()
+      lastUpdated: Date.now(),
     }
   }
 
@@ -125,19 +128,19 @@ export class ExchangeRateService {
    */
   private static async fetchFromJupiter(): Promise<ExchangeRates> {
     const response = await fetch(this.JUPITER_URL)
-    
+
     if (!response.ok) {
       throw new Error(`Jupiter API error: ${response.status} ${response.statusText}`)
     }
 
     const data = await response.json()
-    
+
     if (!data.data?.SOL?.price) {
       throw new Error('Invalid response format from Jupiter')
     }
 
     const solUsd = data.data.SOL.price
-    
+
     // Jupiter doesn't provide NGN directly, so we need to calculate it
     // Using approximate USD to NGN rate (you may want to fetch this separately)
     const usdToNgn = 1650 // Approximate rate, consider fetching this separately
@@ -146,7 +149,7 @@ export class ExchangeRateService {
     return {
       SOL_USD: solUsd,
       SOL_NGN: solNgn,
-      lastUpdated: Date.now()
+      lastUpdated: Date.now(),
     }
   }
 
@@ -156,15 +159,16 @@ export class ExchangeRateService {
   static getCachedRates(): ExchangeRates | null {
     try {
       const cached = localStorage.getItem(this.CACHE_KEY)
-      if (!cached) return null
+      if (!cached)
+        return null
 
       const data: CachedExchangeRates = JSON.parse(cached)
-      
+
       // Validate cache structure
       if (
-        typeof data.SOL_USD !== 'number' ||
-        typeof data.SOL_NGN !== 'number' ||
-        typeof data.lastUpdated !== 'number'
+        typeof data.SOL_USD !== 'number'
+        || typeof data.SOL_NGN !== 'number'
+        || typeof data.lastUpdated !== 'number'
       ) {
         return null
       }
@@ -172,9 +176,10 @@ export class ExchangeRateService {
       return {
         SOL_USD: data.SOL_USD,
         SOL_NGN: data.SOL_NGN,
-        lastUpdated: data.lastUpdated
+        lastUpdated: data.lastUpdated,
       }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Failed to read cached exchange rates:', error)
       return null
     }
@@ -187,10 +192,11 @@ export class ExchangeRateService {
     try {
       const cached: CachedExchangeRates = {
         ...rates,
-        version: this.CACHE_VERSION
+        version: this.CACHE_VERSION,
       }
       localStorage.setItem(this.CACHE_KEY, JSON.stringify(cached))
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Failed to cache exchange rates:', error)
     }
   }
@@ -216,13 +222,17 @@ export class ExchangeRateService {
   static formatRateAge(rates: ExchangeRates): string {
     const ageMs = this.getRateAge(rates)
     const ageMinutes = Math.floor(ageMs / 60000)
-    
-    if (ageMinutes < 1) return 'just now'
-    if (ageMinutes === 1) return '1 minute ago'
-    if (ageMinutes < 60) return `${ageMinutes} minutes ago`
-    
+
+    if (ageMinutes < 1)
+      return 'just now'
+    if (ageMinutes === 1)
+      return '1 minute ago'
+    if (ageMinutes < 60)
+      return `${ageMinutes} minutes ago`
+
     const ageHours = Math.floor(ageMinutes / 60)
-    if (ageHours === 1) return '1 hour ago'
+    if (ageHours === 1)
+      return '1 hour ago'
     return `${ageHours} hours ago`
   }
 
@@ -232,7 +242,8 @@ export class ExchangeRateService {
   static clearCache(): void {
     try {
       localStorage.removeItem(this.CACHE_KEY)
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Failed to clear exchange rate cache:', error)
     }
   }

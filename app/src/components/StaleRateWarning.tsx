@@ -1,6 +1,6 @@
+import type { ExchangeRates } from '@/types/currency'
 import { useState } from 'react'
 import { ExchangeRateService } from '@/lib/exchangeRateService'
-import type { ExchangeRates } from '@/types/currency'
 
 interface StaleRateWarningProps {
   exchangeRates: ExchangeRates

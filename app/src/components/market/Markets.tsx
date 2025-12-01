@@ -3,8 +3,8 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useAllMarkets } from '../../hooks/useMarketData'
 import { getRandomApiKey } from '../../utils/apiKey'
-import { Market } from './Market'
 import SearchBar from '../SearchBar'
+import { Market } from './Market'
 
 const COMPETITIONS = [
   { code: 'PL', name: 'Premier League' },

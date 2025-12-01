@@ -227,7 +227,7 @@ export class AccountDecoder {
     // Skip 8-byte Anchor discriminator
     const accountData = data.slice(8)
     const decoded = deserialize(MarketSchema, accountData) as any
-    
+
     // Handle Option<MatchOutcome> - if None, outcome will be null
     const outcome = decoded.outcome !== null && decoded.outcome !== undefined ? decoded.outcome : 255
 

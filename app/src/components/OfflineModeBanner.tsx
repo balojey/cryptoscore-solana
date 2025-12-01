@@ -1,6 +1,6 @@
+import type { ExchangeRates } from '@/types/currency'
 import { useState } from 'react'
 import { ExchangeRateService } from '@/lib/exchangeRateService'
-import type { ExchangeRates } from '@/types/currency'
 
 interface OfflineModeBannerProps {
   exchangeRates: ExchangeRates | null
@@ -56,37 +56,41 @@ export default function OfflineModeBanner({
           aria-hidden="true"
         />
         <div className="flex-1 min-w-0">
-          {hasCachedRates ? (
-            <>
-              <p
-                className="text-sm font-medium"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Using cached exchange rates
-              </p>
-              <p
-                className="text-xs mt-0.5"
-                style={{ color: 'var(--text-tertiary)' }}
-              >
-                Unable to fetch latest rates. Last updated {lastUpdated}
-              </p>
-            </>
-          ) : (
-            <>
-              <p
-                className="text-sm font-medium"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Currency conversion unavailable
-              </p>
-              <p
-                className="text-xs mt-0.5"
-                style={{ color: 'var(--text-tertiary)' }}
-              >
-                {ratesError || 'Unable to fetch exchange rates. Displaying values in SOL.'}
-              </p>
-            </>
-          )}
+          {hasCachedRates
+            ? (
+                <>
+                  <p
+                    className="text-sm font-medium"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Using cached exchange rates
+                  </p>
+                  <p
+                    className="text-xs mt-0.5"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    Unable to fetch latest rates. Last updated
+                    {' '}
+                    {lastUpdated}
+                  </p>
+                </>
+              )
+            : (
+                <>
+                  <p
+                    className="text-sm font-medium"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Currency conversion unavailable
+                  </p>
+                  <p
+                    className="text-xs mt-0.5"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    {ratesError || 'Unable to fetch exchange rates. Displaying values in SOL.'}
+                  </p>
+                </>
+              )}
         </div>
       </div>
 

@@ -19,6 +19,7 @@
 
 import type { PublicKey } from '@solana/web3.js'
 import type { CreateMarketParams, JoinMarketParams, ResolveMarketParams } from './borsh-schemas'
+import { Buffer } from 'buffer'
 import { TransactionInstruction } from '@solana/web3.js'
 import { serialize } from 'borsh'
 import {
@@ -32,7 +33,6 @@ import {
 
   ResolveMarketSchema,
 } from './borsh-schemas'
-import { Buffer } from 'buffer'
 
 /**
  * Synchronous discriminator calculation using pre-computed values
@@ -47,12 +47,12 @@ function getDiscriminator(name: string): Buffer {
     resolve_market: [155, 23, 80, 173, 46, 74, 23, 239],
     withdraw_rewards: [10, 214, 219, 139, 205, 22, 251, 21],
   }
-  
+
   const disc = discriminators[name]
   if (!disc) {
     throw new Error(`Unknown instruction: ${name}`)
   }
-  
+
   return Buffer.from(disc)
 }
 

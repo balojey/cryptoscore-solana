@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useCurrency } from '@/hooks/useCurrency'
 import PoolTrendChart from '../components/charts/PoolTrendChart'
 import PredictionDistributionChart from '../components/charts/PredictionDistributionChart'
 import MarketComments from '../components/MarketComments'
@@ -15,8 +16,7 @@ import { useMarketData } from '../hooks/useMarketData'
 import { useMatchData } from '../hooks/useMatchData'
 import { useParticipantData } from '../hooks/useParticipantData'
 import { useUserRewards } from '../hooks/useUserRewards'
-import { formatSOL, shortenAddress, formatCurrency, formatWithSOLEquivalent } from '../utils/formatters'
-import { useCurrency } from '@/hooks/useCurrency'
+import { formatCurrency, formatWithSOLEquivalent, shortenAddress } from '../utils/formatters'
 
 // --- SUB-COMPONENTS ---
 
@@ -88,7 +88,7 @@ interface MarketStatsProps {
   matchData: Match
   entryFeeValue: number
   currency: 'SOL' | 'USD' | 'NGN'
-  exchangeRates: { SOL_USD: number; SOL_NGN: number } | null
+  exchangeRates: { SOL_USD: number, SOL_NGN: number } | null
 }
 
 function MarketStats({ marketInfo, poolSize, participantsCount, marketStatus, isMatchStarted, winningTeamName, homeCount, awayCount, drawCount, userPrediction, userHasJoined, matchData, entryFeeValue, currency, exchangeRates }: MarketStatsProps) {
@@ -506,7 +506,7 @@ export function MarketDetail() {
   // Get user's prediction and rewards
   const { data: participantData } = useParticipantData(marketAddress, userAddress?.toString())
   const { data: rewardsData } = useUserRewards(marketAddress)
-  
+
   // Derive prediction info from participant data
   const hasJoined = !!participantData
   const predictionName = participantData?.prediction?.toUpperCase() || 'NONE'
@@ -689,13 +689,13 @@ export function MarketDetail() {
   const renderButtons = (): React.ReactNode => {
     // Check if user is the creator
     const isCreator = userAddress && marketInfo?.creator === userAddress.toBase58()
-    
+
     if (marketStatus) { // Resolved
       // Use the rewards data from the hook
       const userIsWinner = rewardsData?.isWinner || false
       const canWithdraw = rewardsData?.canWithdraw || false
       const hasWithdrawn = rewardsData?.hasWithdrawn || false
-      
+
       // Allow withdraw for participants (winners) and creator
       const canUserWithdraw = (userIsWinner && canWithdraw) || (isCreator && canWithdraw)
       const hasUserWithdrawn = (userIsWinner && hasWithdrawn) || (isCreator && hasWithdrawn)

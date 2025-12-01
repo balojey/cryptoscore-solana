@@ -3,7 +3,7 @@
  * Fetches market data using Connection.getProgramAccounts() and AccountDecoder
  */
 
-import type { Market, MarketDashboardInfo } from '../types'
+import type { MarketDashboardInfo } from '../types'
 import { useMemo } from 'react'
 import { useAllMarkets as useAllMarketsData, useUserMarkets as useUserMarketsData, useUserParticipantMarkets } from './useMarketData'
 
@@ -50,7 +50,7 @@ export function useDashboardData(userAddress?: string): DashboardData {
     console.log('[useDashboardData] User address:', userAddress)
     console.log('[useDashboardData] User markets data:', userMarketsData)
     console.log('[useDashboardData] Participant markets:', participantMarkets)
-    
+
     if (!userMarketsData || userMarketsData.length === 0 || !userAddress) {
       console.log('[useDashboardData] No data or user address')
       return {
@@ -66,20 +66,20 @@ export function useDashboardData(userAddress?: string): DashboardData {
 
     // Create a set of market addresses where user has made a prediction (has Participant account)
     const participantMarketSet = new Set(
-      (participantMarkets || []).map(m => m.marketAddress.toLowerCase())
+      (participantMarkets || []).map(m => m.marketAddress.toLowerCase()),
     )
 
     // Created markets: where user is the creator
-    const created = transformed.filter(m => 
-      m.creator.toLowerCase() === userAddress.toLowerCase()
+    const created = transformed.filter(m =>
+      m.creator.toLowerCase() === userAddress.toLowerCase(),
     )
-    
+
     // Joined markets: where user has a Participant account (made a prediction)
     // This can include markets they created if they also joined them
-    const joined = transformed.filter(m => 
-      participantMarketSet.has(m.marketAddress.toLowerCase())
+    const joined = transformed.filter(m =>
+      participantMarketSet.has(m.marketAddress.toLowerCase()),
     )
-    
+
     console.log('[useDashboardData] Created markets:', created.length, created.map(m => ({ addr: m.marketAddress, creator: m.creator })))
     console.log('[useDashboardData] Joined markets:', joined.length, joined.map(m => ({ addr: m.marketAddress, creator: m.creator })))
     console.log('[useDashboardData] User address for comparison:', userAddress)
@@ -125,7 +125,8 @@ export function useAllMarkets(options: {
 
   // Transform and filter markets
   const markets = useMemo(() => {
-    if (!marketsData || marketsData.length === 0) return []
+    if (!marketsData || marketsData.length === 0)
+      return []
 
     let filtered = marketsData
 
@@ -175,7 +176,8 @@ export function useMarketDetails(marketAddresses: string[], options: { enabled?:
   const { data: allMarketsData, isLoading, error } = useAllMarketsData()
 
   const markets = useMemo(() => {
-    if (!allMarketsData || marketAddresses.length === 0) return []
+    if (!allMarketsData || marketAddresses.length === 0)
+      return []
 
     // Filter markets by addresses
     const addressSet = new Set(marketAddresses)

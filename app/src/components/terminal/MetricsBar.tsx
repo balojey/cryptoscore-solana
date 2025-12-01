@@ -1,7 +1,7 @@
 import type { MarketData } from '../../hooks/useMarketData'
 import { useMemo } from 'react'
-import { useAllMarkets } from '../../hooks/useMarketData'
 import { useCurrency } from '../../hooks/useCurrency'
+import { useAllMarkets } from '../../hooks/useMarketData'
 import AnimatedNumber from '../ui/AnimatedNumber'
 
 interface MetricCardProps {
@@ -15,6 +15,20 @@ interface MetricCardProps {
 }
 
 function MetricCard({ label, value, suffix = '', icon, trend, isLoading, solEquivalent }: MetricCardProps) {
+  // Determine decimal places based on metric type
+  const getDecimals = () => {
+    // Integer metrics (no decimals)
+    if (label === 'Total Markets' || label === 'Active Traders') {
+      return 0
+    }
+    // SOL values (4 decimals)
+    if (suffix.includes('SOL') || suffix.includes('◎')) {
+      return 4
+    }
+    // Currency values (2 decimals)
+    return 2
+  }
+
   return (
     <div
       className="p-4 rounded-lg transition-all hover:scale-[1.02]"
@@ -46,7 +60,7 @@ function MetricCard({ label, value, suffix = '', icon, trend, isLoading, solEqui
                 <AnimatedNumber
                   value={value}
                   duration={500}
-                  decimals={suffix.includes('SOL') || suffix.includes('◎') ? 4 : 2}
+                  decimals={getDecimals()}
                 />
                 {suffix && <span className="text-lg ml-1">{suffix}</span>}
               </>
@@ -207,7 +221,7 @@ export default function MetricsBar({ error }: MetricsBarProps) {
   // Format monetary values with currency conversion
   const tvlValue = showError ? 0 : convertFromLamports(metrics.totalValueLockedLamports)
   const volumeValue = showError ? 0 : convertFromLamports(metrics.volume24hLamports)
-  
+
   // Get currency symbol
   const currencySymbol = currency === 'SOL' ? '◎' : currency === 'USD' ? '$' : '₦'
   const currencySuffix = ` ${currencySymbol}`

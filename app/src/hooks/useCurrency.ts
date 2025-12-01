@@ -1,6 +1,6 @@
 /**
  * Currency Hook
- * 
+ *
  * Re-export useCurrency hook from CurrencyContext for convenient access
  */
 

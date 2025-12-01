@@ -1,5 +1,5 @@
-import type { Market } from '../../types'
 import type { MarketData } from '../../hooks/useMarketData'
+import type { Market } from '../../types'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAllMarkets } from '../../hooks/useMarketData'
@@ -33,7 +33,8 @@ export default function FeaturedMarketsPreview() {
 
   // Transform market data to expected format
   const transformedMarkets = useMemo(() => {
-    if (!marketsData || !Array.isArray(marketsData)) return null
+    if (!marketsData || !Array.isArray(marketsData))
+      return null
     return marketsData.map(transformMarketData)
   }, [marketsData])
 
