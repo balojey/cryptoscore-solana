@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { themePresets, useTheme } from '@/contexts/ThemeContext'
 import Connect from '../Connect'
+import CurrencySelector from '../CurrencySelector'
 import SearchBar from '../SearchBar'
 import ThemeSwitcher from '../ThemeSwitcher'
 
@@ -169,6 +170,8 @@ export default function Header() {
               </Link>
             </Button>
 
+            <CurrencySelector />
+
             <ThemeSwitcher />
 
             <Connect />
@@ -288,6 +291,15 @@ export default function Header() {
                   )}
                 </Link>
               </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              <div className="px-2 py-2">
+                <div className="text-xs font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  Currency
+                </div>
+                <CurrencySelector />
+              </div>
 
               <DropdownMenuSeparator />
 

@@ -39,13 +39,13 @@
   - Implement keyboard navigation and accessibility features
   - _Requirements: 1.1, 1.4, 6.5_
 
-- [ ] 6. Integrate CurrencyProvider into app
+- [x] 6. Integrate CurrencyProvider into app
   - Wrap App component with CurrencyProvider in main.tsx
   - Add CurrencySelector to header/navigation area
   - Ensure provider is at same level as ThemeProvider
   - _Requirements: 1.2, 1.3, 1.5_
 
-- [ ] 7. Update PortfolioSummary component
+- [-] 7. Update PortfolioSummary component
   - Replace formatSOL calls with formatCurrency from useCurrency hook
   - Add SOL equivalent display for converted values
   - Update all stat cards to show values in selected currency
