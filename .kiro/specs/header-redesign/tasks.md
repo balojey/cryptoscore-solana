@@ -48,7 +48,7 @@
   - Style SearchBar container with appropriate max-width and spacing
   - _Requirements: 3.4, 3.5_
 
-- [ ] 6. Add Leaderboard access to Terminal page
+- [x] 6. Add Leaderboard access to Terminal page
   - Open TradingTerminal.tsx (or equivalent terminal page component)
   - Add a prominent link or button to navigate to Leaderboard
   - Implement as either: tab navigation, quick action button, or sidebar link

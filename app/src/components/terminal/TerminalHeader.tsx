@@ -80,6 +80,21 @@ export default function TerminalHeader({
             ))}
           </div>
 
+          {/* Leaderboard Link */}
+          <Link
+            to="/leaderboard"
+            className="px-4 py-1.5 text-sm font-medium rounded transition-all hover-lift flex items-center gap-2"
+            style={{
+              background: 'var(--bg-secondary)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-default)',
+            }}
+            aria-label="View leaderboard"
+          >
+            <span className="icon-[mdi--trophy] w-4 h-4" aria-hidden="true" />
+            Leaderboard
+          </Link>
+
           {/* View All Markets CTA */}
           <Link
             to="/markets"
