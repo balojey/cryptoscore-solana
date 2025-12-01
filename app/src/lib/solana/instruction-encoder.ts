@@ -32,6 +32,7 @@ import {
 
   ResolveMarketSchema,
 } from './borsh-schemas'
+import { Buffer } from 'buffer'
 
 /**
  * Synchronous discriminator calculation using pre-computed values
