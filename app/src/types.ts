@@ -4,13 +4,16 @@ export interface MarketDashboardInfo {
   creator: string // Solana public key as base58 string
   entryFee: bigint // Entry fee in lamports
   resolved: boolean // Whether market is resolved
-  winner: number // Winner: 0=None, 1=Home, 2=Away, 3=Draw
+  winner?: number // Winner: 0=None, 1=Home, 2=Away, 3=Draw (deprecated, use outcome)
+  outcome?: 'Home' | 'Draw' | 'Away' | null // Market outcome
   participantsCount: bigint // Number of participants
   isPublic: boolean // Whether market is public
   startTime: bigint // Match kickoff time (Unix timestamp)
   homeCount: bigint // Number of home predictions
   awayCount: bigint // Number of away predictions
   drawCount: bigint // Number of draw predictions
+  totalPool?: bigint // Total prize pool in lamports
+  status?: 'Open' | 'Live' | 'Resolved' | 'Cancelled' // Market status
 }
 
 export interface Match {

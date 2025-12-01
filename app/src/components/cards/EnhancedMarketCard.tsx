@@ -8,7 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { useMarketData } from '../../hooks/useMarketData'
+import { useMarketData, useUserParticipantMarkets } from '../../hooks/useMarketData'
 import { useMatchData } from '../../hooks/useMatchData'
 import { formatSOL, shortenAddress } from '../../utils/formatters'
 
@@ -183,10 +183,11 @@ export default function EnhancedMarketCard({ market }: EnhancedMarketCardProps) 
   const { data: matchData, loading, error } = useMatchData(Number(market.matchId))
   const distribution = usePredictionDistribution(market.marketAddress)
   const { data: marketData } = useMarketData(market.marketAddress)
+  const { data: userParticipantMarkets } = useUserParticipantMarkets(userAddress?.toString())
 
   // Check if user has joined this market
-  const hasJoined = marketData?.participants?.some(
-    p => p.user === userAddress?.toString(),
+  const hasJoined = userParticipantMarkets?.some(
+    m => m.marketAddress === market.marketAddress,
   ) || false
 
   if (loading) {
@@ -354,23 +355,24 @@ export default function EnhancedMarketCard({ market }: EnhancedMarketCardProps) 
         </CardContent>
 
         {/* Footer */}
-        <CardFooter className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            <span className="icon-[mdi--account-edit-outline] w-4 h-4" />
-            <span className="font-mono">{shortenAddress(market.creator)}</span>
-            {isOwner && (
-              <Badge variant="info" className="text-[10px] px-2 py-0">
-                You
-              </Badge>
+        <CardFooter>
+          <div className="flex items-center justify-between w-full text-xs">
+            <div className="flex items-center gap-2" style={{ color: 'var(--text-tertiary)' }}>
+              <span className="icon-[mdi--account-edit-outline] w-4 h-4" />
+              <span className="font-mono">{shortenAddress(market.creator)}</span>
+              {isOwner && (
+                <Badge variant="info" className="text-[10px] px-2 py-0">
+                  You
+                </Badge>
+              )}
+            </div>
+            {hasJoined && (
+              <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: 'var(--accent-green)' }}>
+                <span className="icon-[mdi--check-circle] w-4 h-4" />
+                <span>Joined</span>
+              </div>
             )}
           </div>
-
-          {hasJoined && (
-            <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: 'var(--accent-green)' }}>
-              <span className="icon-[mdi--check-circle] w-4 h-4" />
-              <span>Joined</span>
-            </div>
-          )}
         </CardFooter>
       </Card>
     </Link>

@@ -20,13 +20,15 @@ export function UserMarkets() {
     // Convert MarketData to Market format and filter
     const filtered = marketDataList
       .filter((marketData) => {
-        // Exclude resolved markets
+        // Only exclude resolved and cancelled markets
+        // Keep Open, Live, and recently finished markets (within 24 hours)
         if (marketData.status === 'Resolved' || marketData.status === 'Cancelled')
           return false
 
-        // Only include markets that haven't started yet or are within 2 hours of ending
-        // (Open, Ending Soon, or Live status)
-        if (marketData.kickoffTime < now - 7200)
+        // Include markets that are upcoming, live, or finished within the last 24 hours
+        // This allows users to see markets they need to resolve or claim rewards from
+        const hoursSinceKickoff = (now - marketData.kickoffTime) / 3600
+        if (hoursSinceKickoff > 24)
           return false
 
         return true
@@ -44,7 +46,7 @@ export function UserMarkets() {
         awayCount: BigInt(marketData.awayCount),
         drawCount: BigInt(marketData.drawCount),
       }))
-      // Sort by start time (earliest first)
+      // Sort by start time (earliest first, so upcoming matches appear first)
       .sort((a, b) => Number(a.startTime) - Number(b.startTime))
 
     return filtered

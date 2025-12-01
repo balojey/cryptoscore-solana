@@ -13,7 +13,7 @@ import { getAccountExplorerUrl } from '../config/programs'
 import { useMarketActions } from '../hooks/useMarketActions'
 import { useMarketData } from '../hooks/useMarketData'
 import { useMatchData } from '../hooks/useMatchData'
-import { useUserPrediction } from '../hooks/useUserPrediction'
+import { useParticipantData } from '../hooks/useParticipantData'
 import { useUserRewards } from '../hooks/useUserRewards'
 import { formatSOL, shortenAddress } from '../utils/formatters'
 
@@ -157,6 +157,30 @@ function MarketStats({ marketInfo, poolSize, participantsCount, marketStatus, is
             value={winningTeamName}
             valueClass="stat-value-success"
             icon="mdi--trophy-outline"
+          />
+        )}
+        {userHasJoined && userPrediction && (
+          <InfoRow
+            label="Your Prediction"
+            value={(
+              <span
+                className="font-sans font-bold"
+                style={{
+                  color: userPrediction === 'HOME'
+                    ? 'var(--accent-green)'
+                    : userPrediction === 'AWAY'
+                      ? 'var(--accent-red)'
+                      : 'var(--accent-amber)',
+                }}
+              >
+                {userPrediction}
+              </span>
+            )}
+            icon={userPrediction === 'HOME'
+              ? 'mdi--home'
+              : userPrediction === 'AWAY'
+                ? 'mdi--airplane-takeoff'
+                : 'mdi--equal'}
           />
         )}
       </div>
@@ -368,14 +392,17 @@ function ActionPanel({ matchData, marketStatus, isMatchStarted, isUserParticipan
     )
   }
 
-  const OutcomeButton = ({ team, outcome, selected, onSelect }: any) => (
+  const OutcomeButton = ({ team, outcome, selected, onSelect, disabled }: any) => (
     <Button
       variant="ghost"
-      onClick={() => onSelect(outcome)}
+      onClick={() => !disabled && onSelect(outcome)}
+      disabled={disabled}
       className="p-6 rounded-xl border-2 text-center transition-all w-full h-auto flex-col"
       style={{
         borderColor: selected ? 'var(--accent-cyan)' : 'var(--border-default)',
         background: selected ? 'rgba(0, 212, 255, 0.1)' : 'var(--bg-secondary)',
+        opacity: disabled ? 0.5 : 1,
+        cursor: disabled ? 'not-allowed' : 'pointer',
       }}
     >
       <div
@@ -404,9 +431,9 @@ function ActionPanel({ matchData, marketStatus, isMatchStarted, isUserParticipan
         Select the outcome you believe will happen. You can only join once.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <OutcomeButton team={matchData.homeTeam} outcome={1} selected={selectedTeam === 1} onSelect={setSelectedTeam} />
-        <OutcomeButton team={{ name: 'Draw', crest: 'https://api.dicebear.com/7.x/initials/svg?seed=Draw' }} outcome={3} selected={selectedTeam === 3} onSelect={setSelectedTeam} />
-        <OutcomeButton team={matchData.awayTeam} outcome={2} selected={selectedTeam === 2} onSelect={setSelectedTeam} />
+        <OutcomeButton team={matchData.homeTeam} outcome={1} selected={selectedTeam === 1} onSelect={setSelectedTeam} disabled={isUserParticipant} />
+        <OutcomeButton team={{ name: 'Draw', crest: 'https://api.dicebear.com/7.x/initials/svg?seed=Draw' }} outcome={3} selected={selectedTeam === 3} onSelect={setSelectedTeam} disabled={isUserParticipant} />
+        <OutcomeButton team={matchData.awayTeam} outcome={2} selected={selectedTeam === 2} onSelect={setSelectedTeam} disabled={isUserParticipant} />
       </div>
       {isUserParticipant && (
         <div className="text-center text-sm font-medium mb-4" style={{ color: 'var(--accent-green)' }}>
@@ -459,8 +486,23 @@ export function MarketDetail() {
   )
 
   // Get user's prediction and rewards
-  const { predictionName, hasJoined } = useUserPrediction(marketAddress)
+  const { data: participantData } = useParticipantData(marketAddress, userAddress?.toString())
   const { data: rewardsData } = useUserRewards(marketAddress)
+  
+  // Derive prediction info from participant data
+  const hasJoined = !!participantData
+  const predictionName = participantData?.prediction?.toUpperCase() || 'NONE'
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Participant Data:', {
+      participantData,
+      hasJoined,
+      predictionName,
+      userAddress: userAddress?.toString(),
+      marketAddress,
+    })
+  }, [participantData, hasJoined, predictionName, userAddress, marketAddress])
 
   // Market info
   const marketInfo = marketData ? {
@@ -526,6 +568,11 @@ export function MarketDetail() {
   }
 
   const handleJoinMarket = () => handleAction(async () => {
+    // Prevent rejoining if user has already joined
+    if (isUserParticipant) {
+      setActionStatus({ type: 'error', message: 'You have already joined this market.' })
+      return null
+    }
     if (selectedTeam === null) {
       setActionStatus({ type: 'error', message: 'Please select a team to predict.' })
       return null
@@ -622,24 +669,31 @@ export function MarketDetail() {
   }
 
   const renderButtons = (): React.ReactNode => {
+    // Check if user is the creator
+    const isCreator = userAddress && marketInfo?.creator === userAddress.toBase58()
+    
     if (marketStatus) { // Resolved
       // Use the rewards data from the hook
       const userIsWinner = rewardsData?.isWinner || false
       const canWithdraw = rewardsData?.canWithdraw || false
       const hasWithdrawn = rewardsData?.hasWithdrawn || false
+      
+      // Allow withdraw for participants (winners) and creator
+      const canUserWithdraw = (userIsWinner && canWithdraw) || (isCreator && canWithdraw)
+      const hasUserWithdrawn = (userIsWinner && hasWithdrawn) || (isCreator && hasWithdrawn)
 
       return (
         <div className="flex items-center gap-4">
           <Button variant="secondary" disabled>Resolved</Button>
-          {userIsWinner && canWithdraw
+          {canUserWithdraw
             ? (
                 <Button variant="success" onClick={handleWithdraw} className="gap-2" disabled={isLoading}>
                   <span className="icon-[mdi--cash-multiple] w-5 h-5" />
-                  {isLoading ? 'Withdrawing...' : 'Withdraw Rewards'}
+                  {isLoading ? 'Withdrawing...' : isCreator ? 'Withdraw Fees' : 'Withdraw Rewards'}
                 </Button>
               )
             : null}
-          {userIsWinner && hasWithdrawn
+          {hasUserWithdrawn
             ? (
                 <div className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--accent-green)' }}>
                   <span className="icon-[mdi--check-circle] w-5 h-5" />
@@ -647,7 +701,7 @@ export function MarketDetail() {
                 </div>
               )
             : null}
-          {!userIsWinner && isUserParticipant
+          {!userIsWinner && isUserParticipant && !isCreator
             ? (
                 <div className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text-tertiary)' }}>
                   <span className="icon-[mdi--close-circle] w-5 h-5" />
@@ -660,7 +714,9 @@ export function MarketDetail() {
     }
 
     if (isMatchStarted) {
-      if (isUserParticipant && (matchData as any)?.status === 'FINISHED') {
+      // Allow any participant or creator to resolve the market when match is finished
+      const canResolve = (isUserParticipant || isCreator) && (matchData as any)?.status === 'FINISHED'
+      if (canResolve) {
         return (
           <Button variant="default" onClick={handleResolveMarket} className="gap-2">
             <span className="icon-[mdi--check-decagram] w-5 h-5" />
@@ -673,14 +729,25 @@ export function MarketDetail() {
 
     return (
       <Button
-        variant="default"
+        variant={isUserParticipant ? 'secondary' : 'default'}
         size="lg"
         onClick={handleJoinMarket}
         disabled={selectedTeam === null || isUserParticipant || isLoading || !userAddress}
         className="gap-2"
       >
-        <span className="icon-[mdi--login] w-5 h-5" />
-        {isLoading ? 'Joining...' : isUserParticipant ? 'Already Joined' : !userAddress ? 'Connect Wallet' : 'Join Market'}
+        {isUserParticipant
+          ? (
+              <>
+                <span className="icon-[mdi--check-circle] w-5 h-5" />
+                Already Joined
+              </>
+            )
+          : (
+              <>
+                <span className="icon-[mdi--login] w-5 h-5" />
+                {isLoading ? 'Joining...' : !userAddress ? 'Connect Wallet' : 'Join Market'}
+              </>
+            )}
       </Button>
     )
   }

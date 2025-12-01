@@ -1,6 +1,6 @@
-import type { Market } from '../../types'
+import type { MarketData } from '../../hooks/useMarketData'
 import { useMemo } from 'react'
-import { useFactoryMarkets, useMarketDetails } from '../../hooks/useDashboardData'
+import { useAllMarkets } from '../../hooks/useMarketData'
 import AnimatedNumber from '../ui/AnimatedNumber'
 
 interface MetricCardProps {
@@ -44,7 +44,7 @@ function MetricCard({ label, value, suffix = '', icon, trend, isLoading }: Metri
                 <AnimatedNumber
                   value={value}
                   duration={500}
-                  decimals={suffix.includes('PAS') ? 2 : 0}
+                  decimals={suffix.includes('SOL') ? 4 : suffix.includes('PAS') ? 2 : 0}
                 />
                 {suffix && <span className="text-lg ml-1">{suffix}</span>}
               </>
@@ -83,43 +83,12 @@ interface MetricsBarProps {
 }
 
 export default function MetricsBar({ error }: MetricsBarProps) {
-  // Fetch all markets from Solana factory program
-  const { data: factoryMarkets, isLoading: isLoadingFactory } = useFactoryMarkets()
-
-  // Get market addresses for detailed data
-  const marketAddresses = useMemo(() => {
-    if (!factoryMarkets || !Array.isArray(factoryMarkets))
-      return []
-    return factoryMarkets.map((market: Market) => market.marketAddress)
-  }, [factoryMarkets])
-
-  // Fetch detailed data from individual market accounts
-  const { data: marketDetails, isLoading: isLoadingDetails } = useMarketDetails(marketAddresses)
-
-  const isLoading = isLoadingFactory || isLoadingDetails
-
-  // Use factory markets data directly (already includes all details from Solana)
-  const marketsData = useMemo(() => {
-    if (!factoryMarkets || !Array.isArray(factoryMarkets))
-      return null
-
-    // If we have detailed data, merge it; otherwise use factory data
-    if (marketDetails && Array.isArray(marketDetails) && marketDetails.length > 0) {
-      return factoryMarkets.map((market, index) => {
-        const detail = marketDetails[index]
-        if (market && typeof market === 'object' && detail && typeof detail === 'object') {
-          return { ...(market as any), ...(detail as any) } as Market
-        }
-        return market as Market
-      }) as Market[]
-    }
-
-    return factoryMarkets as Market[]
-  }, [factoryMarkets, marketDetails])
+  // Fetch all markets from Solana - this already includes all details
+  const { data: marketsData, isLoading } = useAllMarkets()
 
   // Calculate metrics from market data
   const metrics: TerminalMetrics = useMemo(() => {
-    if (!marketsData || !Array.isArray(marketsData)) {
+    if (!marketsData || !Array.isArray(marketsData) || marketsData.length === 0) {
       return {
         totalMarkets: 0,
         totalValueLocked: 0,
@@ -140,47 +109,72 @@ export default function MetricsBar({ error }: MetricsBarProps) {
 
     const totalMarkets = marketsData.length
 
-    // Calculate TVL (sum of all pool sizes) - using lamports for Solana
-    const tvlLamports = marketsData.reduce((sum: bigint, market: Market) => {
-      const poolSize = BigInt(market.entryFee) * BigInt(market.participantsCount)
-      return sum + poolSize
-    }, 0n)
-    // Convert lamports to SOL (1 SOL = 1,000,000,000 lamports)
-    const totalValueLocked = Number(tvlLamports) / 1_000_000_000
+    // Calculate TVL (sum of all totalPool values) - already in lamports
+    const totalPoolLamports = marketsData.reduce((sum: number, market: MarketData) => {
+      return sum + market.totalPool
+    }, 0)
+    const totalValueLocked = totalPoolLamports / 1_000_000_000 // Convert lamports to SOL
+
+    // Debug logging
+    console.log('MetricsBar - TVL Calculation:', {
+      totalMarkets: marketsData.length,
+      totalPoolLamports,
+      totalValueLocked,
+      sampleMarket: marketsData[0] ? {
+        totalPool: marketsData[0].totalPool,
+        entryFee: marketsData[0].entryFee,
+        participantCount: marketsData[0].participantCount,
+      } : null,
+    })
 
     // Calculate unique active traders (creators)
     const uniqueTraders = new Set<string>()
-    marketsData.forEach((market: Market) => {
+    marketsData.forEach((market: MarketData) => {
       uniqueTraders.add(market.creator.toLowerCase())
     })
     const activeTraders = uniqueTraders.size
 
     // Calculate 24h volume and trends
-    let volume24h = 0n
-    let volumePrevious24h = 0n
+    let volume24h = 0
+    let volumePrevious24h = 0
     let markets24h = 0
     let marketsPrevious24h = 0
-    let tvl24h = 0n
-    let tvlPrevious24h = 0n
+    let tvl24h = 0
+    let tvlPrevious24h = 0
 
-    marketsData.forEach((market: Market) => {
-      const poolSize = BigInt(market.entryFee) * BigInt(market.participantsCount)
-      const startTime = Number(market.startTime)
+    marketsData.forEach((market: MarketData) => {
+      const poolSize = market.totalPool
+      const kickoffTime = market.kickoffTime
 
-      if (startTime >= oneDayAgo) {
-        volume24h = volume24h + poolSize
-        markets24h = markets24h + 1
-        tvl24h = tvl24h + poolSize
+      if (kickoffTime >= oneDayAgo) {
+        volume24h += poolSize
+        markets24h += 1
+        tvl24h += poolSize
       }
-      else if (startTime >= twoDaysAgo) {
-        volumePrevious24h = volumePrevious24h + poolSize
-        marketsPrevious24h = marketsPrevious24h + 1
-        tvlPrevious24h = tvlPrevious24h + poolSize
+      else if (kickoffTime >= twoDaysAgo) {
+        volumePrevious24h += poolSize
+        marketsPrevious24h += 1
+        tvlPrevious24h += poolSize
       }
     })
 
     // Convert lamports to SOL for volume
-    const volume24hValue = Number(volume24h) / 1_000_000_000
+    const volume24hValue = volume24h / 1_000_000_000
+
+    // Debug logging
+    console.log('MetricsBar - 24h Volume Calculation:', {
+      volume24hLamports: volume24h,
+      volume24hSOL: volume24hValue,
+      markets24h,
+      totalMarkets24h: marketsData.filter(m => m.kickoffTime >= oneDayAgo).length,
+      now,
+      oneDayAgo,
+      sampleKickoffTimes: marketsData.slice(0, 3).map(m => ({
+        kickoffTime: m.kickoffTime,
+        isRecent: m.kickoffTime >= oneDayAgo,
+        date: new Date(m.kickoffTime * 1000).toISOString(),
+      })),
+    })
 
     // Calculate trend percentages
     let marketsTrend = '+0%'
@@ -193,20 +187,20 @@ export default function MetricsBar({ error }: MetricsBarProps) {
     }
 
     let tvlTrend = '+0%'
-    if (tvlPrevious24h > 0n) {
-      const trend = ((Number(tvl24h) - Number(tvlPrevious24h)) / Number(tvlPrevious24h)) * 100
+    if (tvlPrevious24h > 0) {
+      const trend = ((tvl24h - tvlPrevious24h) / tvlPrevious24h) * 100
       tvlTrend = `${trend >= 0 ? '+' : ''}${trend.toFixed(1)}%`
     }
-    else if (tvl24h > 0n) {
+    else if (tvl24h > 0) {
       tvlTrend = '+100%'
     }
 
     let volumeTrend = '+0%'
-    if (volumePrevious24h > 0n) {
-      const trend = ((Number(volume24h) - Number(volumePrevious24h)) / Number(volumePrevious24h)) * 100
+    if (volumePrevious24h > 0) {
+      const trend = ((volume24h - volumePrevious24h) / volumePrevious24h) * 100
       volumeTrend = `${trend >= 0 ? '+' : ''}${trend.toFixed(1)}%`
     }
-    else if (volume24h > 0n) {
+    else if (volume24h > 0) {
       volumeTrend = '+100%'
     }
 

@@ -190,6 +190,7 @@ export function Dashboard() {
           <PortfolioSummary
             userAddress={publicKey.toString()}
             joinedMarkets={joinedMarkets}
+            allMarkets={allInvolvedMarkets}
           />
         </div>
 

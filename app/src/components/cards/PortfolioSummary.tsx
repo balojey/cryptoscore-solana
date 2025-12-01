@@ -1,51 +1,135 @@
 import type { MarketDashboardInfo } from '../../types'
+import { PublicKey } from '@solana/web3.js'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
+import { MARKET_PROGRAM_ID } from '../../config/programs'
+import { AccountDecoder } from '../../lib/solana/account-decoder'
+import { PDAUtils } from '../../lib/solana/pda-utils'
+import { useSolanaConnection } from '../../hooks/useSolanaConnection'
 import { formatSOL } from '../../utils/formatters'
 
 interface PortfolioSummaryProps {
   userAddress?: string
   joinedMarkets?: MarketDashboardInfo[]
+  allMarkets?: MarketDashboardInfo[] // Include all markets (created + joined) for comprehensive stats
 }
 
-export default function PortfolioSummary({ userAddress, joinedMarkets = [] }: PortfolioSummaryProps) {
+export default function PortfolioSummary({ userAddress, joinedMarkets = [], allMarkets }: PortfolioSummaryProps) {
   const { publicKey } = useWallet()
+  const { connection } = useSolanaConnection()
   const walletAddress = userAddress || publicKey?.toString()
 
-  // For now, we'll use a simplified approach since we don't have the full Solana integration yet
-  // This will be enhanced when the Solana hooks are fully implemented
-  const { data: portfolioData } = useQuery({
-    queryKey: ['portfolioData', walletAddress, joinedMarkets.map(m => m.marketAddress).join(',')],
+  // Use allMarkets if provided, otherwise fall back to joinedMarkets
+  // This allows showing stats for both created and joined markets
+  const marketsToAnalyze = allMarkets && allMarkets.length > 0 ? allMarkets : joinedMarkets
+
+  // Debug logging
+  console.log('[PortfolioSummary] Wallet:', walletAddress)
+  console.log('[PortfolioSummary] Joined Markets Count:', joinedMarkets.length)
+  console.log('[PortfolioSummary] All Markets Count:', allMarkets?.length || 0)
+  console.log('[PortfolioSummary] Markets to Analyze:', marketsToAnalyze.length)
+  console.log('[PortfolioSummary] Markets:', marketsToAnalyze)
+
+  // Fetch participant data for all markets
+  const { data: portfolioData, isLoading: isLoadingPortfolio } = useQuery({
+    queryKey: ['portfolioData', walletAddress, marketsToAnalyze.map(m => m.marketAddress).join(',')],
     queryFn: async () => {
-      if (!walletAddress || joinedMarkets.length === 0) {
+      if (!walletAddress || marketsToAnalyze.length === 0) {
         return {
           userMarketData: [],
-          withdrawnRewards: {},
         }
       }
 
-      // TODO: Implement Solana-specific data fetching
-      // For now, return mock data structure
-      const userMarketData = joinedMarkets.map(market => ({
-        market,
-        prediction: 0, // Will be fetched from Solana program
-        reward: 0, // Will be fetched from Solana program
-        hasWithdrawn: false, // Will be fetched from Solana program
-      }))
+      const userPubkey = new PublicKey(walletAddress)
+      const marketProgramId = new PublicKey(MARKET_PROGRAM_ID)
+      const pdaUtils = new PDAUtils(marketProgramId)
 
+      // Fetch participant data for each market
+      const userMarketData = await Promise.all(
+        marketsToAnalyze.map(async (market) => {
+          try {
+            const marketPubkey = new PublicKey(market.marketAddress)
+            const { pda: participantPda } = await pdaUtils.findParticipantPDA(marketPubkey, userPubkey)
+
+            // Fetch participant account
+            const accountInfo = await connection.getAccountInfo(participantPda)
+
+            if (!accountInfo || !accountInfo.data) {
+              // User hasn't joined this market
+              return null
+            }
+
+            // Decode participant data
+            const participant = AccountDecoder.decodeParticipant(accountInfo.data)
+
+            // Calculate reward if market is resolved
+            let reward = 0
+            if (market.resolved && market.outcome) {
+              // Convert outcome to prediction number (Home=0, Draw=1, Away=2)
+              const outcomeMap: Record<string, number> = { Home: 0, Draw: 1, Away: 2 }
+              const winningPrediction = outcomeMap[market.outcome]
+
+              console.log(`[PortfolioSummary] Market ${market.marketAddress}: prediction=${participant.prediction}, winning=${winningPrediction}, outcome=${market.outcome}`)
+
+              // Check if user's prediction matches the winner
+              if (participant.prediction === winningPrediction) {
+                // Calculate winner count based on outcome
+                const winnerCount = market.outcome === 'Home'
+                  ? Number(market.homeCount)
+                  : market.outcome === 'Away'
+                    ? Number(market.awayCount)
+                    : Number(market.drawCount)
+
+                const totalPool = market.totalPool ? Number(market.totalPool) : 0
+                
+                console.log(`[PortfolioSummary] Winner! totalPool=${totalPool}, winnerCount=${winnerCount}`)
+
+                // Calculate reward: totalPool / winnerCount
+                if (winnerCount > 0 && totalPool > 0) {
+                  reward = totalPool / winnerCount
+                  console.log(`[PortfolioSummary] Calculated reward: ${reward} lamports`)
+                }
+              }
+            }
+
+            return {
+              market,
+              prediction: participant.prediction,
+              reward,
+              hasWithdrawn: participant.hasWithdrawn,
+              entryFee: Number(market.entryFee),
+            }
+          }
+          catch (error) {
+            console.error(`Error fetching participant data for market ${market.marketAddress}:`, error)
+            return null
+          }
+        }),
+      )
+
+      // Filter out null entries (markets user hasn't joined)
       return {
-        userMarketData,
-        withdrawnRewards: {} as Record<string, number>,
+        userMarketData: userMarketData.filter(data => data !== null) as Array<{
+          market: MarketDashboardInfo
+          prediction: number
+          reward: number
+          hasWithdrawn: boolean
+          entryFee: number
+        }>,
       }
     },
-    enabled: !!walletAddress && joinedMarkets.length > 0,
+    enabled: !!walletAddress && marketsToAnalyze.length > 0,
     staleTime: 30000, // Cache for 30 seconds
   })
 
   const stats = useMemo(() => {
+    console.log('[PortfolioSummary] Computing stats...')
+    console.log('[PortfolioSummary] Portfolio Data:', portfolioData)
+    
     if (!walletAddress) {
+      console.log('[PortfolioSummary] No wallet address')
       return {
         totalValue: 0,
         activePositions: 0,
@@ -57,63 +141,88 @@ export default function PortfolioSummary({ userAddress, joinedMarkets = [] }: Po
       }
     }
 
-    // Active positions = markets user joined that are still open (not resolved)
-    const activePositions = joinedMarkets.filter(m => !m.resolved).length
-    const resolvedPositions = joinedMarkets.filter(m => m.resolved).length
-
     const userMarketData = portfolioData?.userMarketData || []
-    const withdrawnRewards = portfolioData?.withdrawnRewards || {}
+    
+    console.log('[PortfolioSummary] User market data count:', userMarketData.length)
 
-    // Calculate total invested (entry fees for all participated markets) - convert from lamports to SOL
-    const totalInvested = joinedMarkets.reduce((sum, m) => {
-      return sum + (Number(m.entryFee) / 1_000_000_000) // Convert lamports to SOL
-    }, 0)
+    // Active positions = markets user participated in that are still open (not resolved)
+    const activePositions = userMarketData.filter(data => !data.market.resolved).length
+    const resolvedPositions = userMarketData.filter(data => data.market.resolved).length
 
-    // Calculate total claimable rewards (not yet withdrawn) - convert from lamports to SOL
-    const totalClaimableRewards = userMarketData.reduce((sum, data) => {
-      return sum + (data.reward / 1_000_000_000) // Convert lamports to SOL
-    }, 0)
+    console.log('[PortfolioSummary] Active positions:', activePositions)
+    console.log('[PortfolioSummary] Resolved positions:', resolvedPositions)
 
-    // Calculate total withdrawn rewards (already claimed) - convert from lamports to SOL
-    const totalWithdrawnRewards = Object.values(withdrawnRewards).reduce((sum, amount) => {
-      return sum + (amount / 1_000_000_000) // Convert lamports to SOL
+    // Calculate total invested (entry fees for all participated markets) - in lamports
+    const totalInvestedLamports = userMarketData.reduce((sum, data) => {
+      return sum + data.entryFee
     }, 0)
 
     // Calculate wins and losses based on actual predictions
     let totalWins = 0
     let totalLosses = 0
+    let totalClaimableRewardsLamports = 0
+    let totalWithdrawnRewardsLamports = 0
 
-    const resolvedMarkets = userMarketData.filter(data => data.market.resolved)
+    userMarketData.forEach((data) => {
+      const { market, prediction, reward, hasWithdrawn } = data
 
-    resolvedMarkets.forEach((data) => {
-      const { market, prediction } = data
-      const winner = market.winner // 1=HOME, 2=AWAY, 3=DRAW, 0=NONE
+      // If market is resolved and has an outcome
+      if (market.resolved && market.outcome) {
+        // Convert outcome to prediction number (Home=0, Draw=1, Away=2)
+        const outcomeMap: Record<string, number> = { Home: 0, Draw: 1, Away: 2 }
+        const winningPrediction = outcomeMap[market.outcome]
 
-      // If market is resolved and has a winner
-      if (winner > 0 && prediction > 0) {
         // Check if user's prediction matches the winner
-        if (prediction === winner) {
+        if (prediction === winningPrediction) {
           totalWins++
+          
+          // Track rewards
+          if (hasWithdrawn) {
+            totalWithdrawnRewardsLamports += reward
+          } else {
+            totalClaimableRewardsLamports += reward
+          }
         }
         else {
           totalLosses++
+          // Lost markets: user loses their entry fee (no reward)
         }
       }
     })
 
-    const winRate = resolvedMarkets.length > 0 ? (totalWins / resolvedMarkets.length) * 100 : 0
+    const winRate = resolvedPositions > 0 ? (totalWins / resolvedPositions) * 100 : 0
 
-    // P&L = (Withdrawn rewards + Claimable rewards) - Total invested
-    // This gives the true profit/loss including both claimed and unclaimed winnings
-    const totalPnL = (totalWithdrawnRewards + totalClaimableRewards) - totalInvested
+    // P&L = (Total rewards received/claimable) - Total invested
+    // Rewards already include the entry fee, so this gives true profit/loss
+    const totalRewardsLamports = totalWithdrawnRewardsLamports + totalClaimableRewardsLamports
+    const totalPnLLamports = totalRewardsLamports - totalInvestedLamports
 
-    // Portfolio Value = Value in active positions + Claimable rewards
-    // Active positions value = entry fees for unresolved markets
-    const activePositionsValue = joinedMarkets
-      .filter(m => !m.resolved)
-      .reduce((sum, m) => sum + (Number(m.entryFee) / 1_000_000_000), 0) // Convert lamports to SOL
+    // Portfolio Value = Invested in active positions + Claimable rewards from resolved wins
+    // For active positions, we count the entry fee (what's at stake)
+    // For resolved wins, we count claimable rewards (what we can withdraw)
+    const activePositionsValueLamports = userMarketData
+      .filter(data => !data.market.resolved)
+      .reduce((sum, data) => sum + data.entryFee, 0)
 
-    const totalValue = activePositionsValue + totalClaimableRewards
+    const totalValueLamports = activePositionsValueLamports + totalClaimableRewardsLamports
+
+    // Convert to SOL for display
+    const totalValue = totalValueLamports / 1_000_000_000
+    const totalPnL = totalPnLLamports / 1_000_000_000
+
+    console.log('[PortfolioSummary] Final Stats:', {
+      totalValue,
+      activePositions,
+      resolvedPositions,
+      totalWins,
+      totalLosses,
+      winRate,
+      totalPnL,
+      totalInvestedLamports,
+      totalClaimableRewardsLamports,
+      totalWithdrawnRewardsLamports,
+      activePositionsValueLamports,
+    })
 
     return {
       totalValue,
@@ -124,7 +233,7 @@ export default function PortfolioSummary({ userAddress, joinedMarkets = [] }: Po
       winRate,
       totalPnL,
     }
-  }, [walletAddress, joinedMarkets, portfolioData])
+  }, [walletAddress, portfolioData])
 
   const StatCard = ({
     label,

@@ -177,6 +177,7 @@ export function useAllMarkets() {
 
 /**
  * Hook for fetching markets for a specific user
+ * Returns markets where user is either creator OR participant
  */
 export function useUserMarkets(userAddress?: string) {
   const { connection } = useSolanaConnection()
@@ -192,44 +193,88 @@ export function useUserMarkets(userAddress?: string) {
         const userPubkey = new PublicKey(userAddress)
         const marketProgramId = new PublicKey(MARKET_PROGRAM_ID)
 
-        // Fetch all market accounts
-        const accounts = await connection.getProgramAccounts(marketProgramId, {
+        // Step 1: Fetch all Participant accounts where user is the participant
+        const participantAccounts = await connection.getProgramAccounts(marketProgramId, {
           filters: [
             {
-              dataSize: 193, // Market::LEN = 193 bytes
+              dataSize: 83, // Participant::LEN = 83 bytes (8 + 32 + 32 + 1 + 8 + 1 + 1)
+            },
+            {
+              memcmp: {
+                offset: 40, // Skip discriminator (8) + market pubkey (32) to get to user field
+                bytes: userPubkey.toBase58(),
+              },
             },
           ],
         })
 
-        // Decode and filter markets where user is creator or participant
-        const userMarkets: MarketData[] = []
-
-        for (const { pubkey, account } of accounts) {
+        // Extract unique market addresses from participant accounts
+        const marketAddressesSet = new Set<string>()
+        for (const { account } of participantAccounts) {
           try {
-            const market = AccountDecoder.decodeMarket(account.data)
+            // Market pubkey is at offset 8 (after discriminator)
+            const marketPubkey = new PublicKey(account.data.slice(8, 40))
+            marketAddressesSet.add(marketPubkey.toString())
+          }
+          catch (error) {
+            console.warn('Failed to extract market address from participant account:', error)
+          }
+        }
 
-            // Check if user is the creator
-            if (market.creator.equals(userPubkey)) {
-              userMarkets.push({
-                marketAddress: pubkey.toString(),
-                creator: market.creator.toString(),
-                matchId: market.matchId,
-                entryFee: Number(market.entryFee),
-                kickoffTime: Number(market.kickoffTime),
-                endTime: Number(market.endTime),
-                status: parseMarketStatus(market.status),
-                outcome: parseOutcome(market.outcome),
-                totalPool: Number(market.totalPool),
-                participantCount: Number(market.participantCount),
-                homeCount: Number(market.homeCount),
-                drawCount: Number(market.drawCount),
-                awayCount: Number(market.awayCount),
-                isPublic: market.isPublic,
-              })
+        // Step 2: Fetch all market accounts where user is creator
+        const creatorMarketAccounts = await connection.getProgramAccounts(marketProgramId, {
+          filters: [
+            {
+              dataSize: 193, // Market::LEN = 193 bytes
+            },
+            {
+              memcmp: {
+                offset: 40, // Skip discriminator (8) + factory pubkey (32) to get to creator field
+                bytes: userPubkey.toBase58(),
+              },
+            },
+          ],
+        })
+
+        // Add creator markets to the set
+        for (const { pubkey } of creatorMarketAccounts) {
+          marketAddressesSet.add(pubkey.toString())
+        }
+
+        // Step 3: Fetch full market data for all unique markets
+        const userMarkets: MarketData[] = []
+        const marketAddresses = Array.from(marketAddressesSet)
+
+        for (const marketAddress of marketAddresses) {
+          try {
+            const marketPubkey = new PublicKey(marketAddress)
+            const accountInfo = await connection.getAccountInfo(marketPubkey)
+
+            if (!accountInfo || !accountInfo.data) {
+              continue
             }
+
+            const market = AccountDecoder.decodeMarket(accountInfo.data)
+
+            userMarkets.push({
+              marketAddress: marketPubkey.toString(),
+              creator: market.creator.toString(),
+              matchId: market.matchId,
+              entryFee: Number(market.entryFee),
+              kickoffTime: Number(market.kickoffTime),
+              endTime: Number(market.endTime),
+              status: parseMarketStatus(market.status),
+              outcome: parseOutcome(market.outcome),
+              totalPool: Number(market.totalPool),
+              participantCount: Number(market.participantCount),
+              homeCount: Number(market.homeCount),
+              drawCount: Number(market.drawCount),
+              awayCount: Number(market.awayCount),
+              isPublic: market.isPublic,
+            })
           }
           catch (decodeError) {
-            console.warn('Failed to decode market account:', pubkey.toString(), decodeError)
+            console.warn('Failed to decode market account:', marketAddress, decodeError)
           }
         }
 
@@ -240,6 +285,105 @@ export function useUserMarkets(userAddress?: string) {
       }
       catch (error) {
         console.error('Error fetching user markets:', error)
+        return []
+      }
+    },
+    enabled: !!userAddress,
+    staleTime: 10000,
+    refetchInterval: 10000,
+  })
+}
+
+/**
+ * Hook for fetching markets where user has made a prediction (has Participant account)
+ * This is different from useUserMarkets which includes markets where user is creator
+ */
+export function useUserParticipantMarkets(userAddress?: string) {
+  const { connection } = useSolanaConnection()
+
+  return useQuery({
+    queryKey: ['markets', 'participant', userAddress],
+    queryFn: async (): Promise<MarketData[]> => {
+      if (!userAddress) {
+        return []
+      }
+
+      try {
+        const userPubkey = new PublicKey(userAddress)
+        const marketProgramId = new PublicKey(MARKET_PROGRAM_ID)
+
+        // Fetch all Participant accounts where user is the participant
+        const participantAccounts = await connection.getProgramAccounts(marketProgramId, {
+          filters: [
+            {
+              dataSize: 83, // Participant::LEN = 83 bytes
+            },
+            {
+              memcmp: {
+                offset: 40, // Skip discriminator (8) + market pubkey (32) to get to user field
+                bytes: userPubkey.toBase58(),
+              },
+            },
+          ],
+        })
+
+        // Extract unique market addresses from participant accounts
+        const marketAddressesSet = new Set<string>()
+        for (const { account } of participantAccounts) {
+          try {
+            // Market pubkey is at offset 8 (after discriminator)
+            const marketPubkey = new PublicKey(account.data.slice(8, 40))
+            marketAddressesSet.add(marketPubkey.toString())
+          }
+          catch (error) {
+            console.warn('Failed to extract market address from participant account:', error)
+          }
+        }
+
+        // Fetch full market data for all markets where user is participant
+        const participantMarkets: MarketData[] = []
+        const marketAddresses = Array.from(marketAddressesSet)
+
+        for (const marketAddress of marketAddresses) {
+          try {
+            const marketPubkey = new PublicKey(marketAddress)
+            const accountInfo = await connection.getAccountInfo(marketPubkey)
+
+            if (!accountInfo || !accountInfo.data) {
+              continue
+            }
+
+            const market = AccountDecoder.decodeMarket(accountInfo.data)
+
+            participantMarkets.push({
+              marketAddress: marketPubkey.toString(),
+              creator: market.creator.toString(),
+              matchId: market.matchId,
+              entryFee: Number(market.entryFee),
+              kickoffTime: Number(market.kickoffTime),
+              endTime: Number(market.endTime),
+              status: parseMarketStatus(market.status),
+              outcome: parseOutcome(market.outcome),
+              totalPool: Number(market.totalPool),
+              participantCount: Number(market.participantCount),
+              homeCount: Number(market.homeCount),
+              drawCount: Number(market.drawCount),
+              awayCount: Number(market.awayCount),
+              isPublic: market.isPublic,
+            })
+          }
+          catch (decodeError) {
+            console.warn('Failed to decode market account:', marketAddress, decodeError)
+          }
+        }
+
+        // Sort by kickoff time (newest first)
+        participantMarkets.sort((a, b) => b.kickoffTime - a.kickoffTime)
+
+        return participantMarkets
+      }
+      catch (error) {
+        console.error('Error fetching participant markets:', error)
         return []
       }
     },
