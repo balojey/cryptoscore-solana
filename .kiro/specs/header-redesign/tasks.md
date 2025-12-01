@@ -10,7 +10,7 @@
   - Remove SearchBar rendering in header (both desktop and mobile)
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 3.1, 3.2, 3.3, 4.1, 4.3_
 
-- [ ] 2. Simplify Header navigation to core links
+- [x] 2. Simplify Header navigation to core links
   - Keep only Markets, Terminal, and Dashboard navigation links in desktop view
   - Update navigation button layout and spacing
   - Ensure active state styling works for all three links
