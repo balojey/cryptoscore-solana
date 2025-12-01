@@ -43,7 +43,7 @@ const currencyOptions: CurrencyOption[] = [
 ]
 
 export default function CurrencySelector() {
-  const { currency, setCurrency, exchangeRates, isLoadingRates, ratesError } = useCurrency()
+  const { currency, setCurrency, exchangeRates, isLoadingRates } = useCurrency()
 
   const currentOption = currencyOptions.find((opt) => opt.value === currency)
   const isStale = exchangeRates ? ExchangeRateService.isStale(exchangeRates) : false
@@ -207,17 +207,7 @@ export default function CurrencySelector() {
             </div>
           )}
 
-          {!isLoadingRates && ratesError && (
-            <div 
-              className="text-xs flex items-center gap-2"
-              style={{ color: 'var(--accent-amber)' }}
-            >
-              <span className="icon-[mdi--alert-circle-outline] w-3 h-3" />
-              <span>Using cached rates</span>
-            </div>
-          )}
-
-          {!isLoadingRates && exchangeRates && !ratesError && (
+          {!isLoadingRates && exchangeRates && (
             <div 
               className="text-xs"
               style={{ color: isStale ? 'var(--accent-amber)' : 'var(--text-secondary)' }}
