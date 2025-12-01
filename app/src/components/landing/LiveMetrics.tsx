@@ -1,6 +1,7 @@
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { memo, useMemo } from 'react'
 import { useAllMarkets } from '../../hooks/useMarketData'
+import { useCurrency } from '../../hooks/useCurrency'
 import AnimatedNumber from '../ui/AnimatedNumber'
 
 interface MetricCardProps {
@@ -11,9 +12,10 @@ interface MetricCardProps {
   color: string
   decimals?: number
   isLoading?: boolean
+  solEquivalent?: string
 }
 
-const MetricCard = memo(({ label, value, suffix = '', icon, color, decimals = 0, isLoading }: MetricCardProps) => {
+const MetricCard = memo(({ label, value, suffix = '', icon, color, decimals = 0, isLoading, solEquivalent }: MetricCardProps) => {
   if (isLoading) {
     return (
       <div
@@ -51,6 +53,14 @@ const MetricCard = memo(({ label, value, suffix = '', icon, color, decimals = 0,
       <div className="font-mono text-3xl md:text-4xl font-bold" style={{ color: 'var(--text-primary)' }}>
         <AnimatedNumber value={value} decimals={decimals} suffix={suffix} duration={800} />
       </div>
+      {solEquivalent && (
+        <div
+          className="text-sm font-medium mt-2"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          {solEquivalent}
+        </div>
+      )}
     </div>
   )
 })
@@ -58,13 +68,14 @@ const MetricCard = memo(({ label, value, suffix = '', icon, color, decimals = 0,
 export default function LiveMetrics() {
   // Fetch all markets and calculate statistics
   const { data: marketsData, isLoading } = useAllMarkets()
+  const { currency, convertFromLamports } = useCurrency()
 
   // Calculate metrics from market data
   const metrics = useMemo(() => {
     if (!marketsData || marketsData.length === 0) {
       return {
         totalMarkets: 0,
-        totalValueLocked: 0,
+        totalValueLockedLamports: 0,
         activeTraders: 0,
         marketsResolved: 0,
       }
@@ -72,7 +83,7 @@ export default function LiveMetrics() {
 
     const now = Date.now() / 1000 // Current time in seconds
 
-    let totalValueLocked = 0
+    let totalValueLockedLamports = 0
     let activeTraders = 0
     let marketsResolved = 0
     let activeMarkets = 0
@@ -87,9 +98,9 @@ export default function LiveMetrics() {
         activeMarkets++
       }
 
-      // Sum total value locked (only for non-resolved markets)
+      // Sum total value locked (only for non-resolved markets) - keep in lamports
       if (market.status !== 'Resolved') {
-        totalValueLocked += market.totalPool
+        totalValueLockedLamports += market.totalPool
       }
 
       // Sum unique participants
@@ -98,7 +109,7 @@ export default function LiveMetrics() {
 
     return {
       totalMarkets: activeMarkets,
-      totalValueLocked: totalValueLocked / LAMPORTS_PER_SOL, // Convert lamports to SOL
+      totalValueLockedLamports,
       activeTraders,
       marketsResolved,
     }
@@ -131,12 +142,17 @@ export default function LiveMetrics() {
           />
           <MetricCard
             label="Total Value Locked"
-            value={metrics.totalValueLocked}
-            suffix=" SOL"
+            value={convertFromLamports(metrics.totalValueLockedLamports)}
+            suffix={currency === 'SOL' ? ' SOL' : currency === 'USD' ? ' USD' : ' NGN'}
             icon="mdi--safe-square-outline"
             color="var(--accent-green)"
-            decimals={2}
+            decimals={currency === 'SOL' ? 4 : 2}
             isLoading={isLoading}
+            solEquivalent={
+              currency !== 'SOL'
+                ? `◎${(metrics.totalValueLockedLamports / LAMPORTS_PER_SOL).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })} SOL`
+                : undefined
+            }
           />
           <MetricCard
             label="Active Traders"

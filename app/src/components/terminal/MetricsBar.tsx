@@ -1,6 +1,7 @@
 import type { MarketData } from '../../hooks/useMarketData'
 import { useMemo } from 'react'
 import { useAllMarkets } from '../../hooks/useMarketData'
+import { useCurrency } from '../../hooks/useCurrency'
 import AnimatedNumber from '../ui/AnimatedNumber'
 
 interface MetricCardProps {
@@ -10,9 +11,10 @@ interface MetricCardProps {
   icon: string
   trend?: string
   isLoading?: boolean
+  solEquivalent?: string
 }
 
-function MetricCard({ label, value, suffix = '', icon, trend, isLoading }: MetricCardProps) {
+function MetricCard({ label, value, suffix = '', icon, trend, isLoading, solEquivalent }: MetricCardProps) {
   return (
     <div
       className="p-4 rounded-lg transition-all hover:scale-[1.02]"
@@ -44,12 +46,20 @@ function MetricCard({ label, value, suffix = '', icon, trend, isLoading }: Metri
                 <AnimatedNumber
                   value={value}
                   duration={500}
-                  decimals={suffix.includes('SOL') ? 4 : suffix.includes('PAS') ? 2 : 0}
+                  decimals={suffix.includes('SOL') || suffix.includes('◎') ? 4 : 2}
                 />
                 {suffix && <span className="text-lg ml-1">{suffix}</span>}
               </>
             )}
       </div>
+      {solEquivalent && !isLoading && (
+        <div
+          className="text-xs font-medium mt-1"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          {solEquivalent}
+        </div>
+      )}
       {trend && !isLoading && (
         <div
           className="text-xs font-medium flex items-center gap-1"
@@ -67,9 +77,9 @@ function MetricCard({ label, value, suffix = '', icon, trend, isLoading }: Metri
 
 interface TerminalMetrics {
   totalMarkets: number
-  totalValueLocked: number
+  totalValueLockedLamports: number
   activeTraders: number
-  volume24h: number
+  volume24hLamports: number
   trends: {
     markets: string
     tvl: string
@@ -85,15 +95,16 @@ interface MetricsBarProps {
 export default function MetricsBar({ error }: MetricsBarProps) {
   // Fetch all markets from Solana - this already includes all details
   const { data: marketsData, isLoading } = useAllMarkets()
+  const { currency, convertFromLamports } = useCurrency()
 
   // Calculate metrics from market data
   const metrics: TerminalMetrics = useMemo(() => {
     if (!marketsData || !Array.isArray(marketsData) || marketsData.length === 0) {
       return {
         totalMarkets: 0,
-        totalValueLocked: 0,
+        totalValueLockedLamports: 0,
         activeTraders: 0,
-        volume24h: 0,
+        volume24hLamports: 0,
         trends: {
           markets: '+0%',
           tvl: '+0%',
@@ -109,23 +120,10 @@ export default function MetricsBar({ error }: MetricsBarProps) {
 
     const totalMarkets = marketsData.length
 
-    // Calculate TVL (sum of all totalPool values) - already in lamports
+    // Calculate TVL (sum of all totalPool values) - keep in lamports
     const totalPoolLamports = marketsData.reduce((sum: number, market: MarketData) => {
       return sum + market.totalPool
     }, 0)
-    const totalValueLocked = totalPoolLamports / 1_000_000_000 // Convert lamports to SOL
-
-    // Debug logging
-    console.log('MetricsBar - TVL Calculation:', {
-      totalMarkets: marketsData.length,
-      totalPoolLamports,
-      totalValueLocked,
-      sampleMarket: marketsData[0] ? {
-        totalPool: marketsData[0].totalPool,
-        entryFee: marketsData[0].entryFee,
-        participantCount: marketsData[0].participantCount,
-      } : null,
-    })
 
     // Calculate unique active traders (creators)
     const uniqueTraders = new Set<string>()
@@ -156,24 +154,6 @@ export default function MetricsBar({ error }: MetricsBarProps) {
         marketsPrevious24h += 1
         tvlPrevious24h += poolSize
       }
-    })
-
-    // Convert lamports to SOL for volume
-    const volume24hValue = volume24h / 1_000_000_000
-
-    // Debug logging
-    console.log('MetricsBar - 24h Volume Calculation:', {
-      volume24hLamports: volume24h,
-      volume24hSOL: volume24hValue,
-      markets24h,
-      totalMarkets24h: marketsData.filter(m => m.kickoffTime >= oneDayAgo).length,
-      now,
-      oneDayAgo,
-      sampleKickoffTimes: marketsData.slice(0, 3).map(m => ({
-        kickoffTime: m.kickoffTime,
-        isRecent: m.kickoffTime >= oneDayAgo,
-        date: new Date(m.kickoffTime * 1000).toISOString(),
-      })),
     })
 
     // Calculate trend percentages
@@ -209,9 +189,9 @@ export default function MetricsBar({ error }: MetricsBarProps) {
 
     return {
       totalMarkets,
-      totalValueLocked,
+      totalValueLockedLamports: totalPoolLamports,
       activeTraders,
-      volume24h: volume24hValue,
+      volume24hLamports: volume24h,
       trends: {
         markets: marketsTrend,
         tvl: tvlTrend,
@@ -224,6 +204,23 @@ export default function MetricsBar({ error }: MetricsBarProps) {
   // Show error state if there's an error and no data
   const showError = error && !marketsData
 
+  // Format monetary values with currency conversion
+  const tvlValue = showError ? 0 : convertFromLamports(metrics.totalValueLockedLamports)
+  const volumeValue = showError ? 0 : convertFromLamports(metrics.volume24hLamports)
+  
+  // Get currency symbol
+  const currencySymbol = currency === 'SOL' ? '◎' : currency === 'USD' ? '$' : '₦'
+  const currencySuffix = ` ${currencySymbol}`
+
+  // Generate SOL equivalents for non-SOL currencies
+  const tvlSolEquivalent = currency !== 'SOL' && !showError
+    ? `◎${(metrics.totalValueLockedLamports / 1_000_000_000).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })} SOL`
+    : undefined
+
+  const volumeSolEquivalent = currency !== 'SOL' && !showError
+    ? `◎${(metrics.volume24hLamports / 1_000_000_000).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })} SOL`
+    : undefined
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in">
       <MetricCard
@@ -235,11 +232,12 @@ export default function MetricsBar({ error }: MetricsBarProps) {
       />
       <MetricCard
         label="Total Value Locked"
-        value={showError ? 0 : metrics.totalValueLocked}
-        suffix=" SOL"
+        value={tvlValue}
+        suffix={currencySuffix}
         icon="🔒"
         trend={showError ? undefined : metrics.trends.tvl}
         isLoading={isLoading}
+        solEquivalent={tvlSolEquivalent}
       />
       <MetricCard
         label="Active Traders"
@@ -250,11 +248,12 @@ export default function MetricsBar({ error }: MetricsBarProps) {
       />
       <MetricCard
         label="24h Volume"
-        value={showError ? 0 : metrics.volume24h}
-        suffix=" SOL"
+        value={volumeValue}
+        suffix={currencySuffix}
         icon="📈"
         trend={showError ? undefined : metrics.trends.volume}
         isLoading={isLoading}
+        solEquivalent={volumeSolEquivalent}
       />
     </div>
   )
