@@ -15,13 +15,13 @@
   - Add error state management for rate fetching failures
   - _Requirements: 1.2, 1.3, 2.1, 2.2, 2.5, 5.1, 5.2, 6.1, 6.4_
 
-- [ ] 3. Create useCurrency hook
+- [x] 3. Create useCurrency hook
   - Implement useCurrency hook to access CurrencyContext
   - Add error handling for usage outside provider
   - Export hook from contexts directory
   - _Requirements: 5.1, 5.2_
 
-- [ ] 4. Extend formatter utilities with currency conversion
+- [x] 4. Extend formatter utilities with currency conversion
   - Add formatCurrency function that accepts lamports and converts to selected currency
   - Implement getCurrencySymbol helper function
   - Implement getCurrencyDecimals helper function
@@ -30,7 +30,7 @@
   - Add thousand separator formatting for NGN
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.2, 4.3, 5.3, 5.4, 5.5_
 
-- [ ] 5. Build CurrencySelector component
+- [-] 5. Build CurrencySelector component
   - Create CurrencySelector component with dropdown menu UI
   - Add currency options (SOL, USD, NGN) with symbols and icons
   - Display current exchange rates in dropdown
