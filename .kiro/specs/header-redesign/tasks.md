@@ -30,7 +30,7 @@
   - Update active state indicators (check icons) for mobile menu items
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 7.5_
 
-- [ ] 4. Remove network badge from Connect component
+- [x] 4. Remove network badge from Connect component
   - Open Connect.tsx component
   - Remove network indicator div and related styling
   - Remove networkColors object if no longer used
