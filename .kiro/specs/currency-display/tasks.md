@@ -72,7 +72,7 @@
   - Add SOL equivalents where appropriate
   - _Requirements: 3.1, 3.2, 3.3, 7.5_
 
-- [-] 11. Update chart components
+- [x] 11. Update chart components
   - Update PoolTrendChart to use selected currency for Y-axis
   - Update PredictionDistributionChart if it shows monetary values
   - Update PerformanceChart to display values in selected currency

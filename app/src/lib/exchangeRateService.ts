@@ -10,7 +10,7 @@ import type { ExchangeRates, CachedExchangeRates } from '@/types/currency'
 export class ExchangeRateService {
   private static readonly CACHE_KEY = 'cryptoscore-exchange-rates'
   private static readonly CACHE_VERSION = 1
-  private static readonly UPDATE_INTERVAL = 60000 // 60 seconds
+//   private static readonly UPDATE_INTERVAL = 60000 // 60 seconds
   private static readonly STALE_THRESHOLD = 300000 // 5 minutes
   private static readonly MAX_RETRIES = 3
   private static readonly RETRY_DELAYS = [1000, 2000, 4000] // Exponential backoff

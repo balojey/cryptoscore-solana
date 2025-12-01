@@ -2,6 +2,7 @@ import type { Market } from '../../types'
 import { useMemo, useState } from 'react'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ErrorBoundary } from '../ErrorBoundary'
+import { useCurrency } from '@/hooks/useCurrency'
 
 type ChartType = 'tvl' | 'volume' | 'participants'
 type Timeframe = '24h' | '7d' | '30d' | 'all'
@@ -16,18 +17,21 @@ interface MarketOverviewChartProps {
 }
 
 // Custom Tooltip Component
-function CustomTooltip({ active, payload, label, metricType }: any) {
+function CustomTooltip({ active, payload, label, metricType, currency, formatCurrency }: any) {
   if (active && payload && payload.length) {
     const value = payload[0].value
-    let formattedValue = value.toFixed(2)
-    let suffix = ''
+    const lamports = payload[0].payload.lamports
+    let formattedValue: string
 
     if (metricType === 'tvl' || metricType === 'volume') {
-      suffix = ' SOL'
+      // Use formatCurrency for monetary values
+      formattedValue = formatCurrency(lamports, { showSOLEquivalent: currency !== 'SOL' })
     }
     else if (metricType === 'participants') {
-      formattedValue = value.toFixed(0)
-      suffix = ' traders'
+      formattedValue = `${value.toFixed(0)} traders`
+    }
+    else {
+      formattedValue = value.toFixed(2)
     }
 
     return (
@@ -44,7 +48,6 @@ function CustomTooltip({ active, payload, label, metricType }: any) {
         </p>
         <p className="text-xs" style={{ color: 'var(--accent-cyan)' }}>
           {formattedValue}
-          {suffix}
         </p>
       </div>
     )
@@ -87,6 +90,7 @@ export default function MarketOverviewChart({
 }: MarketOverviewChartProps) {
   // Chart type selector state (internal to component)
   const [chartType, setChartType] = useState<'line' | 'bar' | 'area'>('line')
+  const { currency, convertFromLamports, formatCurrency } = useCurrency()
 
   // Transform market data into chart-compatible format
   const chartData = useMemo(() => {
@@ -119,8 +123,8 @@ export default function MarketOverviewChart({
 
     // Group data by date
     const dataByDate = new Map<string, {
-      tvl: number
-      volume: number
+      tvlLamports: number
+      volumeLamports: number
       participants: number
       count: number
     }>()
@@ -152,20 +156,20 @@ export default function MarketOverviewChart({
         })
       }
 
-      // Convert lamports to SOL for pool size
-      const poolSize = (Number(market.entryFee) * Number(market.participantsCount)) / 1_000_000_000
+      // Calculate pool size in lamports
+      const poolSizeLamports = Number(market.entryFee) * Number(market.participantsCount)
       const participants = Number(market.participantsCount)
 
       const existing = dataByDate.get(dateKey) || {
-        tvl: 0,
-        volume: 0,
+        tvlLamports: 0,
+        volumeLamports: 0,
         participants: 0,
         count: 0,
       }
 
       dataByDate.set(dateKey, {
-        tvl: existing.tvl + poolSize,
-        volume: existing.volume + poolSize,
+        tvlLamports: existing.tvlLamports + poolSizeLamports,
+        volumeLamports: existing.volumeLamports + poolSizeLamports,
         participants: existing.participants + participants,
         count: existing.count + 1,
       })
@@ -173,46 +177,54 @@ export default function MarketOverviewChart({
 
     // Convert to chart data array
     const chartDataArray = Array.from(dataByDate.entries()).map(([date, data]) => {
+      let lamports: number
       let value: number
 
       switch (selectedMetric) {
         case 'tvl':
           // Cumulative TVL
-          value = data.tvl
+          lamports = data.tvlLamports
+          value = convertFromLamports(lamports)
           break
         case 'volume':
           // Total volume for the period
-          value = data.volume
+          lamports = data.volumeLamports
+          value = convertFromLamports(lamports)
           break
         case 'participants':
-          // Total participants
+          // Total participants (not monetary)
+          lamports = 0
           value = data.participants
           break
         default:
+          lamports = 0
           value = 0
       }
 
       return {
         date,
-        value: Number(value.toFixed(2)),
+        value: Number(value.toFixed(currency === 'SOL' ? 4 : 2)),
+        lamports,
         label: date,
       }
     })
 
     // For TVL, make it cumulative
     if (selectedMetric === 'tvl') {
-      let cumulative = 0
+      let cumulativeLamports = 0
       return chartDataArray.map((point) => {
-        cumulative += point.value
+        cumulativeLamports += point.lamports
+        const cumulativeValue = convertFromLamports(cumulativeLamports)
         return {
           ...point,
-          value: Number(cumulative.toFixed(2)),
+          value: Number(cumulativeValue.toFixed(currency === 'SOL' ? 4 : 2)),
+          lamports: cumulativeLamports,
         }
       })
     }
 
     return chartDataArray
-  }, [markets, selectedTimeframe, selectedMetric])
+  }, [markets, selectedTimeframe, selectedMetric, convertFromLamports, currency])
 
   // Show loading skeleton
   if (isLoading) {
@@ -381,7 +393,7 @@ export default function MarketOverviewChart({
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" />
               <XAxis {...axisProps.xAxis} />
               <YAxis {...axisProps.yAxis} />
-              <Tooltip content={<CustomTooltip metricType={selectedMetric} />} />
+              <Tooltip content={<CustomTooltip metricType={selectedMetric} currency={currency} formatCurrency={formatCurrency} />} />
               <Bar
                 dataKey="value"
                 fill="var(--accent-cyan)"
@@ -402,7 +414,7 @@ export default function MarketOverviewChart({
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" />
               <XAxis {...axisProps.xAxis} />
               <YAxis {...axisProps.yAxis} />
-              <Tooltip content={<CustomTooltip metricType={selectedMetric} />} />
+              <Tooltip content={<CustomTooltip metricType={selectedMetric} currency={currency} formatCurrency={formatCurrency} />} />
               <Area
                 type="monotone"
                 dataKey="value"
@@ -421,7 +433,7 @@ export default function MarketOverviewChart({
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" />
               <XAxis {...axisProps.xAxis} />
               <YAxis {...axisProps.yAxis} />
-              <Tooltip content={<CustomTooltip metricType={selectedMetric} />} />
+              <Tooltip content={<CustomTooltip metricType={selectedMetric} currency={currency} formatCurrency={formatCurrency} />} />
               <Line
                 type="monotone"
                 dataKey="value"

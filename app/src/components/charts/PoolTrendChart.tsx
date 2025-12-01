@@ -1,12 +1,15 @@
 import type { Market, MarketDashboardInfo } from '../../types'
 import { useMemo } from 'react'
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { useCurrency } from '@/hooks/useCurrency'
 
 interface PoolTrendChartProps {
   markets: (Market | MarketDashboardInfo)[]
 }
 
 export default function PoolTrendChart({ markets }: PoolTrendChartProps) {
+  const { currency, convertFromLamports, formatCurrency } = useCurrency()
+
   const chartData = useMemo(() => {
     if (!markets || markets.length === 0)
       return []
@@ -16,31 +19,38 @@ export default function PoolTrendChart({ markets }: PoolTrendChartProps) {
       Number(a.startTime) - Number(b.startTime),
     )
 
-    // Group by date and calculate average pool size
-    const dataByDate = new Map<string, { total: number, count: number }>()
+    // Group by date and calculate average pool size in lamports
+    const dataByDate = new Map<string, { totalLamports: number, count: number }>()
 
     sortedMarkets.forEach((market) => {
       const date = new Date(Number(market.startTime) * 1000)
       const dateKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
-      // Convert lamports to SOL (1 SOL = 1,000,000,000 lamports)
-      const poolSize = (Number(market.entryFee) / 1_000_000_000) * Number(market.participantsCount)
+      // Calculate pool size in lamports
+      const poolSizeLamports = Number(market.entryFee) * Number(market.participantsCount)
 
-      const existing = dataByDate.get(dateKey) || { total: 0, count: 0 }
+      const existing = dataByDate.get(dateKey) || { totalLamports: 0, count: 0 }
       dataByDate.set(dateKey, {
-        total: existing.total + poolSize,
+        totalLamports: existing.totalLamports + poolSizeLamports,
         count: existing.count + 1,
       })
     })
 
-    // Convert to chart data
-    return Array.from(dataByDate.entries()).map(([date, data]) => ({
-      date,
-      avgPool: Number((data.total / data.count).toFixed(2)),
-      totalPool: Number(data.total.toFixed(2)),
-      markets: data.count,
-    }))
-  }, [markets])
+    // Convert to chart data with currency conversion
+    return Array.from(dataByDate.entries()).map(([date, data]) => {
+      const avgLamports = data.totalLamports / data.count
+      const totalLamports = data.totalLamports
+
+      return {
+        date,
+        avgPool: Number(convertFromLamports(avgLamports).toFixed(currency === 'SOL' ? 4 : 2)),
+        totalPool: Number(convertFromLamports(totalLamports).toFixed(currency === 'SOL' ? 4 : 2)),
+        avgPoolLamports: avgLamports,
+        totalPoolLamports: totalLamports,
+        markets: data.count,
+      }
+    })
+  }, [markets, convertFromLamports, currency])
 
   if (chartData.length === 0) {
     return (
@@ -56,6 +66,9 @@ export default function PoolTrendChart({ markets }: PoolTrendChartProps) {
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const avgPoolLamports = payload[0].payload.avgPoolLamports
+      const totalPoolLamports = payload[0].payload.totalPoolLamports
+
       return (
         <div
           className="px-3 py-2 rounded-lg"
@@ -70,16 +83,12 @@ export default function PoolTrendChart({ markets }: PoolTrendChartProps) {
           <p className="text-xs" style={{ color: 'var(--accent-cyan)' }}>
             Avg Pool:
             {' '}
-            {payload[0].value}
-            {' '}
-            SOL
+            {formatCurrency(avgPoolLamports, { showSOLEquivalent: currency !== 'SOL' })}
           </p>
           <p className="text-xs" style={{ color: 'var(--accent-green)' }}>
             Total:
             {' '}
-            {payload[1].value}
-            {' '}
-            SOL
+            {formatCurrency(totalPoolLamports, { showSOLEquivalent: currency !== 'SOL' })}
           </p>
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
             Markets:
@@ -107,7 +116,7 @@ export default function PoolTrendChart({ markets }: PoolTrendChartProps) {
             stroke="var(--text-tertiary)"
             style={{ fontSize: '12px' }}
             label={{
-              value: 'SOL',
+              value: currency,
               angle: -90,
               position: 'insideLeft',
               style: { fill: 'var(--text-tertiary)' },
