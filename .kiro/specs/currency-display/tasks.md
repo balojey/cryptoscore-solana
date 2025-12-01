@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. Create exchange rate service and currency types
+- [x] 1. Create exchange rate service and currency types
   - Create TypeScript types for Currency, ExchangeRates, and related interfaces
   - Implement ExchangeRateService class with API integration (CoinGecko)
   - Add localStorage caching for exchange rates
