@@ -1,17 +1,19 @@
 import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { useEffect, useState } from 'react'
+import { useCurrency } from '@/hooks/useCurrency'
 
 export default function Balance() {
   const { connection } = useConnection()
   const { publicKey } = useWallet()
-  const [balance, setBalance] = useState<number | null>(null)
+  const { currency, formatCurrency, convertFromLamports } = useCurrency()
+  const [balanceLamports, setBalanceLamports] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
     if (!publicKey) {
-      setBalance(null)
+      setBalanceLamports(null)
       setIsLoading(false)
       return
     }
@@ -23,7 +25,7 @@ export default function Balance() {
     connection.getBalance(publicKey)
       .then((lamports) => {
         if (isMounted) {
-          setBalance(lamports / LAMPORTS_PER_SOL)
+          setBalanceLamports(lamports)
           setIsLoading(false)
         }
       })
@@ -47,14 +49,32 @@ export default function Balance() {
     return <span className="font-sans text-lg font-bold" style={{ color: 'var(--accent-red)' }}>Error</span>
   }
 
+  const lamports = balanceLamports || 0
+
+  // Format the primary display value
+  const primaryValue = formatCurrency(lamports, { showSymbol: false })
+  const currencySymbol = currency === 'SOL' ? '◎' : currency === 'USD' ? '$' : '₦'
+
+  // Calculate SOL equivalent if not already in SOL
+  const solEquivalent = currency !== 'SOL' ? (lamports / LAMPORTS_PER_SOL).toFixed(4) : null
+
   return (
-    <div className="flex items-baseline gap-2">
-      <span className="font-jakarta font-bold text-2xl" style={{ color: 'var(--text-primary)' }}>
-        {(balance || 0).toFixed(3)}
-      </span>
-      <span className="font-sans font-semibold" style={{ color: 'var(--text-tertiary)' }}>
-        SOL
-      </span>
+    <div className="flex flex-col gap-1">
+      <div className="flex items-baseline gap-2">
+        <span className="font-jakarta font-bold text-2xl" style={{ color: 'var(--text-primary)' }}>
+          {primaryValue}
+        </span>
+        <span className="font-sans font-semibold" style={{ color: 'var(--text-tertiary)' }}>
+          {currency}
+        </span>
+      </div>
+      {solEquivalent && (
+        <div className="flex items-baseline gap-1">
+          <span className="font-mono text-xs" style={{ color: 'var(--text-tertiary)' }}>
+            ◎{solEquivalent} SOL
+          </span>
+        </div>
+      )}
     </div>
   )
 }

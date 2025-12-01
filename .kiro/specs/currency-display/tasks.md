@@ -58,7 +58,7 @@
   - Update reward displays in market cards
   - _Requirements: 3.1, 3.2, 3.3, 4.1, 4.3, 4.4, 7.1, 7.2_
 
-- [ ] 9. Update Balance and wallet components
+- [x] 9. Update Balance and wallet components
   - Update Balance component to show wallet balance in selected currency
   - Add SOL equivalent display below converted balance
   - Update Connect component if it displays balance
