@@ -10,7 +10,8 @@ import {
 } from '@/components/ui/tooltip'
 import { useMarketData, useUserParticipantMarkets } from '../../hooks/useMarketData'
 import { useMatchData } from '../../hooks/useMatchData'
-import { formatSOL, shortenAddress } from '../../utils/formatters'
+import { formatSOL, shortenAddress, formatCurrency, formatWithSOLEquivalent } from '../../utils/formatters'
+import { useCurrency } from '@/hooks/useCurrency'
 
 interface EnhancedMarketCardProps {
   market: Market
@@ -184,6 +185,7 @@ export default function EnhancedMarketCard({ market }: EnhancedMarketCardProps) 
   const distribution = usePredictionDistribution(market.marketAddress)
   const { data: marketData } = useMarketData(market.marketAddress)
   const { data: userParticipantMarkets } = useUserParticipantMarkets(userAddress?.toString())
+  const { currency, exchangeRates } = useCurrency()
 
   // Check if user has joined this market
   const hasJoined = userParticipantMarkets?.some(
@@ -298,14 +300,24 @@ export default function EnhancedMarketCard({ market }: EnhancedMarketCardProps) 
                     <span>Pool Size</span>
                   </div>
                   <div className="info-value font-mono">
-                    {formatSOL(poolSize * 1_000_000_000, 2)}
-                    {' '}
-                    {/* Convert back to lamports for formatting */}
+                    <div>
+                      {formatCurrency(Math.floor(poolSize * 1_000_000_000), currency, exchangeRates, { decimals: 2 })}
+                    </div>
+                    {currency !== 'SOL' && (
+                      <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                        {formatWithSOLEquivalent(Math.floor(poolSize * 1_000_000_000), currency, exchangeRates).equivalent}
+                      </div>
+                    )}
                   </div>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Total value locked in this market</p>
+                {currency !== 'SOL' && (
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                    {formatSOL(poolSize * 1_000_000_000, 4)}
+                  </p>
+                )}
               </TooltipContent>
             </Tooltip>
 
@@ -342,12 +354,24 @@ export default function EnhancedMarketCard({ market }: EnhancedMarketCardProps) 
                     <span>Entry Fee</span>
                   </div>
                   <div className="info-value font-mono">
-                    {formatSOL(market.entryFee, 4)}
+                    <div>
+                      {formatCurrency(Number(market.entryFee), currency, exchangeRates, { decimals: currency === 'SOL' ? 4 : 2 })}
+                    </div>
+                    {currency !== 'SOL' && (
+                      <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                        {formatWithSOLEquivalent(Number(market.entryFee), currency, exchangeRates).equivalent}
+                      </div>
+                    )}
                   </div>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Cost to join and make a prediction</p>
+                {currency !== 'SOL' && (
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                    {formatSOL(market.entryFee, 4)}
+                  </p>
+                )}
               </TooltipContent>
             </Tooltip>
           </div>

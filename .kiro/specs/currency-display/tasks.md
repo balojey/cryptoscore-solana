@@ -51,7 +51,7 @@
   - Update all stat cards to show values in selected currency
   - _Requirements: 3.1, 3.2, 3.3, 4.1, 4.4, 7.3_
 
-- [ ] 8. Update market card components
+- [x] 8. Update market card components
   - Update EnhancedMarketCard to display entry fees in selected currency
   - Update pool size displays with currency conversion
   - Add SOL equivalent tooltips on hover
@@ -64,9 +64,11 @@
   - Update Connect component if it displays balance
   - _Requirements: 3.1, 3.2, 3.3, 4.1, 4.2, 7.4_
 
-- [ ] 10. Update TradingTerminal MetricsBar
+- [ ] 10. Update TradingTerminal MetricsBar and LandingPage LiveMetrics
   - Update MetricsBar to display all monetary metrics in selected currency
   - Convert total volume, average pool size, and other monetary values
+  - Update LiveMetrics to display all monetary metrics in selected currency
+  - Convert total value locked
   - Add SOL equivalents where appropriate
   - _Requirements: 3.1, 3.2, 3.3, 7.5_
 

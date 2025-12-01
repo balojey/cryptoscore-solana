@@ -15,7 +15,8 @@ import { useMarketData } from '../hooks/useMarketData'
 import { useMatchData } from '../hooks/useMatchData'
 import { useParticipantData } from '../hooks/useParticipantData'
 import { useUserRewards } from '../hooks/useUserRewards'
-import { formatSOL, shortenAddress } from '../utils/formatters'
+import { formatSOL, shortenAddress, formatCurrency, formatWithSOLEquivalent } from '../utils/formatters'
+import { useCurrency } from '@/hooks/useCurrency'
 
 // --- SUB-COMPONENTS ---
 
@@ -86,9 +87,11 @@ interface MarketStatsProps {
   userHasJoined: boolean
   matchData: Match
   entryFeeValue: number
+  currency: 'SOL' | 'USD' | 'NGN'
+  exchangeRates: { SOL_USD: number; SOL_NGN: number } | null
 }
 
-function MarketStats({ marketInfo, poolSize, participantsCount, marketStatus, isMatchStarted, winningTeamName, homeCount, awayCount, drawCount, userPrediction, userHasJoined, matchData, entryFeeValue }: MarketStatsProps) {
+function MarketStats({ marketInfo, poolSize, participantsCount, marketStatus, isMatchStarted, winningTeamName, homeCount, awayCount, drawCount, userPrediction, userHasJoined, matchData, entryFeeValue, currency, exchangeRates }: MarketStatsProps) {
   const InfoRow = ({ label, value, valueClass, icon }: { label: string, value: React.ReactNode, valueClass?: string, icon: string }) => (
     <div className="info-row">
       <div className="info-label">
@@ -124,14 +127,28 @@ function MarketStats({ marketInfo, poolSize, participantsCount, marketStatus, is
         <InfoRow
           label="Pool Size"
           value={(
-            <span className="font-mono">{formatSOL(poolSize, 2)}</span>
+            <div className="text-right">
+              <div className="font-mono">{formatCurrency(poolSize, currency, exchangeRates, { decimals: 2 })}</div>
+              {currency !== 'SOL' && (
+                <div className="text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
+                  {formatWithSOLEquivalent(poolSize, currency, exchangeRates).equivalent}
+                </div>
+              )}
+            </div>
           )}
           icon="mdi--database-outline"
         />
         <InfoRow
           label="Entry Fee"
           value={(
-            <span className="font-mono">{formatSOL(entryFeeValue, 4)}</span>
+            <div className="text-right">
+              <div className="font-mono">{formatCurrency(entryFeeValue, currency, exchangeRates, { decimals: currency === 'SOL' ? 4 : 2 })}</div>
+              {currency !== 'SOL' && (
+                <div className="text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
+                  {formatWithSOLEquivalent(entryFeeValue, currency, exchangeRates).equivalent}
+                </div>
+              )}
+            </div>
           )}
           icon="mdi--login"
         />
@@ -471,6 +488,7 @@ export function MarketDetail() {
   const { publicKey: userAddress } = useWallet()
   const { joinMarket, resolveMarket, withdrawRewards, getExplorerLink, isLoading, txSignature } = useMarketActions()
   const { data: marketData, isLoading: isLoadingMarket, error: marketError, refetch: refetchMarket } = useMarketData(marketAddress)
+  const { currency, exchangeRates } = useCurrency()
 
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null)
   const [actionStatus, setActionStatus] = useState<{
@@ -852,6 +870,8 @@ export function MarketDetail() {
               userHasJoined={hasJoined}
               matchData={matchData}
               entryFeeValue={entryFeeValue}
+              currency={currency}
+              exchangeRates={exchangeRates}
             />
             {actionStatus && (
               <div
