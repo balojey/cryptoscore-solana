@@ -19,7 +19,7 @@
   - Verify route matching logic for Dashboard
   - _Requirements: 1.1, 7.1, 7.2, 7.3, 7.4_
 
-- [ ] 3. Update mobile menu navigation
+- [x] 3. Update mobile menu navigation
   - Remove Home link from mobile menu
   - Remove Leaderboard link from mobile menu
   - Remove search toggle option from mobile menu

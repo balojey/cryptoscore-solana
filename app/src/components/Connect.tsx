@@ -21,9 +21,9 @@ export default function Connect() {
   return (
     <div className="flex items-center gap-2">
       {/* Network indicator */}
-      <div className={`px-2 py-1 rounded-md text-xs font-medium border ${networkColors[network as keyof typeof networkColors]}`}>
+      {/* <div className={`px-2 py-1 rounded-md text-xs font-medium border ${networkColors[network as keyof typeof networkColors]}`}>
         {network.toUpperCase()}
-      </div>
+      </div> */}
 
       {!connected
         ? (
