@@ -121,6 +121,7 @@ export default function CurrencySelector() {
               }}
               role="menuitemradio"
               aria-checked={isActive}
+              title={isDisabled ? 'Exchange rates unavailable' : undefined}
             >
               <div className="flex items-center gap-2 flex-shrink-0">
                 {option.flag && (
@@ -135,7 +136,7 @@ export default function CurrencySelector() {
                   className="text-xs" 
                   style={{ color: 'var(--text-tertiary)' }}
                 >
-                  {option.name}
+                  {isDisabled ? 'Unavailable' : option.name}
                 </div>
               </div>
 
@@ -166,7 +167,16 @@ export default function CurrencySelector() {
                 </div>
               )}
 
-              {isActive && (
+              {/* Show unavailable indicator for disabled options */}
+              {isDisabled && (
+                <span 
+                  className="icon-[mdi--lock-outline] w-4 h-4 flex-shrink-0"
+                  style={{ color: 'var(--text-disabled)' }}
+                  aria-hidden="true"
+                />
+              )}
+
+              {isActive && !isDisabled && (
                 <span 
                   className="icon-[mdi--check] w-5 h-5 flex-shrink-0"
                   aria-hidden="true"

@@ -31,4 +31,5 @@ export interface CurrencyContextType {
   ratesError: string | null
   convertFromLamports: (lamports: number, targetCurrency?: Currency) => number
   formatCurrency: (lamports: number, options?: FormatOptions) => string
+  refreshRates: () => Promise<void>
 }

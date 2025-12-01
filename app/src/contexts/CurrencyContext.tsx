@@ -77,10 +77,16 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
       if (cached && !exchangeRates) {
         setExchangeRates(cached)
       }
+      
+      // If no cached rates available and user is on USD/NGN, switch to SOL
+      if (!cached && !exchangeRates && currency !== 'SOL') {
+        setCurrencyState('SOL')
+        localStorage.setItem('cryptoscore-currency', 'SOL')
+      }
     } finally {
       setIsLoadingRates(false)
     }
-  }, [exchangeRates])
+  }, [exchangeRates, currency])
 
   /**
    * Fetch rates on mount and set up interval
@@ -186,6 +192,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
       ratesError,
       convertFromLamports,
       formatCurrency,
+      refreshRates: fetchRates,
     }),
     [
       currency,
@@ -195,6 +202,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
       ratesError,
       convertFromLamports,
       formatCurrency,
+      fetchRates,
     ]
   )
 

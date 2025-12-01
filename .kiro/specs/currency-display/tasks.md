@@ -79,27 +79,27 @@
   - Ensure chart tooltips show converted values
   - _Requirements: 3.1, 3.2, 3.3, 7.5_
 
-- [ ] 12. Add stale rate warning banner
+- [x] 12. Add stale rate warning banner
   - Create warning banner component for stale exchange rates
   - Display banner when rates are older than 5 minutes
   - Show last update timestamp
   - Add dismiss functionality
   - _Requirements: 6.4, 6.5_
 
-- [ ] 13. Add offline mode handling
+- [x] 13. Add offline mode handling
   - Display info banner when using cached rates offline
   - Disable USD/NGN options when no rates available
   - Show appropriate error messages for rate fetch failures
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 14. Write unit tests for exchange rate service
+- [ ]* 14. Write unit tests for exchange rate service
   - Test fetchRates with mocked API responses
   - Test caching mechanism (getCachedRates, cacheRates)
   - Test stale rate detection (isStale)
   - Test error handling for network and API errors
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 15. Write unit tests for currency formatters
+- [ ]* 15. Write unit tests for currency formatters
   - Test formatCurrency for all three currencies
   - Test conversion accuracy with known exchange rates
   - Test edge cases (zero, very small, very large values)
@@ -107,7 +107,7 @@
   - Test formatWithSOLEquivalent output
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 5.3, 5.4_
 
-- [ ] 16. Write integration tests for currency feature
+- [ ]* 16. Write integration tests for currency feature
   - Test currency selection flow end-to-end
   - Test rate updates propagating to all components
   - Test localStorage persistence across sessions
