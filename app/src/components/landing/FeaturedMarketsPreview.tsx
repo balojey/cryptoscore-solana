@@ -1,35 +1,51 @@
 import type { Market } from '../../types'
-import { useEffect, useState } from 'react'
+import type { MarketData } from '../../hooks/useMarketData'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAllMarketsQuery } from '../../hooks/useAllMarketsQuery'
+import { useAllMarkets } from '../../hooks/useMarketData'
 import EnhancedMarketCard, { EnhancedMarketCardSkeleton } from '../cards/EnhancedMarketCard'
 import ErrorBanner from '../terminal/ErrorBanner'
+
+// Helper to transform MarketData to Market type
+function transformMarketData(marketData: MarketData): Market {
+  return {
+    marketAddress: marketData.marketAddress,
+    matchId: BigInt(marketData.matchId),
+    entryFee: BigInt(marketData.entryFee),
+    creator: marketData.creator,
+    participantsCount: BigInt(marketData.participantCount),
+    resolved: marketData.status === 'Resolved',
+    isPublic: marketData.isPublic,
+    startTime: BigInt(marketData.kickoffTime),
+    homeCount: BigInt(marketData.homeCount),
+    awayCount: BigInt(marketData.awayCount),
+    drawCount: BigInt(marketData.drawCount),
+  }
+}
 
 // Main component
 export default function FeaturedMarketsPreview() {
   const [showError, setShowError] = useState(true)
   const [cachedMarkets, setCachedMarkets] = useState<Market[] | null>(null)
 
-  // Fetch all public markets from Dashboard program
-  // We'll filter and select featured ones on the client side
-  const { data: marketsData, isLoading, isError, refetch } = useAllMarketsQuery({
-    filterStatus: null, // Get all statuses
-    filterVisibility: true, // Only public markets
-    sortBy: 'EndingSoon', // Sort by ending soon first
-    page: 0,
-    pageSize: 50, // Fetch more to have options for selection
-    enabled: true,
-  })
+  // Fetch all markets using the new Anchor-free hook
+  const { data: marketsData, isLoading, isError, refetch } = useAllMarkets()
+
+  // Transform market data to expected format
+  const transformedMarkets = useMemo(() => {
+    if (!marketsData || !Array.isArray(marketsData)) return null
+    return marketsData.map(transformMarketData)
+  }, [marketsData])
 
   // Cache successful data fetches
   useEffect(() => {
-    if (marketsData && Array.isArray(marketsData) && marketsData.length > 0) {
-      setCachedMarkets(marketsData as Market[])
+    if (transformedMarkets && transformedMarkets.length > 0) {
+      setCachedMarkets(transformedMarkets)
     }
-  }, [marketsData])
+  }, [transformedMarkets])
 
   // Use cached data if available and current fetch failed
-  const dataToUse = (isError && cachedMarkets) ? cachedMarkets : (marketsData as Market[] | undefined)
+  const dataToUse = (isError && cachedMarkets) ? cachedMarkets : transformedMarkets
 
   const handleRetry = () => {
     setShowError(true)

@@ -79,11 +79,12 @@ export function useParticipantData(marketAddress?: string, userAddress?: string)
 }
 
 // Helper to convert prediction enum
+// Note: Rust enum is 0-indexed (Home=0, Draw=1, Away=2)
 function parsePrediction(prediction: number): 'Home' | 'Draw' | 'Away' {
   switch (prediction) {
-    case 1: return 'Home'
-    case 2: return 'Draw'
-    case 3: return 'Away'
+    case 0: return 'Home'
+    case 1: return 'Draw'
+    case 2: return 'Away'
     default: return 'Home'
   }
 }

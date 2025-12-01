@@ -18,21 +18,22 @@ export enum MarketStatus {
 
 /**
  * Match outcome enum
+ * Note: Must match Rust enum order (0-indexed)
  */
 export enum MatchOutcome {
-  None = 0,
-  Home = 1,
-  Draw = 2,
-  Away = 3,
+  Home = 0,
+  Draw = 1,
+  Away = 2,
 }
 
 /**
  * Prediction choice enum
+ * Note: Must match Rust enum order (0-indexed)
  */
 export enum PredictionChoice {
-  Home = 1,
-  Draw = 2,
-  Away = 3,
+  Home = 0,
+  Draw = 1,
+  Away = 2,
 }
 
 /**

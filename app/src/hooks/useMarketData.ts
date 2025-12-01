@@ -41,12 +41,13 @@ function parseMarketStatus(status: number): 'Open' | 'Live' | 'Resolved' | 'Canc
 }
 
 // Helper to convert outcome enum from account data
+// Note: Rust enum is 0-indexed (Home=0, Draw=1, Away=2)
 function parseOutcome(outcome: number): 'Home' | 'Draw' | 'Away' | null {
   switch (outcome) {
-    case 0: return null // None
-    case 1: return 'Home'
-    case 2: return 'Draw'
-    case 3: return 'Away'
+    case 0: return 'Home'
+    case 1: return 'Draw'
+    case 2: return 'Away'
+    case 255: return null // None (Option::None is represented as 255)
     default: return null
   }
 }
@@ -123,8 +124,8 @@ export function useAllMarkets() {
         const accounts = await connection.getProgramAccounts(marketProgramId, {
           filters: [
             {
-              // Filter by account size (markets have a specific size)
-              dataSize: 200, // Approximate size, adjust based on actual account structure
+              // Filter by account size (Market::LEN = 193 bytes)
+              dataSize: 193,
             },
           ],
         })
@@ -195,7 +196,7 @@ export function useUserMarkets(userAddress?: string) {
         const accounts = await connection.getProgramAccounts(marketProgramId, {
           filters: [
             {
-              dataSize: 200, // Approximate size
+              dataSize: 193, // Market::LEN = 193 bytes
             },
           ],
         })

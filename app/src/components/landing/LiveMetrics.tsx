@@ -1,6 +1,6 @@
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { memo, useMemo } from 'react'
-import { useMarketStats } from '../../hooks/useMarketStats'
+import { useAllMarkets } from '../../hooks/useMarketData'
 import AnimatedNumber from '../ui/AnimatedNumber'
 
 interface MetricCardProps {
@@ -56,12 +56,12 @@ const MetricCard = memo(({ label, value, suffix = '', icon, color, decimals = 0,
 })
 
 export default function LiveMetrics() {
-  // Fetch market statistics from Dashboard program
-  const { data: stats, isLoading } = useMarketStats()
+  // Fetch all markets and calculate statistics
+  const { data: marketsData, isLoading } = useAllMarkets()
 
-  // Transform stats to display metrics
+  // Calculate metrics from market data
   const metrics = useMemo(() => {
-    if (!stats) {
+    if (!marketsData || marketsData.length === 0) {
       return {
         totalMarkets: 0,
         totalValueLocked: 0,
@@ -70,13 +70,39 @@ export default function LiveMetrics() {
       }
     }
 
+    const now = Date.now() / 1000 // Current time in seconds
+
+    let totalValueLocked = 0
+    let activeTraders = 0
+    let marketsResolved = 0
+    let activeMarkets = 0
+
+    marketsData.forEach((market) => {
+      // Count resolved markets
+      if (market.status === 'Resolved') {
+        marketsResolved++
+      }
+      // Count active markets (Open or Live)
+      else if (market.status === 'Open' || market.status === 'Live') {
+        activeMarkets++
+      }
+
+      // Sum total value locked (only for non-resolved markets)
+      if (market.status !== 'Resolved') {
+        totalValueLocked += market.totalPool
+      }
+
+      // Sum unique participants
+      activeTraders += market.participantCount
+    })
+
     return {
-      totalMarkets: stats.openMarkets + stats.liveMarkets,
-      totalValueLocked: stats.totalVolume / LAMPORTS_PER_SOL, // Convert lamports to SOL
-      activeTraders: stats.totalParticipants,
-      marketsResolved: stats.resolvedMarkets,
+      totalMarkets: activeMarkets,
+      totalValueLocked: totalValueLocked / LAMPORTS_PER_SOL, // Convert lamports to SOL
+      activeTraders,
+      marketsResolved,
     }
-  }, [stats])
+  }, [marketsData])
 
   return (
     <section className="py-16 md:py-24">

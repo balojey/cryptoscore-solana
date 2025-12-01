@@ -1,17 +1,11 @@
 /**
- * DEPRECATED: This hook uses Anchor framework which has been removed.
- *
- * This hook is kept for backward compatibility but will not function correctly
- * without Anchor. Consider implementing an Anchor-free version using:
- * - lib/solana/account-decoder.ts for decoding accounts
- * - Connection.getProgramAccounts() for fetching markets
- * - hooks/useMarketData.ts for Anchor-free market data fetching
+ * Dashboard data hooks using Anchor-free implementation
+ * Fetches market data using Connection.getProgramAccounts() and AccountDecoder
  */
 
 import type { Market, MarketDashboardInfo } from '../types'
-import { useConnection, useWallet } from '@solana/wallet-adapter-react'
-import { useQuery } from '@tanstack/react-query'
-import { useCallback, useRef } from 'react'
+import { useMemo } from 'react'
+import { useAllMarkets as useAllMarketsData, useUserMarkets as useUserMarketsData } from './useMarketData'
 
 export interface DashboardData {
   createdMarkets: MarketDashboardInfo[]
@@ -22,64 +16,72 @@ export interface DashboardData {
 }
 
 /**
- * @deprecated Anchor framework removed - this hook will not function
+ * Helper to transform MarketData to MarketDashboardInfo
+ */
+function transformToMarketDashboardInfo(marketData: any): MarketDashboardInfo {
+  return {
+    marketAddress: marketData.marketAddress,
+    matchId: BigInt(marketData.matchId || '0'),
+    entryFee: BigInt(marketData.entryFee),
+    creator: marketData.creator,
+    participantsCount: BigInt(marketData.participantCount),
+    resolved: marketData.status === 'Resolved',
+    isPublic: marketData.isPublic,
+    startTime: BigInt(marketData.kickoffTime),
+    homeCount: BigInt(marketData.homeCount),
+    awayCount: BigInt(marketData.awayCount),
+    drawCount: BigInt(marketData.drawCount),
+    totalPool: BigInt(marketData.totalPool),
+    status: marketData.status,
+    outcome: marketData.outcome,
+  }
+}
+
+/**
  * Hook for fetching user dashboard data (created and joined markets)
- * Uses Solana Dashboard program's getUserMarkets view function
+ * Uses useUserMarkets to fetch markets where user is creator
  */
 export function useDashboardData(userAddress?: string): DashboardData {
-  const { connection } = useConnection()
-  const wallet = useWallet()
-  const lastFetchTime = useRef<number>(0)
-  const rateLimitDelay = 2000 // Minimum 2 seconds between requests
+  const { data: userMarketsData, isLoading, error } = useUserMarketsData(userAddress)
 
-  const fetchUserMarkets = useCallback(async (): Promise<{
-    createdMarkets: MarketDashboardInfo[]
-    joinedMarkets: MarketDashboardInfo[]
-  }> => {
-    console.warn('useDashboardData: Anchor framework has been removed. This hook will not function correctly.')
-    console.warn('Use hooks/useMarketData.ts (useUserMarkets) for Anchor-free market fetching.')
-    return {
-      createdMarkets: [],
-      joinedMarkets: [],
+  // Transform and categorize markets
+  const { createdMarkets, joinedMarkets, allInvolvedMarkets } = useMemo(() => {
+    if (!userMarketsData || userMarketsData.length === 0) {
+      return {
+        createdMarkets: [],
+        joinedMarkets: [],
+        allInvolvedMarkets: [],
+      }
     }
-  }, [connection, wallet, userAddress])
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['dashboard', 'user', userAddress],
-    queryFn: fetchUserMarkets,
-    enabled: !!userAddress,
-    staleTime: 10000, // 10 seconds
-    refetchInterval: 10000, // Refetch every 10 seconds for real-time updates
-    retry: 3,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
-  })
+    // Transform all markets
+    const transformed = userMarketsData.map(transformToMarketDashboardInfo)
 
-  // Combine and deduplicate markets
-  const allInvolvedMarkets = (() => {
-    if (!data)
-      return []
+    // For now, all markets from useUserMarkets are created markets
+    // TODO: Implement participant tracking to identify joined markets
+    const created = transformed
+    const joined: MarketDashboardInfo[] = []
 
-    const combinedMarkets = [
-      ...(data.createdMarkets || []),
-      ...(data.joinedMarkets || []),
-    ]
-
-    // Remove duplicates based on marketAddress
+    // Combine and deduplicate
     const uniqueMarketsMap = new Map<string, MarketDashboardInfo>()
-    combinedMarkets.forEach((market) => {
+    ;[...created, ...joined].forEach((market) => {
       uniqueMarketsMap.set(market.marketAddress, market)
     })
 
-    // Convert back to array and sort by starting date (newest first)
-    const uniqueMarkets = Array.from(uniqueMarketsMap.values())
-    uniqueMarkets.sort((a, b) => Number(b.startTime) - Number(a.startTime))
+    // Sort by start time (newest first)
+    const allMarkets = Array.from(uniqueMarketsMap.values())
+    allMarkets.sort((a, b) => Number(b.startTime) - Number(a.startTime))
 
-    return uniqueMarkets
-  })()
+    return {
+      createdMarkets: created,
+      joinedMarkets: joined,
+      allInvolvedMarkets: allMarkets,
+    }
+  }, [userMarketsData])
 
   return {
-    createdMarkets: data?.createdMarkets || [],
-    joinedMarkets: data?.joinedMarkets || [],
+    createdMarkets,
+    joinedMarkets,
     allInvolvedMarkets,
     isLoading,
     error: error as Error | null,
@@ -87,9 +89,8 @@ export function useDashboardData(userAddress?: string): DashboardData {
 }
 
 /**
- * @deprecated Anchor framework removed - this hook will not function
- * Hook for fetching all markets from dashboard
- * Uses Solana Dashboard program's getAllMarkets view function
+ * Hook for fetching all markets
+ * Uses useAllMarkets from useMarketData with filtering options
  */
 export function useAllMarkets(options: {
   page?: number
@@ -97,84 +98,73 @@ export function useAllMarkets(options: {
   publicOnly?: boolean
   enabled?: boolean
 } = {}) {
-  const { page = 0, pageSize = 100, publicOnly = false, enabled = true } = options
-  const { connection } = useConnection()
-  const wallet = useWallet()
-  const lastFetchTime = useRef<number>(0)
-  const rateLimitDelay = 2000
+  const { publicOnly = false } = options
+  const { data: marketsData, isLoading, error, refetch } = useAllMarketsData()
 
-  const fetchDashboardData = useCallback(async (): Promise<Market[]> => {
-    console.warn('useAllMarkets: Anchor framework has been removed. This hook will not function correctly.')
-    console.warn('Use hooks/useMarketData.ts (useAllMarkets) for Anchor-free market fetching.')
-    return []
-  }, [connection, wallet, page, pageSize, publicOnly])
+  // Transform and filter markets
+  const markets = useMemo(() => {
+    if (!marketsData || marketsData.length === 0) return []
 
-  return useQuery({
-    queryKey: ['dashboard', 'markets', page, pageSize, publicOnly],
-    queryFn: fetchDashboardData,
-    enabled,
-    staleTime: 15000, // 15 seconds
-    refetchInterval: 30000, // Refetch every 30 seconds
-    retry: 3,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-  })
+    let filtered = marketsData
+
+    // Filter by visibility if requested
+    if (publicOnly) {
+      filtered = filtered.filter(m => m.isPublic)
+    }
+
+    // Transform to Market type
+    return filtered.map(m => ({
+      marketAddress: m.marketAddress,
+      matchId: BigInt(m.matchId || '0'),
+      entryFee: BigInt(m.entryFee),
+      creator: m.creator,
+      participantsCount: BigInt(m.participantCount),
+      resolved: m.status === 'Resolved',
+      isPublic: m.isPublic,
+      startTime: BigInt(m.kickoffTime),
+      homeCount: BigInt(m.homeCount),
+      awayCount: BigInt(m.awayCount),
+      drawCount: BigInt(m.drawCount),
+    }))
+  }, [marketsData, publicOnly])
+
+  return {
+    data: markets,
+    isLoading,
+    error,
+    refetch,
+  }
 }
 
 /**
- * @deprecated Anchor framework removed - this hook will not function
  * Hook for fetching all markets from factory
- * Uses Solana Factory program's getMarkets view function
- * Used by MetricsBar component
+ * Alias for useAllMarkets for backward compatibility
  */
 export function useFactoryMarkets(options: { enabled?: boolean } = {}) {
-  const { enabled = true } = options
-  const { connection } = useConnection()
-  const wallet = useWallet()
-  const lastFetchTime = useRef<number>(0)
-  const rateLimitDelay = 2000
-
-  const fetchFactoryMarkets = useCallback(async (): Promise<Market[]> => {
-    console.warn('useFactoryMarkets: Anchor framework has been removed. This hook will not function correctly.')
-    console.warn('Use hooks/useMarketData.ts (useAllMarkets) for Anchor-free market fetching.')
-    return []
-  }, [connection, wallet])
-
-  return useQuery({
-    queryKey: ['factory', 'markets'],
-    queryFn: fetchFactoryMarkets,
-    enabled,
-    staleTime: 15000,
-    refetchInterval: 30000,
-    retry: 3,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-  })
+  return useAllMarkets(options)
 }
 
 /**
- * @deprecated Anchor framework removed - this hook will not function
- * Hook for fetching detailed market data
- * Fetches Market account data from Solana for multiple addresses
- * Used by MetricsBar component
+ * Hook for fetching detailed market data for multiple addresses
+ * Returns all markets and filters by the provided addresses
  */
 export function useMarketDetails(marketAddresses: string[], options: { enabled?: boolean } = {}) {
   const { enabled = true } = options
-  const { connection } = useConnection()
-  const wallet = useWallet()
-  const lastFetchTime = useRef<number>(0)
-  const rateLimitDelay = 2000
+  const { data: allMarketsData, isLoading, error } = useAllMarketsData()
 
-  const fetchMarketDetails = useCallback(async () => {
-    console.warn('useMarketDetails: Anchor framework has been removed. This hook will not function correctly.')
-    console.warn('Use hooks/useMarketData.ts (useMarketData) for Anchor-free market fetching.')
-    return []
-  }, [connection, wallet, marketAddresses])
+  const markets = useMemo(() => {
+    if (!allMarketsData || marketAddresses.length === 0) return []
 
-  return useQuery({
-    queryKey: ['markets', 'details', marketAddresses],
-    queryFn: fetchMarketDetails,
-    enabled: enabled && marketAddresses.length > 0,
-    staleTime: 15000,
-    retry: 3,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-  })
+    // Filter markets by addresses
+    const addressSet = new Set(marketAddresses)
+    return allMarketsData
+      .filter(m => addressSet.has(m.marketAddress))
+      .map(transformToMarketDashboardInfo)
+  }, [allMarketsData, marketAddresses])
+
+  return {
+    data: markets,
+    isLoading: enabled ? isLoading : false,
+    error,
+  }
 }
