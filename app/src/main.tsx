@@ -1,3 +1,4 @@
+import { Buffer } from 'buffer'
 import type { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react'
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
@@ -14,6 +15,9 @@ import App from './App.tsx'
 
 import './style.css'
 import '@solana/wallet-adapter-react-ui/styles.css'
+
+// Polyfill Buffer for browser
+window.Buffer = Buffer
 
 const queryClient = new QueryClient()
 
