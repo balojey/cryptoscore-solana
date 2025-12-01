@@ -8,7 +8,7 @@ import { MARKET_PROGRAM_ID } from '../../config/programs'
 import { AccountDecoder } from '../../lib/solana/account-decoder'
 import { PDAUtils } from '../../lib/solana/pda-utils'
 import { useSolanaConnection } from '../../hooks/useSolanaConnection'
-import { formatSOL } from '../../utils/formatters'
+import { useCurrency } from '../../hooks/useCurrency'
 
 interface PortfolioSummaryProps {
   userAddress?: string
@@ -19,6 +19,7 @@ interface PortfolioSummaryProps {
 export default function PortfolioSummary({ userAddress, joinedMarkets = [], allMarkets }: PortfolioSummaryProps) {
   const { publicKey } = useWallet()
   const { connection } = useSolanaConnection()
+  const { formatCurrency, currency } = useCurrency()
   const walletAddress = userAddress || publicKey?.toString()
 
   // Use allMarkets if provided, otherwise fall back to joinedMarkets
@@ -280,14 +281,29 @@ export default function PortfolioSummary({ userAddress, joinedMarkets = [], allM
     </Card>
   )
 
+  // Format portfolio value with SOL equivalent
+  const portfolioValueLamports = stats.totalValue * 1_000_000_000
+  const portfolioValueFormatted = formatCurrency(portfolioValueLamports, { showSymbol: true })
+  const portfolioValueSubtitle = currency !== 'SOL' 
+    ? formatCurrency(portfolioValueLamports, { targetCurrency: 'SOL', showSymbol: true })
+    : 'Invested + profits'
+
+  // Format P&L with SOL equivalent
+  const pnlLamports = Math.abs(stats.totalPnL) * 1_000_000_000
+  const pnlSign = stats.totalPnL >= 0 ? '+' : '-'
+  const pnlFormatted = `${pnlSign}${formatCurrency(pnlLamports, { showSymbol: true })}`
+  const pnlSubtitle = currency !== 'SOL'
+    ? formatCurrency(pnlLamports, { targetCurrency: 'SOL', showSymbol: true })
+    : stats.totalPnL >= 0 ? 'Profit' : 'Loss'
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard
         label="Portfolio Value"
-        value={formatSOL(stats.totalValue * 1_000_000_000, 2)} // Convert back to lamports for formatting
+        value={portfolioValueFormatted}
         icon="mdi--wallet-outline"
         color="var(--accent-cyan)"
-        subtitle="Invested + profits"
+        subtitle={portfolioValueSubtitle}
       />
 
       <StatCard
@@ -309,10 +325,10 @@ export default function PortfolioSummary({ userAddress, joinedMarkets = [], allM
 
       <StatCard
         label="P&L"
-        value={`${stats.totalPnL >= 0 ? '+' : ''}${formatSOL(Math.abs(stats.totalPnL) * 1_000_000_000, 2, false)} SOL`}
+        value={pnlFormatted}
         icon="mdi--chart-line"
         color={stats.totalPnL >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}
-        subtitle={stats.totalPnL >= 0 ? 'Profit' : 'Loss'}
+        subtitle={pnlSubtitle}
         trend={stats.totalPnL > 0 ? 'up' : stats.totalPnL < 0 ? 'down' : 'neutral'}
       />
     </div>

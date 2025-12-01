@@ -17,11 +17,11 @@ export class ExchangeRateService {
 
   // CoinGecko Free API (no auth required)
   private static readonly COINGECKO_URL = 
-    'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd,ngn'
+    'https://corsproxy.io/?https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd,ngn'
   
   // CryptoCompare fallback API
   private static readonly CRYPTOCOMPARE_URL = 
-    'https://min-api.cryptocompare.com/data/price?fsym=SOL&tsyms=USD,NGN'
+    'https://corsproxy.io/?https://min-api.cryptocompare.com/data/price?fsym=SOL&tsyms=USD,NGN'
 
   /**
    * Fetch current exchange rates from API

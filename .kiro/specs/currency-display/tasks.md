@@ -45,7 +45,7 @@
   - Ensure provider is at same level as ThemeProvider
   - _Requirements: 1.2, 1.3, 1.5_
 
-- [-] 7. Update PortfolioSummary component
+- [x] 7. Update PortfolioSummary component
   - Replace formatSOL calls with formatCurrency from useCurrency hook
   - Add SOL equivalent display for converted values
   - Update all stat cards to show values in selected currency
