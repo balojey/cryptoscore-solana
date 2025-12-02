@@ -18,12 +18,12 @@ export class ExchangeRateService {
   // CoinGecko API (supports both free and pro with API key)
   private static readonly COINGECKO_API_KEY = import.meta.env.VITE_COINGECKO_API_KEY || ''
   private static readonly COINGECKO_URL = this.COINGECKO_API_KEY
-    ? `https://corsproxy.io/?https://pro-api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd,ngn&x_cg_pro_api_key=${this.COINGECKO_API_KEY}`
-    : 'https://corsproxy.io/?https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd,ngn'
+    ? `https://pro-api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd,ngn&x_cg_pro_api_key=${this.COINGECKO_API_KEY}`
+    : 'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd,ngn'
 
   // CryptoCompare fallback API
   private static readonly CRYPTOCOMPARE_URL
-    = 'https://corsproxy.io/?https://min-api.cryptocompare.com/data/price?fsym=SOL&tsyms=USD,NGN'
+    = 'https://min-api.cryptocompare.com/data/price?fsym=SOL&tsyms=USD,NGN'
 
   // Jupiter Price API (Solana-native, no auth required)
   private static readonly JUPITER_URL
