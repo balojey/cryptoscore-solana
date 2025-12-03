@@ -10,7 +10,9 @@ import type { Transaction, VersionedTransaction } from '@solana/web3.js'
 import { useAuth, useWallet as useCrossmintWallet, type Wallet, type Chain } from '@crossmint/client-sdk-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { PublicKey } from '@solana/web3.js'
-import React, { createContext, use, useCallback, useMemo, useState } from 'react'
+import React, { createContext, use, useCallback, useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
+import { WALLET_ERROR_CODES, WalletErrorHandler } from '@/lib/crossmint/wallet-error-handler'
 
 /**
  * Wallet type discriminator
@@ -90,6 +92,7 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
   // Track internal connection state
   const [isConnecting, setIsConnecting] = useState(false)
   const [isDisconnecting, setIsDisconnecting] = useState(false)
+  const [hasShownSessionExpiredWarning, setHasShownSessionExpiredWarning] = useState(false)
 
   // Determine which wallet type is active
   const walletType: WalletType = useMemo(() => {
@@ -201,15 +204,24 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
       if (walletType === 'crossmint') {
         // Logout from Crossmint
         await crossmintAuth.logout()
+        toast.success('Disconnected successfully')
       }
       else if (walletType === 'adapter') {
         // Disconnect adapter wallet
         await adapterWallet.disconnect()
+        toast.success('Wallet disconnected')
       }
     }
     catch (error) {
-      console.error('Failed to disconnect wallet:', error)
-      throw error
+      // Use WalletErrorHandler to parse and log the error
+      WalletErrorHandler.logError(error, 'disconnect', walletType)
+      const walletError = WalletErrorHandler.parseError(error, walletType, 'disconnect')
+
+      // Get user-friendly error message
+      const errorMessage = WalletErrorHandler.getUserMessage(walletError)
+      toast.error(errorMessage)
+
+      throw walletError
     }
     finally {
       setIsDisconnecting(false)
@@ -293,6 +305,39 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
 
     throw new Error('No wallet connected')
   }, [connected, walletType, adapterWallet])
+
+  // Monitor Crossmint authentication state for session expiration
+  useEffect(() => {
+    // Only monitor if we were previously authenticated with Crossmint
+    if (walletType === 'crossmint' && !crossmintAuth.isAuthenticated && !hasShownSessionExpiredWarning) {
+      // Session may have expired
+      setHasShownSessionExpiredWarning(true)
+
+      // Show re-authentication prompt
+      toast.error('Your session has expired. Please sign in again.', {
+        duration: 6000,
+        action: {
+          label: 'Sign In',
+          onClick: () => {
+            // Trigger re-authentication
+            // This would typically open the auth modal
+            console.log('Re-authentication requested')
+          },
+        },
+      })
+
+      WalletErrorHandler.logError(
+        new Error('Session expired'),
+        'sessionMonitor',
+        'crossmint',
+      )
+    }
+
+    // Reset warning flag when user reconnects
+    if (crossmintAuth.isAuthenticated && hasShownSessionExpiredWarning) {
+      setHasShownSessionExpiredWarning(false)
+    }
+  }, [walletType, crossmintAuth.isAuthenticated, hasShownSessionExpiredWarning])
 
   // Create context value
   const value: UnifiedWalletContextType = useMemo(

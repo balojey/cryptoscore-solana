@@ -3,9 +3,10 @@ import { useConnection } from '@solana/wallet-adapter-react'
 import { PublicKey, SystemProgram } from '@solana/web3.js'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useState } from 'react'
-import { toast } from 'react-hot-toast'
+import { toast } from 'sonner'
 import { FACTORY_PROGRAM_ID, MARKET_PROGRAM_ID } from '../config/programs'
 import { useUnifiedWallet } from '../contexts/UnifiedWalletContext'
+import { WALLET_ERROR_CODES, WalletErrorHandler } from '../lib/crossmint/wallet-error-handler'
 import { SolanaErrorHandler } from '../lib/solana/error-handler'
 import { InstructionEncoder } from '../lib/solana/instruction-encoder'
 import { PDAUtils } from '../lib/solana/pda-utils'
@@ -95,43 +96,78 @@ export function useMarketActions() {
    */
   const signAndSendTransaction = useCallback(async (
     transaction: any,
+    operationName: string,
   ): Promise<string> => {
     if (!publicKey) {
-      throw new Error('Wallet not connected')
+      const error = WalletErrorHandler.parseError(
+        new Error('Wallet not connected'),
+        walletType,
+        operationName,
+      )
+      throw error
     }
 
-    // For adapter wallets, use the standard sign and send flow
-    if (walletType === 'adapter') {
-      // Sign the transaction
-      const signedTx = await signTransaction(transaction)
+    try {
+      // For adapter wallets, use the standard sign and send flow
+      if (walletType === 'adapter') {
+        // Sign the transaction
+        toast.info('Please approve the transaction in your wallet...')
+        const signedTx = await signTransaction(transaction)
 
-      // Send the signed transaction
-      const signature = await connection.sendRawTransaction(signedTx.serialize(), {
-        skipPreflight: false,
-        preflightCommitment: 'confirmed',
-      })
+        // Send the signed transaction
+        toast.info('Sending transaction...')
+        const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+          skipPreflight: false,
+          preflightCommitment: 'confirmed',
+        })
 
-      return signature
+        return signature
+      }
+
+      // For Crossmint wallets, we need to use a different approach
+      // Crossmint handles signing internally, so we just send the transaction
+      if (walletType === 'crossmint') {
+        // Crossmint wallets require using their SDK's transaction methods
+        // For now, we'll sign and send using the standard flow
+        // The Crossmint wallet adapter should handle the signing internally
+        toast.info('Please approve the transaction...')
+        const signedTx = await signTransaction(transaction)
+
+        // Send the signed transaction
+        toast.info('Sending transaction...')
+        const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+          skipPreflight: false,
+          preflightCommitment: 'confirmed',
+        })
+
+        return signature
+      }
+
+      throw new Error('Unknown wallet type')
     }
+    catch (error) {
+      // Parse the error using WalletErrorHandler
+      const walletError = WalletErrorHandler.parseError(error, walletType, operationName)
 
-    // For Crossmint wallets, we need to use a different approach
-    // Crossmint handles signing internally, so we just send the transaction
-    if (walletType === 'crossmint') {
-      // Crossmint wallets require using their SDK's transaction methods
-      // For now, we'll sign and send using the standard flow
-      // The Crossmint wallet adapter should handle the signing internally
-      const signedTx = await signTransaction(transaction)
+      // Log the error for debugging
+      WalletErrorHandler.logError(error, operationName, walletType)
 
-      // Send the signed transaction
-      const signature = await connection.sendRawTransaction(signedTx.serialize(), {
-        skipPreflight: false,
-        preflightCommitment: 'confirmed',
-      })
+      // Handle specific error types
+      if (walletError.code === WALLET_ERROR_CODES.TRANSACTION_REJECTED) {
+        toast.error('Transaction was rejected')
+      }
+      else if (walletError.code === WALLET_ERROR_CODES.INSUFFICIENT_FUNDS) {
+        toast.error('Insufficient funds to complete this transaction')
+      }
+      else if (walletError.code === WALLET_ERROR_CODES.NETWORK_ERROR) {
+        toast.error('Network error. Please check your connection and try again.')
+      }
+      else if (WalletErrorHandler.requiresReauth(walletError)) {
+        toast.error('Your session has expired. Please sign in again.')
+      }
 
-      return signature
+      throw walletError
     }
-
-    throw new Error('Unknown wallet type')
   }, [publicKey, walletType, signTransaction, connection])
 
   /**
@@ -209,30 +245,58 @@ export function useMarketActions() {
       }
 
       // Sign and send transaction using unified wallet interface
-      const signature = await signAndSendTransaction(transaction)
+      const signature = await signAndSendTransaction(transaction, 'createMarket')
 
       console.log('Transaction sent:', signature)
+      toast.info('Confirming transaction...')
 
       // Confirm transaction with retry logic
       const confirmed = await SolanaUtils.confirmTransaction(connection, signature)
 
       if (!confirmed) {
-        throw new Error('Transaction confirmation failed')
+        const error = WalletErrorHandler.parseError(
+          new Error('Transaction confirmation failed'),
+          walletType,
+          'createMarket',
+        )
+        throw error
       }
 
       setTxSignature(signature)
 
       // Handle success with toast notification and cache invalidation
-      toast.success('Market created successfully!')
+      toast.success('Market created successfully!', {
+        description: 'Your market is now live',
+        action: {
+          label: 'View',
+          onClick: () => {
+            window.open(SolanaUtils.getExplorerUrl(signature, import.meta.env.VITE_SOLANA_NETWORK || 'devnet'), '_blank')
+          },
+        },
+      })
       queryClient.invalidateQueries({ queryKey: ['markets'] })
 
       return signature
     }
     catch (error: any) {
-      // Handle errors with SolanaErrorHandler
+      // Check if it's already a WalletError
+      if (error.name === 'WalletError') {
+        // Already handled by signAndSendTransaction
+        return null
+      }
+
+      // Handle errors with both handlers for backward compatibility
       SolanaErrorHandler.logError(error, 'createMarket')
-      const errorMessage = SolanaErrorHandler.getUserMessage(error)
-      toast.error(errorMessage)
+      WalletErrorHandler.logError(error, 'createMarket', walletType)
+
+      const walletError = WalletErrorHandler.parseError(error, walletType, 'createMarket')
+      const errorMessage = WalletErrorHandler.getUserMessage(walletError)
+
+      // Only show toast if not already shown by signAndSendTransaction
+      if (!error.message?.includes('rejected') && !error.message?.includes('insufficient')) {
+        toast.error(errorMessage)
+      }
+
       return null
     }
     finally {
@@ -311,29 +375,58 @@ export function useMarketActions() {
       }
 
       // Sign and send transaction using unified wallet interface
-      const signature = await signAndSendTransaction(transaction)
+      const signature = await signAndSendTransaction(transaction, 'joinMarket')
 
       console.log('Transaction sent:', signature)
+      toast.info('Confirming transaction...')
 
       const confirmed = await SolanaUtils.confirmTransaction(connection, signature)
 
       if (!confirmed) {
-        throw new Error('Transaction confirmation failed')
+        const error = WalletErrorHandler.parseError(
+          new Error('Transaction confirmation failed'),
+          walletType,
+          'joinMarket',
+        )
+        throw error
       }
 
       setTxSignature(signature)
 
       // Handle success and errors appropriately
-      toast.success('Joined market successfully!')
+      toast.success('Joined market successfully!', {
+        description: 'Your prediction has been recorded',
+        action: {
+          label: 'View',
+          onClick: () => {
+            window.open(SolanaUtils.getExplorerUrl(signature, import.meta.env.VITE_SOLANA_NETWORK || 'devnet'), '_blank')
+          },
+        },
+      })
       queryClient.invalidateQueries({ queryKey: ['markets'] })
       queryClient.invalidateQueries({ queryKey: ['market', 'details', params.marketAddress] })
 
       return signature
     }
     catch (error: any) {
+      // Check if it's already a WalletError
+      if (error.name === 'WalletError') {
+        // Already handled by signAndSendTransaction
+        return null
+      }
+
+      // Handle errors with both handlers for backward compatibility
       SolanaErrorHandler.logError(error, 'joinMarket')
-      const errorMessage = SolanaErrorHandler.getUserMessage(error)
-      toast.error(errorMessage)
+      WalletErrorHandler.logError(error, 'joinMarket', walletType)
+
+      const walletError = WalletErrorHandler.parseError(error, walletType, 'joinMarket')
+      const errorMessage = WalletErrorHandler.getUserMessage(walletError)
+
+      // Only show toast if not already shown by signAndSendTransaction
+      if (!error.message?.includes('rejected') && !error.message?.includes('insufficient')) {
+        toast.error(errorMessage)
+      }
+
       return null
     }
     finally {
@@ -404,29 +497,58 @@ export function useMarketActions() {
       }
 
       // Sign and send transaction using unified wallet interface
-      const signature = await signAndSendTransaction(transaction)
+      const signature = await signAndSendTransaction(transaction, 'resolveMarket')
 
       console.log('Transaction sent:', signature)
+      toast.info('Confirming transaction...')
 
       const confirmed = await SolanaUtils.confirmTransaction(connection, signature)
 
       if (!confirmed) {
-        throw new Error('Transaction confirmation failed')
+        const error = WalletErrorHandler.parseError(
+          new Error('Transaction confirmation failed'),
+          walletType,
+          'resolveMarket',
+        )
+        throw error
       }
 
       setTxSignature(signature)
 
       // Handle success and errors appropriately
-      toast.success('Market resolved successfully!')
+      toast.success('Market resolved successfully!', {
+        description: 'Winners can now withdraw their rewards',
+        action: {
+          label: 'View',
+          onClick: () => {
+            window.open(SolanaUtils.getExplorerUrl(signature, import.meta.env.VITE_SOLANA_NETWORK || 'devnet'), '_blank')
+          },
+        },
+      })
       queryClient.invalidateQueries({ queryKey: ['markets'] })
       queryClient.invalidateQueries({ queryKey: ['market', 'details', params.marketAddress] })
 
       return signature
     }
     catch (error: any) {
+      // Check if it's already a WalletError
+      if (error.name === 'WalletError') {
+        // Already handled by signAndSendTransaction
+        return null
+      }
+
+      // Handle errors with both handlers for backward compatibility
       SolanaErrorHandler.logError(error, 'resolveMarket')
-      const errorMessage = SolanaErrorHandler.getUserMessage(error)
-      toast.error(errorMessage)
+      WalletErrorHandler.logError(error, 'resolveMarket', walletType)
+
+      const walletError = WalletErrorHandler.parseError(error, walletType, 'resolveMarket')
+      const errorMessage = WalletErrorHandler.getUserMessage(walletError)
+
+      // Only show toast if not already shown by signAndSendTransaction
+      if (!error.message?.includes('rejected') && !error.message?.includes('insufficient')) {
+        toast.error(errorMessage)
+      }
+
       return null
     }
     finally {
@@ -495,20 +617,34 @@ export function useMarketActions() {
       }
 
       // Sign and send transaction using unified wallet interface
-      const signature = await signAndSendTransaction(transaction)
+      const signature = await signAndSendTransaction(transaction, 'withdrawRewards')
 
       console.log('Transaction sent:', signature)
+      toast.info('Confirming transaction...')
 
       const confirmed = await SolanaUtils.confirmTransaction(connection, signature)
 
       if (!confirmed) {
-        throw new Error('Transaction confirmation failed')
+        const error = WalletErrorHandler.parseError(
+          new Error('Transaction confirmation failed'),
+          walletType,
+          'withdrawRewards',
+        )
+        throw error
       }
 
       setTxSignature(signature)
 
       // Handle success with celebration and cache invalidation
-      toast.success('🎉 Rewards withdrawn successfully!')
+      toast.success('🎉 Rewards withdrawn successfully!', {
+        description: 'Your winnings have been transferred to your wallet',
+        action: {
+          label: 'View',
+          onClick: () => {
+            window.open(SolanaUtils.getExplorerUrl(signature, import.meta.env.VITE_SOLANA_NETWORK || 'devnet'), '_blank')
+          },
+        },
+      })
       queryClient.invalidateQueries({ queryKey: ['markets'] })
       queryClient.invalidateQueries({ queryKey: ['market', 'details', marketAddress] })
       queryClient.invalidateQueries({ queryKey: ['user'] })
@@ -516,9 +652,24 @@ export function useMarketActions() {
       return signature
     }
     catch (error: any) {
+      // Check if it's already a WalletError
+      if (error.name === 'WalletError') {
+        // Already handled by signAndSendTransaction
+        return null
+      }
+
+      // Handle errors with both handlers for backward compatibility
       SolanaErrorHandler.logError(error, 'withdrawRewards')
-      const errorMessage = SolanaErrorHandler.getUserMessage(error)
-      toast.error(errorMessage)
+      WalletErrorHandler.logError(error, 'withdrawRewards', walletType)
+
+      const walletError = WalletErrorHandler.parseError(error, walletType, 'withdrawRewards')
+      const errorMessage = WalletErrorHandler.getUserMessage(walletError)
+
+      // Only show toast if not already shown by signAndSendTransaction
+      if (!error.message?.includes('rejected') && !error.message?.includes('insufficient')) {
+        toast.error(errorMessage)
+      }
+
       return null
     }
     finally {

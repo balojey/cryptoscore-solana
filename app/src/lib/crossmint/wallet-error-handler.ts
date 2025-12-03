@@ -1,0 +1,367 @@
+/**
+ * Wallet Error Handler
+ *
+ * Provides error handling utilities for both Crossmint and traditional
+ * wallet operations, including authentication and transaction errors.
+ */
+
+import type { WalletType } from '@/contexts/UnifiedWalletContext'
+
+/**
+ * Error codes for wallet operations
+ */
+export const WALLET_ERROR_CODES = {
+  // Authentication errors
+  AUTH_FAILED: 'AUTH_FAILED',
+  AUTH_CANCELLED: 'AUTH_CANCELLED',
+  AUTH_TIMEOUT: 'AUTH_TIMEOUT',
+  SESSION_EXPIRED: 'SESSION_EXPIRED',
+  TOKEN_REFRESH_FAILED: 'TOKEN_REFRESH_FAILED',
+  INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
+
+  // Connection errors
+  CONNECTION_FAILED: 'CONNECTION_FAILED',
+  CONNECTION_REJECTED: 'CONNECTION_REJECTED',
+  WALLET_NOT_FOUND: 'WALLET_NOT_FOUND',
+  WALLET_NOT_CONNECTED: 'WALLET_NOT_CONNECTED',
+  NETWORK_MISMATCH: 'NETWORK_MISMATCH',
+
+  // Transaction errors
+  TRANSACTION_REJECTED: 'TRANSACTION_REJECTED',
+  TRANSACTION_FAILED: 'TRANSACTION_FAILED',
+  TRANSACTION_TIMEOUT: 'TRANSACTION_TIMEOUT',
+  INSUFFICIENT_FUNDS: 'INSUFFICIENT_FUNDS',
+  SIGNING_FAILED: 'SIGNING_FAILED',
+  SIMULATION_FAILED: 'SIMULATION_FAILED',
+
+  // Network errors
+  NETWORK_ERROR: 'NETWORK_ERROR',
+  RPC_ERROR: 'RPC_ERROR',
+  RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
+
+  // Configuration errors
+  CONFIG_ERROR: 'CONFIG_ERROR',
+  INVALID_API_KEY: 'INVALID_API_KEY',
+  MISSING_ENVIRONMENT: 'MISSING_ENVIRONMENT',
+
+  // Generic errors
+  UNKNOWN_ERROR: 'UNKNOWN_ERROR',
+} as const
+
+export type WalletErrorCode = typeof WALLET_ERROR_CODES[keyof typeof WALLET_ERROR_CODES]
+
+/**
+ * Custom error class for wallet operations
+ */
+export class WalletError extends Error {
+  constructor(
+    message: string,
+    public code: WalletErrorCode,
+    public walletType: WalletType,
+    public originalError?: unknown,
+  ) {
+    super(message)
+    this.name = 'WalletError'
+
+    // Maintain proper stack trace for where our error was thrown (only available on V8)
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, WalletError)
+    }
+  }
+}
+
+/**
+ * User-friendly error messages mapped to error codes
+ */
+const ERROR_MESSAGES: Record<WalletErrorCode, string> = {
+  // Authentication errors
+  [WALLET_ERROR_CODES.AUTH_FAILED]: 'Authentication failed. Please try again.',
+  [WALLET_ERROR_CODES.AUTH_CANCELLED]: 'Authentication was cancelled.',
+  [WALLET_ERROR_CODES.AUTH_TIMEOUT]: 'Authentication timed out. Please try again.',
+  [WALLET_ERROR_CODES.SESSION_EXPIRED]: 'Your session has expired. Please sign in again.',
+  [WALLET_ERROR_CODES.TOKEN_REFRESH_FAILED]: 'Failed to refresh session. Please sign in again.',
+  [WALLET_ERROR_CODES.INVALID_CREDENTIALS]: 'Invalid credentials. Please check and try again.',
+
+  // Connection errors
+  [WALLET_ERROR_CODES.CONNECTION_FAILED]: 'Failed to connect wallet. Please try again.',
+  [WALLET_ERROR_CODES.CONNECTION_REJECTED]: 'Wallet connection was rejected.',
+  [WALLET_ERROR_CODES.WALLET_NOT_FOUND]: 'Wallet not found. Please install a wallet extension.',
+  [WALLET_ERROR_CODES.WALLET_NOT_CONNECTED]: 'Wallet not connected. Please connect your wallet first.',
+  [WALLET_ERROR_CODES.NETWORK_MISMATCH]: 'Network mismatch. Please switch to the correct network.',
+
+  // Transaction errors
+  [WALLET_ERROR_CODES.TRANSACTION_REJECTED]: 'Transaction was rejected.',
+  [WALLET_ERROR_CODES.TRANSACTION_FAILED]: 'Transaction failed. Please try again.',
+  [WALLET_ERROR_CODES.TRANSACTION_TIMEOUT]: 'Transaction timed out. Please check your wallet.',
+  [WALLET_ERROR_CODES.INSUFFICIENT_FUNDS]: 'Insufficient funds to complete this transaction.',
+  [WALLET_ERROR_CODES.SIGNING_FAILED]: 'Failed to sign transaction. Please try again.',
+  [WALLET_ERROR_CODES.SIMULATION_FAILED]: 'Transaction simulation failed. This transaction may not succeed.',
+
+  // Network errors
+  [WALLET_ERROR_CODES.NETWORK_ERROR]: 'Network error. Please check your connection and try again.',
+  [WALLET_ERROR_CODES.RPC_ERROR]: 'RPC error. The network may be experiencing issues.',
+  [WALLET_ERROR_CODES.RATE_LIMIT_EXCEEDED]: 'Rate limit exceeded. Please wait a moment and try again.',
+
+  // Configuration errors
+  [WALLET_ERROR_CODES.CONFIG_ERROR]: 'Configuration error. Please contact support.',
+  [WALLET_ERROR_CODES.INVALID_API_KEY]: 'Invalid API key. Please check your configuration.',
+  [WALLET_ERROR_CODES.MISSING_ENVIRONMENT]: 'Missing environment configuration. Please contact support.',
+
+  // Generic errors
+  [WALLET_ERROR_CODES.UNKNOWN_ERROR]: 'An unexpected error occurred. Please try again.',
+}
+
+/**
+ * Wallet Error Handler utility class
+ */
+export class WalletErrorHandler {
+  /**
+   * Parse an error and return a WalletError with appropriate code
+   */
+  static parseError(error: unknown, walletType: WalletType, context?: string): WalletError {
+    // If it's already a WalletError, return it
+    if (error instanceof WalletError) {
+      return error
+    }
+
+    // Handle standard Error objects
+    if (error instanceof Error) {
+      const errorMessage = error.message.toLowerCase()
+
+      // Authentication errors
+      if (errorMessage.includes('auth') || errorMessage.includes('login')) {
+        if (errorMessage.includes('cancel')) {
+          return new WalletError(
+            error.message,
+            WALLET_ERROR_CODES.AUTH_CANCELLED,
+            walletType,
+            error,
+          )
+        }
+        if (errorMessage.includes('timeout')) {
+          return new WalletError(
+            error.message,
+            WALLET_ERROR_CODES.AUTH_TIMEOUT,
+            walletType,
+            error,
+          )
+        }
+        if (errorMessage.includes('expired')) {
+          return new WalletError(
+            error.message,
+            WALLET_ERROR_CODES.SESSION_EXPIRED,
+            walletType,
+            error,
+          )
+        }
+        return new WalletError(
+          error.message,
+          WALLET_ERROR_CODES.AUTH_FAILED,
+          walletType,
+          error,
+        )
+      }
+
+      // Connection errors
+      if (errorMessage.includes('connect') || errorMessage.includes('wallet')) {
+        if (errorMessage.includes('reject')) {
+          return new WalletError(
+            error.message,
+            WALLET_ERROR_CODES.CONNECTION_REJECTED,
+            walletType,
+            error,
+          )
+        }
+        if (errorMessage.includes('not found')) {
+          return new WalletError(
+            error.message,
+            WALLET_ERROR_CODES.WALLET_NOT_FOUND,
+            walletType,
+            error,
+          )
+        }
+        if (errorMessage.includes('not connected')) {
+          return new WalletError(
+            error.message,
+            WALLET_ERROR_CODES.WALLET_NOT_CONNECTED,
+            walletType,
+            error,
+          )
+        }
+        return new WalletError(
+          error.message,
+          WALLET_ERROR_CODES.CONNECTION_FAILED,
+          walletType,
+          error,
+        )
+      }
+
+      // Transaction errors
+      if (errorMessage.includes('transaction') || errorMessage.includes('sign')) {
+        if (errorMessage.includes('reject') || errorMessage.includes('denied') || errorMessage.includes('declined')) {
+          return new WalletError(
+            error.message,
+            WALLET_ERROR_CODES.TRANSACTION_REJECTED,
+            walletType,
+            error,
+          )
+        }
+        if (errorMessage.includes('insufficient') || errorMessage.includes('balance')) {
+          return new WalletError(
+            error.message,
+            WALLET_ERROR_CODES.INSUFFICIENT_FUNDS,
+            walletType,
+            error,
+          )
+        }
+        if (errorMessage.includes('timeout')) {
+          return new WalletError(
+            error.message,
+            WALLET_ERROR_CODES.TRANSACTION_TIMEOUT,
+            walletType,
+            error,
+          )
+        }
+        if (errorMessage.includes('sign')) {
+          return new WalletError(
+            error.message,
+            WALLET_ERROR_CODES.SIGNING_FAILED,
+            walletType,
+            error,
+          )
+        }
+        if (errorMessage.includes('simulat')) {
+          return new WalletError(
+            error.message,
+            WALLET_ERROR_CODES.SIMULATION_FAILED,
+            walletType,
+            error,
+          )
+        }
+        return new WalletError(
+          error.message,
+          WALLET_ERROR_CODES.TRANSACTION_FAILED,
+          walletType,
+          error,
+        )
+      }
+
+      // Network errors
+      if (errorMessage.includes('network') || errorMessage.includes('rpc') || errorMessage.includes('fetch')) {
+        if (errorMessage.includes('rate limit')) {
+          return new WalletError(
+            error.message,
+            WALLET_ERROR_CODES.RATE_LIMIT_EXCEEDED,
+            walletType,
+            error,
+          )
+        }
+        if (errorMessage.includes('rpc')) {
+          return new WalletError(
+            error.message,
+            WALLET_ERROR_CODES.RPC_ERROR,
+            walletType,
+            error,
+          )
+        }
+        return new WalletError(
+          error.message,
+          WALLET_ERROR_CODES.NETWORK_ERROR,
+          walletType,
+          error,
+        )
+      }
+
+      // Configuration errors
+      if (errorMessage.includes('config') || errorMessage.includes('api key') || errorMessage.includes('environment')) {
+        if (errorMessage.includes('api key')) {
+          return new WalletError(
+            error.message,
+            WALLET_ERROR_CODES.INVALID_API_KEY,
+            walletType,
+            error,
+          )
+        }
+        return new WalletError(
+          error.message,
+          WALLET_ERROR_CODES.CONFIG_ERROR,
+          walletType,
+          error,
+        )
+      }
+
+      // Default to unknown error
+      return new WalletError(
+        error.message,
+        WALLET_ERROR_CODES.UNKNOWN_ERROR,
+        walletType,
+        error,
+      )
+    }
+
+    // Handle non-Error objects
+    const errorString = String(error)
+    return new WalletError(
+      errorString,
+      WALLET_ERROR_CODES.UNKNOWN_ERROR,
+      walletType,
+      error,
+    )
+  }
+
+  /**
+   * Get user-friendly error message for a WalletError or error code
+   */
+  static getUserMessage(errorOrCode: WalletError | WalletErrorCode): string {
+    if (errorOrCode instanceof WalletError) {
+      return ERROR_MESSAGES[errorOrCode.code] || ERROR_MESSAGES[WALLET_ERROR_CODES.UNKNOWN_ERROR]
+    }
+    return ERROR_MESSAGES[errorOrCode] || ERROR_MESSAGES[WALLET_ERROR_CODES.UNKNOWN_ERROR]
+  }
+
+  /**
+   * Log error with context for debugging
+   */
+  static logError(error: unknown, context: string, walletType?: WalletType): void {
+    const walletError = walletType
+      ? this.parseError(error, walletType, context)
+      : error
+
+    console.error(`[${context}] Wallet Error:`, {
+      code: walletError instanceof WalletError ? walletError.code : 'UNKNOWN',
+      message: walletError instanceof Error ? walletError.message : String(walletError),
+      walletType: walletError instanceof WalletError ? walletError.walletType : walletType,
+      originalError: walletError instanceof WalletError ? walletError.originalError : error,
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  /**
+   * Check if an error is recoverable (user can retry)
+   */
+  static isRecoverable(error: WalletError): boolean {
+    const recoverableErrors = [
+      WALLET_ERROR_CODES.AUTH_TIMEOUT,
+      WALLET_ERROR_CODES.CONNECTION_FAILED,
+      WALLET_ERROR_CODES.TRANSACTION_TIMEOUT,
+      WALLET_ERROR_CODES.NETWORK_ERROR,
+      WALLET_ERROR_CODES.RPC_ERROR,
+      WALLET_ERROR_CODES.RATE_LIMIT_EXCEEDED,
+    ]
+
+    return recoverableErrors.includes(error.code)
+  }
+
+  /**
+   * Check if an error requires re-authentication
+   */
+  static requiresReauth(error: WalletError): boolean {
+    const reauthErrors = [
+      WALLET_ERROR_CODES.SESSION_EXPIRED,
+      WALLET_ERROR_CODES.TOKEN_REFRESH_FAILED,
+      WALLET_ERROR_CODES.INVALID_CREDENTIALS,
+    ]
+
+    return reauthErrors.includes(error.code)
+  }
+}

@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { isCrossmintEnabled } from '@/config/crossmint'
+import { WALLET_ERROR_CODES, WalletErrorHandler } from '@/lib/crossmint/wallet-error-handler'
 
 export interface AuthModalProps {
   open: boolean
@@ -43,7 +44,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   /**
    * Handle social login via Crossmint
    */
-  const handleSocialLogin = (method: 'google' | 'twitter' | 'farcaster' | 'email') => {
+  const handleSocialLogin = async (method: 'google' | 'twitter' | 'farcaster' | 'email') => {
     setIsLoading(true)
     setLoadingMethod(method)
 
@@ -51,15 +52,34 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
       // Trigger Crossmint authentication
       // The login method will redirect to the provider's auth page
       // @ts-expect-error - Crossmint SDK types may not be fully accurate
-      crossmintAuth.login({ loginMethod: method })
+      await crossmintAuth.login({ loginMethod: method })
 
       // Note: Modal will be closed automatically when user returns from auth
       // or we can close it immediately since the redirect will happen
       toast.success(`Redirecting to ${method} login...`)
     }
     catch (error) {
-      console.error(`Failed to sign in with ${method}:`, error)
-      toast.error(`Failed to sign in with ${method}. Please try again.`)
+      // Use WalletErrorHandler to parse and log the error
+      WalletErrorHandler.logError(error, `socialLogin:${method}`, 'crossmint')
+      const walletError = WalletErrorHandler.parseError(error, 'crossmint', `socialLogin:${method}`)
+
+      // Get user-friendly error message
+      const errorMessage = WalletErrorHandler.getUserMessage(walletError)
+
+      // Show appropriate error message based on error type
+      if (walletError.code === WALLET_ERROR_CODES.AUTH_CANCELLED) {
+        toast.info('Authentication was cancelled')
+      }
+      else if (walletError.code === WALLET_ERROR_CODES.AUTH_TIMEOUT) {
+        toast.error('Authentication timed out. Please try again.')
+      }
+      else if (WalletErrorHandler.isRecoverable(walletError)) {
+        toast.error(`${errorMessage} Please try again.`)
+      }
+      else {
+        toast.error(errorMessage)
+      }
+
       setIsLoading(false)
       setLoadingMethod(null)
     }
@@ -69,11 +89,22 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
    * Handle traditional wallet connection
    */
   const handleWalletConnect = () => {
-    // Close auth modal
-    onOpenChange(false)
+    try {
+      // Close auth modal
+      onOpenChange(false)
 
-    // Open the wallet adapter modal
-    setWalletModalVisible(true)
+      // Open the wallet adapter modal
+      setWalletModalVisible(true)
+    }
+    catch (error) {
+      // Use WalletErrorHandler to parse and log the error
+      WalletErrorHandler.logError(error, 'walletConnect', 'adapter')
+      const walletError = WalletErrorHandler.parseError(error, 'adapter', 'walletConnect')
+
+      // Get user-friendly error message
+      const errorMessage = WalletErrorHandler.getUserMessage(walletError)
+      toast.error(errorMessage)
+    }
   }
 
   /**
