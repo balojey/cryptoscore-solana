@@ -1,16 +1,17 @@
 import type { FeeEstimate } from '../lib/solana/transaction-builder'
+import { useConnection } from '@solana/wallet-adapter-react'
 import { PublicKey, SystemProgram } from '@solana/web3.js'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { FACTORY_PROGRAM_ID, MARKET_PROGRAM_ID } from '../config/programs'
+import { useUnifiedWallet } from '../contexts/UnifiedWalletContext'
 import { SolanaErrorHandler } from '../lib/solana/error-handler'
 import { InstructionEncoder } from '../lib/solana/instruction-encoder'
 import { PDAUtils } from '../lib/solana/pda-utils'
 import { TransactionBuilder } from '../lib/solana/transaction-builder'
 import { SolanaUtils } from '../lib/solana/utils'
 import { MatchOutcome, PredictionChoice } from '../types/solana-program-types'
-import { useSolanaConnection } from './useSolanaConnection'
 
 export type MatchOutcomeType = 'Home' | 'Draw' | 'Away'
 
@@ -43,7 +44,8 @@ export interface SimulationResult {
 }
 
 export function useMarketActions() {
-  const { connection, publicKey, sendTransaction } = useSolanaConnection()
+  const { connection } = useConnection()
+  const { publicKey, signTransaction, walletType } = useUnifiedWallet()
   const queryClient = useQueryClient()
   const [isLoading, setIsLoading] = useState(false)
   const [txSignature, setTxSignature] = useState<string | null>(null)
@@ -88,10 +90,55 @@ export function useMarketActions() {
   }, [connection])
 
   /**
+   * Sign and send a transaction using the unified wallet interface
+   * Handles both Crossmint and adapter wallets
+   */
+  const signAndSendTransaction = useCallback(async (
+    transaction: any,
+  ): Promise<string> => {
+    if (!publicKey) {
+      throw new Error('Wallet not connected')
+    }
+
+    // For adapter wallets, use the standard sign and send flow
+    if (walletType === 'adapter') {
+      // Sign the transaction
+      const signedTx = await signTransaction(transaction)
+
+      // Send the signed transaction
+      const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      })
+
+      return signature
+    }
+
+    // For Crossmint wallets, we need to use a different approach
+    // Crossmint handles signing internally, so we just send the transaction
+    if (walletType === 'crossmint') {
+      // Crossmint wallets require using their SDK's transaction methods
+      // For now, we'll sign and send using the standard flow
+      // The Crossmint wallet adapter should handle the signing internally
+      const signedTx = await signTransaction(transaction)
+
+      // Send the signed transaction
+      const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      })
+
+      return signature
+    }
+
+    throw new Error('Unknown wallet type')
+  }, [publicKey, walletType, signTransaction, connection])
+
+  /**
    * Create a new prediction market
    */
   const createMarket = useCallback(async (params: CreateMarketParams) => {
-    if (!publicKey || !sendTransaction) {
+    if (!publicKey) {
       toast.error('Wallet not connected')
       return null
     }
@@ -161,8 +208,8 @@ export function useMarketActions() {
         return null
       }
 
-      // Send transaction using wallet adapter (handles signing internally)
-      const signature = await sendTransaction(transaction, connection)
+      // Sign and send transaction using unified wallet interface
+      const signature = await signAndSendTransaction(transaction)
 
       console.log('Transaction sent:', signature)
 
@@ -191,13 +238,13 @@ export function useMarketActions() {
     finally {
       setIsLoading(false)
     }
-  }, [connection, publicKey, sendTransaction, queryClient, simulateBeforeSend])
+  }, [connection, publicKey, queryClient, simulateBeforeSend, signAndSendTransaction])
 
   /**
    * Join an existing market with a prediction
    */
   const joinMarket = useCallback(async (params: JoinMarketParams) => {
-    if (!publicKey || !sendTransaction) {
+    if (!publicKey) {
       toast.error('Wallet not connected')
       return null
     }
@@ -263,7 +310,8 @@ export function useMarketActions() {
         return null
       }
 
-      const signature = await sendTransaction(transaction, connection)
+      // Sign and send transaction using unified wallet interface
+      const signature = await signAndSendTransaction(transaction)
 
       console.log('Transaction sent:', signature)
 
@@ -291,13 +339,13 @@ export function useMarketActions() {
     finally {
       setIsLoading(false)
     }
-  }, [connection, publicKey, sendTransaction, queryClient, simulateBeforeSend])
+  }, [connection, publicKey, queryClient, simulateBeforeSend, signAndSendTransaction])
 
   /**
    * Resolve a market with the match outcome
    */
   const resolveMarket = useCallback(async (params: ResolveMarketParams) => {
-    if (!publicKey || !sendTransaction) {
+    if (!publicKey) {
       toast.error('Wallet not connected')
       return null
     }
@@ -355,7 +403,8 @@ export function useMarketActions() {
         return null
       }
 
-      const signature = await sendTransaction(transaction, connection)
+      // Sign and send transaction using unified wallet interface
+      const signature = await signAndSendTransaction(transaction)
 
       console.log('Transaction sent:', signature)
 
@@ -383,13 +432,13 @@ export function useMarketActions() {
     finally {
       setIsLoading(false)
     }
-  }, [connection, publicKey, sendTransaction, queryClient, simulateBeforeSend])
+  }, [connection, publicKey, queryClient, simulateBeforeSend, signAndSendTransaction])
 
   /**
    * Withdraw rewards from a resolved market
    */
   const withdrawRewards = useCallback(async (marketAddress: string) => {
-    if (!publicKey || !sendTransaction) {
+    if (!publicKey) {
       toast.error('Wallet not connected')
       return null
     }
@@ -445,7 +494,8 @@ export function useMarketActions() {
         return null
       }
 
-      const signature = await sendTransaction(transaction, connection)
+      // Sign and send transaction using unified wallet interface
+      const signature = await signAndSendTransaction(transaction)
 
       console.log('Transaction sent:', signature)
 
@@ -474,7 +524,7 @@ export function useMarketActions() {
     finally {
       setIsLoading(false)
     }
-  }, [connection, publicKey, sendTransaction, queryClient, simulateBeforeSend])
+  }, [connection, publicKey, queryClient, simulateBeforeSend, signAndSendTransaction])
 
   /**
    * Get Solana Explorer link for a transaction

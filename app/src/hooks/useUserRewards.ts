@@ -5,15 +5,15 @@
  * for Anchor-free reward checking.
  */
 
-import { useWallet } from '@solana/wallet-adapter-react'
 import { useQuery } from '@tanstack/react-query'
+import { useUnifiedWallet } from '../contexts/UnifiedWalletContext'
 
 /**
  * @deprecated Use useParticipantData and useMarketData instead
  * Hook to check if user has rewards to withdraw from a market
  */
 export function useUserRewards(marketAddress?: string) {
-  const { publicKey } = useWallet()
+  const { publicKey } = useUnifiedWallet()
 
   return useQuery({
     queryKey: ['user', 'rewards', marketAddress, publicKey?.toString()],

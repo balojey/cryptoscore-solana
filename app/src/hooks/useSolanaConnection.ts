@@ -2,19 +2,21 @@
  * useSolanaConnection - Hook for managing Solana connection and wallet state
  *
  * Provides connection, wallet, and signing methods without Anchor dependencies.
+ * Now uses UnifiedWalletContext to support both Crossmint and adapter wallets.
  */
 
-import type { Connection, PublicKey, Transaction } from '@solana/web3.js'
-import { useConnection, useWallet } from '@solana/wallet-adapter-react'
+import type { Connection, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js'
+import { useConnection } from '@solana/wallet-adapter-react'
+import { useUnifiedWallet } from '../contexts/UnifiedWalletContext'
 
 export interface UseSolanaConnectionReturn {
   connection: Connection
-  wallet: ReturnType<typeof useWallet>
   publicKey: PublicKey | null
   isConnected: boolean
-  signTransaction: ((transaction: Transaction) => Promise<Transaction>) | undefined
-  signAllTransactions: ((transactions: Transaction[]) => Promise<Transaction[]>) | undefined
-  sendTransaction: ((transaction: Transaction, connection: Connection) => Promise<string>) | undefined
+  walletType: 'crossmint' | 'adapter' | null
+  signTransaction: <T extends Transaction | VersionedTransaction>(transaction: T) => Promise<T>
+  signAllTransactions: <T extends Transaction | VersionedTransaction>(transactions: T[]) => Promise<T[]>
+  sendTransaction: (transaction: Transaction | VersionedTransaction) => Promise<string>
 }
 
 /**
@@ -24,15 +26,22 @@ export interface UseSolanaConnectionReturn {
  */
 export function useSolanaConnection(): UseSolanaConnectionReturn {
   const { connection } = useConnection()
-  const wallet = useWallet()
+  const {
+    publicKey,
+    connected,
+    walletType,
+    signTransaction,
+    signAllTransactions,
+    sendTransaction,
+  } = useUnifiedWallet()
 
   return {
     connection,
-    wallet,
-    publicKey: wallet.publicKey,
-    isConnected: wallet.connected && !!wallet.publicKey,
-    signTransaction: wallet.signTransaction,
-    signAllTransactions: wallet.signAllTransactions,
-    sendTransaction: wallet.sendTransaction,
+    publicKey,
+    isConnected: connected,
+    walletType,
+    signTransaction,
+    signAllTransactions,
+    sendTransaction,
   }
 }

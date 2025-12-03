@@ -11,7 +11,8 @@
  * This hook is kept for backward compatibility with legacy code only.
  */
 
-import { useConnection, useWallet } from '@solana/wallet-adapter-react'
+import { useConnection } from '@solana/wallet-adapter-react'
+import { useUnifiedWallet } from '../contexts/UnifiedWalletContext'
 
 /**
  * @deprecated Use Anchor-free utilities instead
@@ -20,7 +21,7 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react'
  */
 export function useSolanaProgram() {
   const { connection } = useConnection()
-  const wallet = useWallet()
+  const wallet = useUnifiedWallet()
 
   // DEPRECATED: Anchor provider and program instances removed
   // This hook now returns null values for backward compatibility

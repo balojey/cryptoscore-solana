@@ -1,11 +1,12 @@
-import { useConnection, useWallet } from '@solana/wallet-adapter-react'
+import { useConnection } from '@solana/wallet-adapter-react'
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { useEffect, useState } from 'react'
+import { useUnifiedWallet } from '@/contexts/UnifiedWalletContext'
 import { useCurrency } from '@/hooks/useCurrency'
 
 export default function Balance() {
   const { connection } = useConnection()
-  const { publicKey } = useWallet()
+  const { publicKey } = useUnifiedWallet()
   const { currency, formatCurrency, convertFromLamports } = useCurrency()
   const [balanceLamports, setBalanceLamports] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)

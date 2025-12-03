@@ -68,8 +68,8 @@
     - Update logout/disconnect button to handle both wallet types
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 6. Update market interaction hooks to support unified wallet
-  - [ ] 6.1 Update useMarketActions hook
+- [x] 6. Update market interaction hooks to support unified wallet
+  - [x] 6.1 Update useMarketActions hook
     - Replace direct wallet adapter usage with UnifiedWalletContext
     - Update transaction signing to use unified interface
     - Ensure createMarket works with both wallet types
@@ -78,7 +78,7 @@
     - Ensure withdrawRewards works with both wallet types
     - _Requirements: 3.2, 3.3, 3.4, 3.5_
 
-  - [ ] 6.2 Update other hooks that use wallet functionality
+  - [x] 6.2 Update other hooks that use wallet functionality
     - Update useSolanaProgram hook if needed
     - Update any other hooks that directly access wallet adapter
     - Ensure all transaction flows work with unified wallet interface

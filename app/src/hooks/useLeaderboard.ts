@@ -7,9 +7,10 @@
  * - Connection.getProgramAccounts() for fetching all UserStats
  */
 
-import { useConnection, useWallet } from '@solana/wallet-adapter-react'
+import { useConnection } from '@solana/wallet-adapter-react'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useRef } from 'react'
+import { useUnifiedWallet } from '../contexts/UnifiedWalletContext'
 
 export interface UserStatsData {
   address: string
@@ -33,7 +34,7 @@ export interface UserStatsData {
 export function useLeaderboard(options: { enabled?: boolean } = {}) {
   const { enabled = true } = options
   const { connection } = useConnection()
-  const wallet = useWallet()
+  const wallet = useUnifiedWallet()
   const lastFetchTime = useRef<number>(0)
   const rateLimitDelay = 2000
 
@@ -61,7 +62,7 @@ export function useLeaderboard(options: { enabled?: boolean } = {}) {
 export function useUserStats(userAddress?: string, options: { enabled?: boolean } = {}) {
   const { enabled = true } = options
   const { connection } = useConnection()
-  const wallet = useWallet()
+  const wallet = useUnifiedWallet()
 
   const fetchUserStats = useCallback(async (): Promise<UserStatsData | null> => {
     console.warn('useUserStats: Anchor framework has been removed. This hook will not function correctly.')

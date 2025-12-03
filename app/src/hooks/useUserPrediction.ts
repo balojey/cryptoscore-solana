@@ -4,15 +4,15 @@
  * Use hooks/useParticipantData.ts for Anchor-free participant data fetching.
  */
 
-import { useWallet } from '@solana/wallet-adapter-react'
 import { useQuery } from '@tanstack/react-query'
+import { useUnifiedWallet } from '../contexts/UnifiedWalletContext'
 
 /**
  * @deprecated Use useParticipantData instead
  * Hook to get user's prediction for a specific market
  */
 export function useUserPrediction(marketAddress?: string) {
-  const { publicKey } = useWallet()
+  const { publicKey } = useUnifiedWallet()
 
   const { data } = useQuery({
     queryKey: ['user', 'prediction', marketAddress, publicKey?.toString()],
