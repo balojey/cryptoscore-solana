@@ -1,5 +1,10 @@
 import type { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
 import { Buffer } from 'buffer'
+import {
+  CrossmintAuthProvider,
+  CrossmintProvider,
+  CrossmintWalletProvider,
+} from '@crossmint/client-sdk-react-ui'
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react'
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
 import {
@@ -10,19 +15,15 @@ import { clusterApiUrl } from '@solana/web3.js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React, { useMemo } from 'react'
 import ReactDOM from 'react-dom/client'
-import { 
-  CrossmintProvider,
-  CrossmintAuthProvider,
-  CrossmintWalletProvider,
-} from '@crossmint/client-sdk-react-ui'
 
 import App from './App.tsx'
-import { 
+import {
   CROSSMINT_CLIENT_API_KEY,
   CROSSMINT_LOGIN_METHODS,
   CROSSMINT_WALLET_CONFIG,
   isCrossmintEnabled,
 } from './config/crossmint'
+import { UnifiedWalletProvider } from './contexts/UnifiedWalletContext'
 
 import './style.css'
 import '@solana/wallet-adapter-react-ui/styles.css'
@@ -64,9 +65,11 @@ function Root() {
               <ConnectionProvider endpoint={endpoint}>
                 <WalletProvider wallets={wallets} autoConnect>
                   <WalletModalProvider>
-                    <QueryClientProvider client={queryClient}>
-                      <App />
-                    </QueryClientProvider>
+                    <UnifiedWalletProvider>
+                      <QueryClientProvider client={queryClient}>
+                        <App />
+                      </QueryClientProvider>
+                    </UnifiedWalletProvider>
                   </WalletModalProvider>
                 </WalletProvider>
               </ConnectionProvider>
@@ -78,9 +81,11 @@ function Root() {
         <ConnectionProvider endpoint={endpoint}>
           <WalletProvider wallets={wallets} autoConnect>
             <WalletModalProvider>
-              <QueryClientProvider client={queryClient}>
-                <App />
-              </QueryClientProvider>
+              <UnifiedWalletProvider>
+                <QueryClientProvider client={queryClient}>
+                  <App />
+                </QueryClientProvider>
+              </UnifiedWalletProvider>
             </WalletModalProvider>
           </WalletProvider>
         </ConnectionProvider>

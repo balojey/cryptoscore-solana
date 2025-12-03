@@ -1,6 +1,6 @@
 /**
  * Crossmint Configuration
- * 
+ *
  * Configuration for Crossmint authentication and wallet management.
  * Supports social login (Google, Twitter/X, Farcaster, email OTP) and
  * automatic Solana wallet creation for authenticated users.
@@ -8,12 +8,12 @@
 
 export type CrossmintEnvironment = 'staging' | 'production'
 
-export type CrossmintLoginMethod = 
-  | 'google' 
-  | 'twitter' 
-  | 'farcaster' 
-  | 'email' 
-  | 'web3:solana-only'
+export type CrossmintLoginMethod
+  = | 'google'
+    | 'twitter'
+    | 'farcaster'
+    | 'email'
+    | 'web3:solana-only'
 
 /**
  * Crossmint configuration interface
@@ -38,8 +38,8 @@ export const CROSSMINT_CLIENT_API_KEY = import.meta.env.VITE_CROSSMINT_CLIENT_AP
 /**
  * Get Crossmint environment (staging or production)
  */
-export const CROSSMINT_ENVIRONMENT: CrossmintEnvironment = 
-  (import.meta.env.VITE_CROSSMINT_ENVIRONMENT || 'staging') as CrossmintEnvironment
+export const CROSSMINT_ENVIRONMENT: CrossmintEnvironment
+  = (import.meta.env.VITE_CROSSMINT_ENVIRONMENT || 'staging') as CrossmintEnvironment
 
 /**
  * Supported login methods
@@ -77,12 +77,12 @@ export const crossmintConfig: CrossmintConfig = {
 /**
  * Validate Crossmint configuration
  * Checks if required environment variables are present
- * 
+ *
  * @returns Object with validation result and error message if invalid
  */
-export function validateCrossmintConfig(): { 
+export function validateCrossmintConfig(): {
   valid: boolean
-  error?: string 
+  error?: string
 } {
   if (!CROSSMINT_CLIENT_API_KEY) {
     return {
