@@ -17,12 +17,19 @@ import React, { useMemo } from 'react'
 import ReactDOM from 'react-dom/client'
 
 import App from './App.tsx'
+import { ConfigurationError } from './components/ConfigurationError'
 import {
   CROSSMINT_CLIENT_API_KEY,
+  CROSSMINT_ENVIRONMENT,
   CROSSMINT_LOGIN_METHODS,
   CROSSMINT_WALLET_CONFIG,
   isCrossmintEnabled,
 } from './config/crossmint'
+import {
+  getConsoleUrl,
+  shouldEnableCrossmint,
+  validateCrossmintConfiguration,
+} from './lib/crossmint/config-validator'
 import { UnifiedWalletProvider } from './contexts/UnifiedWalletContext'
 
 import './style.css'
@@ -52,8 +59,40 @@ function Root() {
     [network],
   )
 
-  // Check if Crossmint is enabled
-  const crossmintEnabled = isCrossmintEnabled()
+  // Validate Crossmint configuration on startup
+  const crossmintValidation = useMemo(() => {
+    // Only validate if user is attempting to use Crossmint
+    if (shouldEnableCrossmint(CROSSMINT_CLIENT_API_KEY)) {
+      return validateCrossmintConfiguration({
+        clientApiKey: CROSSMINT_CLIENT_API_KEY,
+        environment: CROSSMINT_ENVIRONMENT,
+      })
+    }
+    return { valid: true, errors: [], warnings: [] }
+  }, [])
+
+  // Check if Crossmint is enabled and valid
+  const crossmintEnabled = isCrossmintEnabled() && crossmintValidation.valid
+
+  // Display configuration error if validation fails
+  if (shouldEnableCrossmint(CROSSMINT_CLIENT_API_KEY) && !crossmintValidation.valid) {
+    return (
+      <React.StrictMode>
+        <ConfigurationError
+          result={crossmintValidation}
+          consoleUrl={getConsoleUrl(CROSSMINT_ENVIRONMENT)}
+        />
+      </React.StrictMode>
+    )
+  }
+
+  // Log warnings to console if any
+  if (crossmintValidation.warnings.length > 0) {
+    console.warn('Crossmint Configuration Warnings:')
+    crossmintValidation.warnings.forEach((warning) => {
+      console.warn(`  - ${warning}`)
+    })
+  }
 
   return (
     <React.StrictMode>

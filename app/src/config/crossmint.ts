@@ -79,6 +79,7 @@ export const crossmintConfig: CrossmintConfig = {
  * Checks if required environment variables are present
  *
  * @returns Object with validation result and error message if invalid
+ * @deprecated Use validateCrossmintConfiguration from config-validator instead
  */
 export function validateCrossmintConfig(): {
   valid: boolean

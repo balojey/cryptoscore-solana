@@ -118,14 +118,14 @@
     - Clear all wallet state on logout/disconnect
     - _Requirements: 4.4, 4.5_
 
-- [ ] 9. Add configuration validation and environment checks
-  - [ ] 9.1 Create configuration validation utility
+- [x] 9. Add configuration validation and environment checks
+  - [x] 9.1 Create configuration validation utility
     - Validate presence of required environment variables
     - Validate API key format
     - Check environment configuration (staging vs production)
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-  - [ ] 9.2 Add startup validation
+  - [x] 9.2 Add startup validation
     - Run configuration validation on application startup
     - Display error message if configuration is invalid
     - Prevent app initialization with missing configuration
