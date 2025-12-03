@@ -1,4 +1,3 @@
-import { useWallet } from '@solana/wallet-adapter-react'
 import { useState } from 'react'
 import {
   Dialog,
@@ -6,6 +5,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import type { CrossmintUser } from '@/contexts/UnifiedWalletContext'
+import { useUnifiedWallet } from '@/contexts/UnifiedWalletContext'
 import { shortenAddress } from '../utils/formatters'
 import Balance from './Balance'
 
@@ -13,16 +14,50 @@ interface AccountProps {
   address: string
   walletName: string | undefined
   walletIcon: string | undefined
+  user: CrossmintUser | null
 }
 
-export default function Account({ address, walletName, walletIcon }: AccountProps) {
-  const { disconnect } = useWallet()
+export default function Account({ address, walletName, walletIcon, user }: AccountProps) {
+  const { disconnect, walletType } = useUnifiedWallet()
   const [isOpen, setIsOpen] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
 
-  function handleDisconnect() {
-    disconnect()
-    setIsOpen(false)
+  async function handleDisconnect() {
+    try {
+      await disconnect()
+      setIsOpen(false)
+    }
+    catch (error) {
+      console.error('Failed to disconnect:', error)
+    }
+  }
+
+  // Get display name for Crossmint users
+  const getDisplayName = () => {
+    if (!user)
+      return null
+
+    if (user.email)
+      return user.email
+    if (user.google?.displayName)
+      return user.google.displayName
+    if (user.twitter?.username)
+      return `@${user.twitter.username}`
+    if (user.farcaster?.username)
+      return `@${user.farcaster.username}`
+
+    return null
+  }
+
+  const displayName = getDisplayName()
+
+  // Get wallet type label
+  const getWalletTypeLabel = () => {
+    if (walletType === 'crossmint')
+      return 'Social Login'
+    if (walletType === 'adapter')
+      return 'Wallet'
+    return ''
   }
 
   const handleCopy = () => {
@@ -63,9 +98,16 @@ export default function Account({ address, walletName, walletIcon }: AccountProp
             : (
                 <span className="icon-[mdi--wallet] w-7 h-7 sm:w-8 sm:h-8" style={{ color: 'var(--text-primary)' }} />
               )}
-          <span className="font-sans font-semibold text-sm sm:text-base" style={{ color: 'var(--text-primary)' }}>
-            {shortenAddress(address)}
-          </span>
+          <div className="flex flex-col items-start">
+            {displayName && (
+              <span className="font-sans font-semibold text-xs sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
+                {displayName}
+              </span>
+            )}
+            <span className="font-sans font-semibold text-sm sm:text-base" style={{ color: 'var(--text-primary)' }}>
+              {shortenAddress(address)}
+            </span>
+          </div>
         </div>
         <span className="icon-[mdi--chevron-down] w-4 h-4 sm:w-5 sm:h-5" style={{ color: 'var(--text-tertiary)' }} />
       </button>
@@ -87,18 +129,47 @@ export default function Account({ address, walletName, walletIcon }: AccountProp
                 )}
             <div className="min-w-0">
               <DialogTitle className="font-jakarta text-lg sm:text-xl">Account</DialogTitle>
-              {walletName && (
-                <p className="text-xs sm:text-sm truncate" style={{ color: 'var(--text-tertiary)' }}>
-                  Connected with
-                  {' '}
-                  {walletName}
-                </p>
-              )}
+              <div className="flex items-center gap-2">
+                {walletName && (
+                  <p className="text-xs sm:text-sm truncate" style={{ color: 'var(--text-tertiary)' }}>
+                    {walletName}
+                  </p>
+                )}
+                {walletType && (
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                    style={{
+                      background: walletType === 'crossmint' ? 'var(--accent-purple-bg)' : 'var(--accent-cyan-bg)',
+                      color: walletType === 'crossmint' ? 'var(--accent-purple)' : 'var(--accent-cyan)',
+                    }}
+                  >
+                    {getWalletTypeLabel()}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </DialogHeader>
 
         <div className="flex flex-col gap-3 sm:gap-4 mt-3 sm:mt-4">
+          {/* User Identity (for Crossmint users) */}
+          {displayName && (
+            <div>
+              <p className="text-xs font-semibold uppercase mb-1.5 sm:mb-2" style={{ color: 'var(--text-tertiary)' }}>
+                Signed in as
+              </p>
+              <div
+                className="flex items-center gap-2 p-2.5 sm:p-3 rounded-[12px]"
+                style={{ background: 'var(--bg-secondary)' }}
+              >
+                <span className="icon-[mdi--account-circle] w-5 h-5" style={{ color: 'var(--text-tertiary)' }} />
+                <span className="font-sans text-sm sm:text-base flex-grow" style={{ color: 'var(--text-primary)' }}>
+                  {displayName}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Address display with copy button */}
           <div>
             <p className="text-xs font-semibold uppercase mb-1.5 sm:mb-2" style={{ color: 'var(--text-tertiary)' }}>
@@ -168,7 +239,7 @@ export default function Account({ address, walletName, walletIcon }: AccountProp
             <span className="icon-[mdi--open-in-new] w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
           </a>
 
-          {/* Disconnect Button */}
+          {/* Disconnect/Logout Button */}
           <button
             type="button"
             className="flex items-center justify-center gap-2 h-11 sm:h-12 px-4 rounded-[12px] font-sans text-sm sm:text-base font-bold transition-all"
@@ -185,10 +256,10 @@ export default function Account({ address, walletName, walletIcon }: AccountProp
               e.currentTarget.style.transform = 'scale(1)'
             }}
             onClick={handleDisconnect}
-            title="Disconnect Wallet"
+            title={walletType === 'crossmint' ? 'Logout' : 'Disconnect Wallet'}
           >
             <span className="icon-[mdi--logout] w-4 h-4 sm:w-5 sm:h-5" />
-            <span>Disconnect Wallet</span>
+            <span>{walletType === 'crossmint' ? 'Logout' : 'Disconnect'}</span>
           </button>
         </div>
       </DialogContent>

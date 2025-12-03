@@ -54,14 +54,14 @@
     - Close modal on successful authentication
     - _Requirements: 1.2, 1.3, 2.2, 4.4_
 
-- [ ] 5. Update Connect component
-  - [ ] 5.1 Refactor Connect component to use UnifiedWalletContext
+- [x] 5. Update Connect component
+  - [x] 5.1 Refactor Connect component to use UnifiedWalletContext
     - Replace useWallet hook with useUnifiedWallet hook
     - Update connection state checks
     - Update button click handler to open AuthModal
     - _Requirements: 1.1, 2.1, 4.1_
 
-  - [ ] 5.2 Update Account component display logic
+  - [x] 5.2 Update Account component display logic
     - Display email/social username for Crossmint users
     - Display wallet address for both wallet types
     - Add wallet type indicator

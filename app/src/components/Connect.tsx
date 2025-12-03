@@ -1,37 +1,43 @@
-import { useWallet } from '@solana/wallet-adapter-react'
-import { useWalletModal } from '@solana/wallet-adapter-react-ui'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { useUnifiedWallet } from '@/contexts/UnifiedWalletContext'
+import { AuthModal } from './auth/AuthModal'
 import Account from './Account'
 
 export default function Connect() {
-  const { publicKey, wallet, connected } = useWallet()
-  const { setVisible } = useWalletModal()
+  const { connected, walletAddress, walletName, walletIcon, user } = useUnifiedWallet()
+  const [authModalOpen, setAuthModalOpen] = useState(false)
 
-  function openConnectModal() {
-    setVisible(true)
+  function openAuthModal() {
+    setAuthModalOpen(true)
   }
 
   return (
-    <div className="flex items-center gap-2">
-      {!connected
-        ? (
-            <Button
-              variant="default"
-              size="default"
-              onClick={openConnectModal}
-              className="gap-2"
-            >
-              <span className="icon-[mdi--wallet]" />
-              <span>Connect</span>
-            </Button>
-          )
-        : (
-            <Account
-              address={publicKey?.toBase58() || ''}
-              walletName={wallet?.adapter.name}
-              walletIcon={wallet?.adapter.icon}
-            />
-          )}
-    </div>
+    <>
+      <div className="flex items-center gap-2">
+        {!connected
+          ? (
+              <Button
+                variant="default"
+                size="default"
+                onClick={openAuthModal}
+                className="gap-2"
+              >
+                <span className="icon-[mdi--wallet]" />
+                <span>Connect</span>
+              </Button>
+            )
+          : (
+              <Account
+                address={walletAddress || ''}
+                walletName={walletName}
+                walletIcon={walletIcon}
+                user={user}
+              />
+            )}
+      </div>
+
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
+    </>
   )
 }
