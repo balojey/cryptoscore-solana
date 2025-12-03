@@ -25,7 +25,7 @@ export interface CrossmintConfig {
   walletConfig: {
     chain: 'solana'
     signer: {
-      type: 'PASSKEY'
+      type: 'email'
     }
   }
 }
@@ -54,12 +54,13 @@ export const CROSSMINT_LOGIN_METHODS: CrossmintLoginMethod[] = [
 
 /**
  * Wallet configuration for Crossmint
- * Creates Solana wallets with PASSKEY signer for authenticated users
+ * Creates Solana wallets with email signer for authenticated users
+ * Note: Passkey signers are only supported for EVM chains, not Solana
  */
 export const CROSSMINT_WALLET_CONFIG = {
   chain: 'solana' as const,
   signer: {
-    type: 'PASSKEY' as const,
+    type: 'email' as const,
   },
 }
 
