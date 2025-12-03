@@ -39,8 +39,6 @@ export default function Account({ address, walletName, walletIcon, user }: Accou
 
     if (user.email)
       return user.email
-    if (user.google?.displayName)
-      return user.google.displayName
     if (user.twitter?.username)
       return `@${user.twitter.username}`
     if (user.farcaster?.username)

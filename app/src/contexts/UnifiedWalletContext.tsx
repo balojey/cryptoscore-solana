@@ -10,8 +10,9 @@ import type { Transaction, VersionedTransaction } from '@solana/web3.js'
 import { useAuth, useWallet as useCrossmintWallet, type Wallet, type Chain } from '@crossmint/client-sdk-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { PublicKey } from '@solana/web3.js'
-import React, { createContext, use, useCallback, useEffect, useMemo, useState } from 'react'
+import React, { createContext, use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { SessionManager } from '@/lib/crossmint/session-manager'
 import { WALLET_ERROR_CODES, WalletErrorHandler } from '@/lib/crossmint/wallet-error-handler'
 
 /**
@@ -26,7 +27,6 @@ export interface CrossmintUser {
   userId: string
   email?: string
   phoneNumber?: string
-  google?: { displayName: string }
   twitter?: { username: string }
   farcaster?: { username: string }
 }
@@ -93,11 +93,15 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
   const [isConnecting, setIsConnecting] = useState(false)
   const [isDisconnecting, setIsDisconnecting] = useState(false)
   const [hasShownSessionExpiredWarning, setHasShownSessionExpiredWarning] = useState(false)
+  const [sessionRestored, setSessionRestored] = useState(false)
+
+  // Use ref to track if session monitoring is active
+  const sessionMonitorRef = useRef<NodeJS.Timeout | null>(null)
 
   // Determine which wallet type is active
   const walletType: WalletType = useMemo(() => {
     // Check if Crossmint wallet is connected
-    if (crossmintAuth.isAuthenticated && crossmintWallet?.address) {
+    if (crossmintAuth.status === 'logged-in' && crossmintWallet?.address) {
       return 'crossmint'
     }
 
@@ -108,7 +112,7 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
 
     return null
   }, [
-    crossmintAuth.isAuthenticated,
+    crossmintAuth.status,
     crossmintWallet?.address,
     adapterWallet.connected,
     adapterWallet.publicKey,
@@ -148,7 +152,6 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
       userId: crossmintAuth.user.id || '',
       email: crossmintAuth.user.email,
       phoneNumber: crossmintAuth.user.phoneNumber,
-      google: crossmintAuth.user.google,
       twitter: crossmintAuth.user.twitter,
       farcaster: crossmintAuth.user.farcaster,
     }
@@ -202,6 +205,9 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
     setIsDisconnecting(true)
     try {
       if (walletType === 'crossmint') {
+        // Clear session data before logout
+        SessionManager.clearAll()
+
         // Logout from Crossmint
         await crossmintAuth.logout()
         toast.success('Disconnected successfully')
@@ -306,10 +312,89 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
     throw new Error('No wallet connected')
   }, [connected, walletType, adapterWallet])
 
+  // Restore session on mount
+  useEffect(() => {
+    if (sessionRestored) {
+      return
+    }
+
+    const restoreSession = async () => {
+      try {
+        // Check if there's a recent session
+        const hasSession = SessionManager.hasRecentSession()
+
+        if (hasSession) {
+          console.log('[UnifiedWallet] Recent session found, attempting restoration')
+
+          // Validate the session
+          const validation = await SessionManager.validateSession()
+
+          if (validation.valid) {
+            console.log('[UnifiedWallet] Session is valid')
+
+            // The Crossmint SDK will automatically restore the session
+            // if valid tokens exist in storage
+            // We just need to wait for the auth state to update
+
+            if (validation.needsRefresh) {
+              console.log('[UnifiedWallet] Session needs refresh')
+              // The SDK handles token refresh automatically
+            }
+          }
+          else if (validation.error) {
+            console.log('[UnifiedWallet] Session validation failed:', validation.error.message)
+
+            // Clear invalid session data
+            SessionManager.clearAll()
+
+            if (WalletErrorHandler.requiresReauth(validation.error)) {
+              toast.error('Your session has expired. Please sign in again.', {
+                duration: 5000,
+              })
+            }
+          }
+        }
+      }
+      catch (error) {
+        WalletErrorHandler.logError(error, 'restoreSession', 'crossmint')
+      }
+      finally {
+        setSessionRestored(true)
+      }
+    }
+
+    restoreSession()
+  }, [sessionRestored])
+
+  // Store session metadata when Crossmint user authenticates
+  useEffect(() => {
+    if (walletType === 'crossmint' && crossmintAuth.status === 'logged-in' && crossmintAuth.user) {
+      // Determine auth method from user data
+      let authMethod: 'google' | 'twitter' | 'farcaster' | 'email' | 'web3' | undefined
+
+      if (crossmintAuth.user.twitter) {
+        authMethod = 'twitter'
+      }
+      else if (crossmintAuth.user.farcaster) {
+        authMethod = 'farcaster'
+      }
+      else if (crossmintAuth.user.email) {
+        authMethod = 'email'
+      }
+
+      SessionManager.storeSessionMetadata({
+        authMethod,
+        userId: crossmintAuth.user.id,
+      })
+
+      console.log('[UnifiedWallet] Session metadata stored for authenticated user')
+    }
+  }, [walletType, crossmintAuth.status, crossmintAuth.user])
+
   // Monitor Crossmint authentication state for session expiration
   useEffect(() => {
     // Only monitor if we were previously authenticated with Crossmint
-    if (walletType === 'crossmint' && !crossmintAuth.isAuthenticated && !hasShownSessionExpiredWarning) {
+    if (walletType === 'crossmint' && crossmintAuth.status === 'logged-out' && !hasShownSessionExpiredWarning) {
       // Session may have expired
       setHasShownSessionExpiredWarning(true)
 
@@ -334,10 +419,84 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
     }
 
     // Reset warning flag when user reconnects
-    if (crossmintAuth.isAuthenticated && hasShownSessionExpiredWarning) {
+    if (crossmintAuth.status === 'logged-in' && hasShownSessionExpiredWarning) {
       setHasShownSessionExpiredWarning(false)
     }
-  }, [walletType, crossmintAuth.isAuthenticated, hasShownSessionExpiredWarning])
+  }, [walletType, crossmintAuth.status, hasShownSessionExpiredWarning])
+
+  // Set up periodic session monitoring for Crossmint users
+  useEffect(() => {
+    // Only monitor active Crossmint sessions
+    if (walletType !== 'crossmint' || crossmintAuth.status !== 'logged-in') {
+      // Clear any existing monitor
+      if (sessionMonitorRef.current) {
+        clearInterval(sessionMonitorRef.current)
+        sessionMonitorRef.current = null
+      }
+      return
+    }
+
+    // Check session health every 5 minutes
+    const monitorInterval = 5 * 60 * 1000
+
+    const monitor = async () => {
+      await SessionManager.monitorSession(
+        // On session expired
+        () => {
+          if (!hasShownSessionExpiredWarning) {
+            setHasShownSessionExpiredWarning(true)
+            toast.error('Your session has expired. Please sign in again.', {
+              duration: 6000,
+            })
+          }
+        },
+        // On refresh needed
+        () => {
+          console.log('[UnifiedWallet] Session refresh needed - SDK will handle automatically')
+          // The Crossmint SDK handles token refresh automatically
+          // We just log for monitoring purposes
+        },
+      )
+    }
+
+    // Run initial check
+    monitor()
+
+    // Set up periodic monitoring
+    sessionMonitorRef.current = setInterval(monitor, monitorInterval)
+
+    // Cleanup on unmount or when dependencies change
+    return () => {
+      if (sessionMonitorRef.current) {
+        clearInterval(sessionMonitorRef.current)
+        sessionMonitorRef.current = null
+      }
+    }
+  }, [walletType, crossmintAuth.status, hasShownSessionExpiredWarning])
+
+  // Show warning when session is about to expire
+  useEffect(() => {
+    if (walletType !== 'crossmint' || crossmintAuth.status !== 'logged-in') {
+      return
+    }
+
+    // Check if session is expiring soon (within 1 hour)
+    const checkExpiry = () => {
+      if (SessionManager.isSessionExpiringSoon()) {
+        toast.warning('Your session will expire soon. Please save your work.', {
+          duration: 10000,
+        })
+      }
+    }
+
+    // Check on mount and every 30 minutes
+    checkExpiry()
+    const expiryCheckInterval = setInterval(checkExpiry, 30 * 60 * 1000)
+
+    return () => {
+      clearInterval(expiryCheckInterval)
+    }
+  }, [walletType, crossmintAuth.status])
 
   // Create context value
   const value: UnifiedWalletContextType = useMemo(

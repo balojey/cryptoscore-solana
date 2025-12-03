@@ -105,14 +105,14 @@
     - Display transaction status and confirmations
     - _Requirements: 3.5, 6.5_
 
-- [ ] 8. Implement session management and persistence
-  - [ ] 8.1 Add session persistence for Crossmint users
+- [x] 8. Implement session management and persistence
+  - [x] 8.1 Add session persistence for Crossmint users
     - Implement automatic session restoration on page load
     - Handle JWT token storage securely
     - Implement automatic token refresh
     - _Requirements: 1.5, 6.1, 6.2, 6.3_
 
-  - [ ] 8.2 Add logout functionality
+  - [x] 8.2 Add logout functionality
     - Implement logout for Crossmint users (clear tokens and session)
     - Maintain existing disconnect for traditional wallets
     - Clear all wallet state on logout/disconnect
