@@ -95,6 +95,9 @@ VITE_DASHBOARD_PROGRAM_ID=your_dashboard_program_id
 VITE_SOLANA_NETWORK=devnet
 VITE_SOLANA_RPC_URL=https://api.devnet.solana.com
 
+# Crossmint Authentication (for social login)
+VITE_CROSSMINT_CLIENT_API_KEY=your_crossmint_client_api_key
+
 # Football Data API Keys (optional, for match data)
 VITE_FOOTBALL_DATA_API_KEY_1=your_api_key_1
 VITE_FOOTBALL_DATA_API_KEY_2=your_api_key_2
@@ -102,6 +105,73 @@ VITE_FOOTBALL_DATA_API_KEY_3=your_api_key_3
 VITE_FOOTBALL_DATA_API_KEY_4=your_api_key_4
 VITE_FOOTBALL_DATA_API_KEY_5=your_api_key_5
 ```
+
+### Crossmint Setup (Social Login)
+
+CryptoScore supports social login via Crossmint, allowing users to authenticate with Google, Twitter/X, Farcaster, or email without needing a crypto wallet.
+
+#### Obtaining Crossmint API Keys
+
+1. **Sign up for Crossmint**
+   - Visit [Crossmint Console](https://www.crossmint.com/console)
+   - Create an account or sign in
+
+2. **Create a Project**
+   - Navigate to the Projects section
+   - Click "Create New Project"
+   - Enter your project name and description
+
+3. **Get API Keys**
+   - Go to the API Keys section in your project
+   - Copy your **Client API Key** (starts with `client_`)
+   - Add it to your `.env` file as `VITE_CROSSMINT_CLIENT_API_KEY`
+
+4. **Configure Environment**
+   - **Staging**: Use staging API keys for development/testing
+   - **Production**: Use production API keys for mainnet deployment
+   - The app automatically detects the environment based on the API key prefix
+
+#### Supported Login Methods
+
+The following authentication methods are enabled:
+
+- **Google** - Sign in with Google account
+- **Twitter/X** - Sign in with Twitter account
+- **Farcaster** - Sign in with Farcaster account
+- **Email OTP** - Sign in with email one-time password
+- **Web3 (Solana)** - Traditional wallet connection (Phantom, Solflare, etc.)
+
+#### How It Works
+
+1. **User Authentication**: Users click the login button and choose their preferred method
+2. **Wallet Creation**: Crossmint automatically creates a Solana wallet for social login users
+3. **Transaction Signing**: Transactions are signed using Crossmint's secure wallet infrastructure
+4. **Session Management**: User sessions persist across page refreshes with automatic token refresh
+
+#### Configuration
+
+Crossmint configuration is managed in `src/config/crossmint.ts`:
+
+```typescript
+{
+  clientApiKey: process.env.VITE_CROSSMINT_CLIENT_API_KEY,
+  loginMethods: ['google', 'twitter', 'farcaster', 'email', 'web3:solana-only'],
+  walletConfig: {
+    chain: 'solana',
+    signer: { type: 'PASSKEY' }
+  }
+}
+```
+
+#### Security Notes
+
+- Client API keys are safe to expose in frontend code
+- Never commit API keys to version control
+- Use separate keys for staging and production
+- JWT tokens are stored securely in browser storage
+- All transactions require user confirmation
+
+For more details, see the [Crossmint Documentation](https://docs.crossmint.com/)
 
 ### Network Configuration
 

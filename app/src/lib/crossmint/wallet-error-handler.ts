@@ -113,10 +113,31 @@ const ERROR_MESSAGES: Record<WalletErrorCode, string> = {
 
 /**
  * Wallet Error Handler utility class
+ *
+ * Provides static methods for parsing, logging, and handling wallet-related errors
+ * from both Crossmint and traditional wallet adapters.
  */
 export class WalletErrorHandler {
   /**
    * Parse an error and return a WalletError with appropriate code
+   *
+   * Analyzes the error message and context to determine the appropriate
+   * error code and create a structured WalletError object.
+   *
+   * @param error - The error to parse (can be any type)
+   * @param walletType - Type of wallet that generated the error
+   * @param context - Optional context string for debugging
+   * @returns Structured WalletError with appropriate error code
+   *
+   * @example
+   * ```typescript
+   * try {
+   *   await wallet.connect()
+   * } catch (error) {
+   *   const walletError = WalletErrorHandler.parseError(error, 'adapter', 'connect')
+   *   console.log(walletError.code) // e.g., 'CONNECTION_FAILED'
+   * }
+   * ```
    */
   static parseError(error: unknown, walletType: WalletType, context?: string): WalletError {
     // If it's already a WalletError, return it
@@ -311,6 +332,18 @@ export class WalletErrorHandler {
 
   /**
    * Get user-friendly error message for a WalletError or error code
+   *
+   * Converts technical error codes into human-readable messages
+   * suitable for displaying to end users.
+   *
+   * @param errorOrCode - WalletError instance or error code string
+   * @returns User-friendly error message
+   *
+   * @example
+   * ```typescript
+   * const message = WalletErrorHandler.getUserMessage(walletError)
+   * toast.error(message) // Display to user
+   * ```
    */
   static getUserMessage(errorOrCode: WalletError | WalletErrorCode): string {
     if (errorOrCode instanceof WalletError) {
@@ -321,6 +354,18 @@ export class WalletErrorHandler {
 
   /**
    * Log error with context for debugging
+   *
+   * Logs detailed error information to the console for debugging purposes.
+   * Includes error code, message, wallet type, and timestamp.
+   *
+   * @param error - The error to log
+   * @param context - Context string describing where the error occurred
+   * @param walletType - Optional wallet type for additional context
+   *
+   * @example
+   * ```typescript
+   * WalletErrorHandler.logError(error, 'socialLogin:google', 'crossmint')
+   * ```
    */
   static logError(error: unknown, context: string, walletType?: WalletType): void {
     const walletError = walletType
@@ -337,7 +382,22 @@ export class WalletErrorHandler {
   }
 
   /**
-   * Check if an error is recoverable (user can retry)
+   * Check if an error is recoverable
+   *
+   * Determines whether the user can retry the operation that caused the error.
+   * Recoverable errors are typically temporary issues like timeouts or network errors.
+   *
+   * @param error - The WalletError to check
+   * @returns True if the error is recoverable and user can retry
+   *
+   * @example
+   * ```typescript
+   * if (WalletErrorHandler.isRecoverable(walletError)) {
+   *   toast.error('Operation failed. Please try again.')
+   * } else {
+   *   toast.error('Operation failed. Please contact support.')
+   * }
+   * ```
    */
   static isRecoverable(error: WalletError): boolean {
     const recoverableErrors = [
@@ -354,6 +414,20 @@ export class WalletErrorHandler {
 
   /**
    * Check if an error requires re-authentication
+   *
+   * Determines whether the error indicates that the user's session has
+   * expired or is invalid, requiring them to authenticate again.
+   *
+   * @param error - The WalletError to check
+   * @returns True if the user needs to re-authenticate
+   *
+   * @example
+   * ```typescript
+   * if (WalletErrorHandler.requiresReauth(walletError)) {
+   *   toast.error('Your session has expired. Please sign in again.')
+   *   openAuthModal()
+   * }
+   * ```
    */
   static requiresReauth(error: WalletError): boolean {
     const reauthErrors = [

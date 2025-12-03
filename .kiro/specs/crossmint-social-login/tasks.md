@@ -131,14 +131,14 @@
     - Prevent app initialization with missing configuration
     - _Requirements: 5.4, 5.5_
 
-- [ ] 10. Update documentation and add usage examples
-  - [ ] 10.1 Update README with Crossmint setup instructions
+- [x] 10. Update documentation and add usage examples
+  - [x] 10.1 Update README with Crossmint setup instructions
     - Document required environment variables
     - Document how to obtain Crossmint API keys
     - Document supported login methods
     - _Requirements: 5.1, 5.2, 5.3_
 
-  - [ ] 10.2 Add code comments and JSDoc
+  - [x] 10.2 Add code comments and JSDoc
     - Document UnifiedWalletContext interface
     - Document CrossmintWalletAdapter methods
     - Document AuthModal component props

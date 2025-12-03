@@ -3,6 +3,8 @@
  *
  * Provides a unified authentication experience with both social login
  * (via Crossmint) and traditional Solana wallet connections.
+ *
+ * @module components/auth/AuthModal
  */
 
 import { useAuth } from '@crossmint/client-sdk-react-ui'
@@ -20,17 +22,43 @@ import {
 import { isCrossmintEnabled } from '@/config/crossmint'
 import { WALLET_ERROR_CODES, WalletErrorHandler } from '@/lib/crossmint/wallet-error-handler'
 
+/**
+ * Props for AuthModal component
+ */
 export interface AuthModalProps {
+  /** Controls whether the modal is visible */
   open: boolean
+
+  /** Callback function to control modal visibility */
   onOpenChange: (open: boolean) => void
 }
 
 /**
- * AuthModal Component
+ * Authentication Modal Component
  *
- * Displays authentication options including:
- * - Social login (Google, Twitter/X, Farcaster, Email) via Crossmint
- * - Traditional wallet connections (Phantom, Solflare)
+ * Displays a unified authentication interface that allows users to choose
+ * between social login methods (via Crossmint) and traditional Solana
+ * wallet connections.
+ *
+ * Features:
+ * - Social login options (Google, Twitter/X, Farcaster, Email)
+ * - Traditional wallet connection (Phantom, Solflare, etc.)
+ * - Loading states during authentication
+ * - Error handling with user-friendly messages
+ * - Automatic modal closure on successful authentication
+ *
+ * @param props - Component props
+ * @returns Authentication modal component
+ *
+ * @example
+ * ```tsx
+ * const [isOpen, setIsOpen] = useState(false)
+ *
+ * <AuthModal
+ *   open={isOpen}
+ *   onOpenChange={setIsOpen}
+ * />
+ * ```
  */
 export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   const crossmintAuth = useAuth()
@@ -43,6 +71,11 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
 
   /**
    * Handle social login via Crossmint
+   *
+   * Initiates the authentication flow for the selected social provider.
+   * The user will be redirected to the provider's authentication page.
+   *
+   * @param method - The authentication method to use
    */
   const handleSocialLogin = async (method: 'google' | 'twitter' | 'farcaster' | 'email') => {
     setIsLoading(true)
@@ -87,6 +120,9 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
 
   /**
    * Handle traditional wallet connection
+   *
+   * Opens the Solana wallet adapter modal to allow users to connect
+   * their traditional crypto wallets (Phantom, Solflare, etc.).
    */
   const handleWalletConnect = () => {
     try {
@@ -108,7 +144,10 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   }
 
   /**
-   * Get loading state for a specific method
+   * Check if a specific authentication method is currently loading
+   *
+   * @param method - The authentication method to check
+   * @returns True if the method is currently processing
    */
   const isMethodLoading = (method: string) => {
     return isLoading && loadingMethod === method
