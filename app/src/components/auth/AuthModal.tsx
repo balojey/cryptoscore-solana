@@ -9,7 +9,7 @@
 
 import { useAuth } from '@crossmint/client-sdk-react-ui'
 import { useWalletModal } from '@solana/wallet-adapter-react-ui'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -41,7 +41,7 @@ export interface AuthModalProps {
  * wallet connections.
  *
  * Features:
- * - Social login options (Google, Twitter/X, Farcaster, Email)
+ * - Social login options (Google, Email)
  * - Traditional wallet connection (Phantom, Solflare, etc.)
  * - Loading states during authentication
  * - Error handling with user-friendly messages
@@ -69,32 +69,48 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
 
   const crossmintEnabled = isCrossmintEnabled()
 
+  // Log Crossmint auth state for debugging
+  console.log('[AuthModal] Crossmint auth state:', {
+    status: crossmintAuth.status,
+    user: crossmintAuth.user,
+    enabled: crossmintEnabled,
+  })
+
+  // Close modal automatically when authentication completes
+  useEffect(() => {
+    if (crossmintAuth.status === 'logged-in' && open) {
+      console.log('[AuthModal] Authentication successful, closing modal')
+      onOpenChange(false)
+      toast.success('Successfully connected!')
+    }
+  }, [crossmintAuth.status, open, onOpenChange])
+
   /**
    * Handle social login via Crossmint
    *
-   * Initiates the authentication flow for the selected social provider.
-   * The user will be redirected to the provider's authentication page.
-   *
-   * @param method - The authentication method to use
+   * Opens Crossmint's native authentication modal with all social login options.
+   * The Crossmint modal will show Google and Email options.
    */
-  const handleSocialLogin = async (method: 'google' | 'twitter' | 'farcaster' | 'email') => {
+  const handleSocialLogin = async () => {
     setIsLoading(true)
-    setLoadingMethod(method)
+    setLoadingMethod('social')
 
     try {
-      // Trigger Crossmint authentication
-      // The login method will redirect to the provider's auth page
-      // @ts-expect-error - Crossmint SDK types may not be fully accurate
-      await crossmintAuth.login({ loginMethod: method })
+      // Close our custom modal
+      onOpenChange(false)
 
-      // Note: Modal will be closed automatically when user returns from auth
-      // or we can close it immediately since the redirect will happen
-      toast.success(`Redirecting to ${method} login...`)
+      // Trigger Crossmint's native login modal
+      // This will show all configured login methods (Google, Twitter, Farcaster, Email)
+      await crossmintAuth.login()
+
+      console.log('[AuthModal] Crossmint login modal opened')
     }
     catch (error) {
+      console.error('[AuthModal] Login error:', error)
+
       // Use WalletErrorHandler to parse and log the error
-      WalletErrorHandler.logError(error, `socialLogin:${method}`, 'crossmint')
-      const walletError = WalletErrorHandler.parseError(error, 'crossmint', `socialLogin:${method}`)
+      WalletErrorHandler.logError(error, 'socialLogin', 'crossmint')
+      const walletError = WalletErrorHandler.parseError(error, 'crossmint', 'socialLogin')
 
       // Get user-friendly error message
       const errorMessage = WalletErrorHandler.getUserMessage(walletError)
@@ -113,6 +129,10 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
         toast.error(errorMessage)
       }
 
+      // Reopen the modal if authentication failed
+      onOpenChange(true)
+    }
+    finally {
       setIsLoading(false)
       setLoadingMethod(null)
     }
@@ -125,6 +145,9 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
    * their traditional crypto wallets (Phantom, Solflare, etc.).
    */
   const handleWalletConnect = () => {
+    setIsLoading(true)
+    setLoadingMethod('wallet')
+
     try {
       // Close auth modal
       onOpenChange(false)
@@ -140,6 +163,10 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
       // Get user-friendly error message
       const errorMessage = WalletErrorHandler.getUserMessage(walletError)
       toast.error(errorMessage)
+    }
+    finally {
+      setIsLoading(false)
+      setLoadingMethod(null)
     }
   }
 
@@ -165,132 +192,50 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4 mt-4">
-          {/* Social Login Section */}
+        <div className="flex flex-col gap-3 mt-4">
+          {/* Social Login Option */}
           {crossmintEnabled && (
-            <>
-              <div className="flex flex-col gap-2">
-                <p
-                  className="text-xs font-semibold uppercase mb-1"
-                  style={{ color: 'var(--text-tertiary)' }}
-                >
-                  Social Login
-                </p>
-
-                {/* Google Login */}
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => handleSocialLogin('google')}
-                  disabled={isLoading}
-                  className="w-full justify-start gap-3 h-12"
-                >
-                  {isMethodLoading('google') ? (
-                    <span className="icon-[mdi--loading] w-5 h-5 animate-spin" />
-                  ) : (
-                    <span className="icon-[mdi--google] w-5 h-5" />
-                  )}
-                  <span className="flex-1 text-left">Sign in with Google</span>
-                </Button>
-
-                {/* Twitter/X Login */}
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => handleSocialLogin('twitter')}
-                  disabled={isLoading}
-                  className="w-full justify-start gap-3 h-12"
-                >
-                  {isMethodLoading('twitter') ? (
-                    <span className="icon-[mdi--loading] w-5 h-5 animate-spin" />
-                  ) : (
-                    <span className="icon-[mdi--twitter] w-5 h-5" />
-                  )}
-                  <span className="flex-1 text-left">Sign in with Twitter</span>
-                </Button>
-
-                {/* Farcaster Login */}
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => handleSocialLogin('farcaster')}
-                  disabled={isLoading}
-                  className="w-full justify-start gap-3 h-12"
-                >
-                  {isMethodLoading('farcaster') ? (
-                    <span className="icon-[mdi--loading] w-5 h-5 animate-spin" />
-                  ) : (
-                    <span className="icon-[mdi--cast] w-5 h-5" />
-                  )}
-                  <span className="flex-1 text-left">Sign in with Farcaster</span>
-                </Button>
-
-                {/* Email Login */}
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => handleSocialLogin('email')}
-                  disabled={isLoading}
-                  className="w-full justify-start gap-3 h-12"
-                >
-                  {isMethodLoading('email') ? (
-                    <span className="icon-[mdi--loading] w-5 h-5 animate-spin" />
-                  ) : (
-                    <span className="icon-[mdi--email] w-5 h-5" />
-                  )}
-                  <span className="flex-1 text-left">Sign in with Email</span>
-                </Button>
-              </div>
-
-              {/* Separator */}
-              <div className="relative">
-                <div
-                  className="absolute inset-0 flex items-center"
-                  aria-hidden="true"
-                >
-                  <div
-                    className="w-full border-t"
-                    style={{ borderColor: 'var(--border-default)' }}
-                  />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span
-                    className="px-2 font-semibold"
-                    style={{
-                      backgroundColor: 'var(--bg-elevated)',
-                      color: 'var(--text-tertiary)',
-                    }}
-                  >
-                    Or
-                  </span>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Traditional Wallet Section */}
-          <div className="flex flex-col gap-2">
-            <p
-              className="text-xs font-semibold uppercase mb-1"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              Wallet Connection
-            </p>
-
             <Button
               variant="outline"
               size="lg"
-              onClick={handleWalletConnect}
+              onClick={handleSocialLogin}
               disabled={isLoading}
-              className="w-full justify-start gap-3 h-12"
+              className="w-full justify-start gap-3 h-14"
             >
-              <span className="icon-[mdi--wallet] w-5 h-5" />
-              <span className="flex-1 text-left">Connect Wallet</span>
-              <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                Phantom, Solflare, etc.
-              </span>
+              {isMethodLoading('social') ? (
+                <span className="icon-[mdi--loading] w-6 h-6 animate-spin" />
+              ) : (
+                <span className="icon-[mdi--account-circle] w-6 h-6" />
+              )}
+              <div className="flex-1 text-left">
+                <div className="font-semibold">Social Login</div>
+                <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  Google, Email
+                </div>
+              </div>
             </Button>
-          </div>
+          )}
+
+          {/* Traditional Wallet Option */}
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={handleWalletConnect}
+            disabled={isLoading}
+            className="w-full justify-start gap-3 h-14"
+          >
+            {isMethodLoading('wallet') ? (
+              <span className="icon-[mdi--loading] w-6 h-6 animate-spin" />
+            ) : (
+              <span className="icon-[mdi--wallet] w-6 h-6" />
+            )}
+            <div className="flex-1 text-left">
+              <div className="font-semibold">Wallet Connection</div>
+              <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                Phantom, Solflare, Backpack, etc.
+              </div>
+            </div>
+          </Button>
 
           {/* Info Text */}
           <p

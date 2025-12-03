@@ -2,8 +2,8 @@
  * Crossmint Configuration
  *
  * Configuration for Crossmint authentication and wallet management.
- * Supports social login (Google, Twitter/X, Farcaster, email OTP) and
- * automatic Solana wallet creation for authenticated users.
+ * Supports social login (Google, email OTP) and automatic Solana
+ * wallet creation for authenticated users.
  *
  * @module config/crossmint
  * @see {@link https://docs.crossmint.com/ Crossmint Documentation}
@@ -19,17 +19,15 @@ export type CrossmintEnvironment = 'staging' | 'production'
 /**
  * Supported authentication methods for Crossmint
  * - `google`: Google OAuth authentication
- * - `twitter`: Twitter/X OAuth authentication
- * - `farcaster`: Farcaster protocol authentication
  * - `email`: Email OTP (one-time password) authentication
  * - `web3:solana-only`: Web3 wallet authentication (Solana only)
  */
 export type CrossmintLoginMethod
   = | 'google'
-    | 'twitter'
-    | 'farcaster'
+    // | 'twitter'
+    // | 'farcaster'
     | 'email'
-    | 'web3:solana-only'
+    // | 'web3:solana-only'
 
 /**
  * Crossmint configuration interface
@@ -94,10 +92,10 @@ export const CROSSMINT_ENVIRONMENT: CrossmintEnvironment
  */
 export const CROSSMINT_LOGIN_METHODS: CrossmintLoginMethod[] = [
   'google',
-  'twitter',
-  'farcaster',
+  // 'twitter',
+  // 'farcaster',
   'email',
-  'web3:solana-only',
+  // 'web3:solana-only',
 ]
 
 /**

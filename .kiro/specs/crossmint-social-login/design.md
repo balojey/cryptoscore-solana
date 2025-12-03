@@ -2,7 +2,7 @@
 
 ## Overview
 
-This design integrates Crossmint authentication and wallet management into the CryptoScore platform, enabling users to authenticate via social login providers (Google, Twitter/X, Farcaster, email OTP) while maintaining full backward compatibility with existing Solana wallet connections (Phantom, Solflare). The integration uses Crossmint's React SDK to provide a unified authentication experience and automatically creates Solana wallets for social login users.
+This design integrates Crossmint authentication and wallet management into the CryptoScore platform, enabling users to authenticate via social login providers (Google, email OTP) while maintaining full backward compatibility with existing Solana wallet connections (Phantom, Solflare). The integration uses Crossmint's React SDK to provide a unified authentication experience and automatically creates Solana wallets for social login users.
 
 The design follows a provider-based architecture that wraps the existing application with Crossmint providers, creating a unified wallet interface that abstracts the differences between Crossmint-managed wallets and traditional wallet adapter connections.
 
@@ -33,7 +33,7 @@ The application will be wrapped with the following provider structure:
 
 ```tsx
 <CrossmintProvider apiKey={clientApiKey}>
-  <CrossmintAuthProvider loginMethods={["google", "twitter", "farcaster", "email", "web3:solana-only"]}>
+  <CrossmintAuthProvider loginMethods={["google", "email", "web3:solana-only"]}>
     <CrossmintWalletProvider createOnLogin={{ chain: "solana", signer: { type: "PASSKEY" } }}>
       <ConnectionProvider endpoint={rpcEndpoint}>
         <WalletProvider wallets={[Phantom, Solflare]} autoConnect>
@@ -114,8 +114,6 @@ Update the existing Connect component to support both authentication methods.
 │  Social Login Options:              │
 │  ┌─────────────────────────────┐   │
 │  │  [G] Sign in with Google    │   │
-│  │  [X] Sign in with Twitter   │   │
-│  │  [F] Sign in with Farcaster │   │
 │  │  [@] Sign in with Email     │   │
 │  └─────────────────────────────┘   │
 │                                     │
@@ -197,8 +195,6 @@ interface UnifiedWalletState {
     email?: string
     phoneNumber?: string
     google?: { displayName: string }
-    twitter?: { username: string }
-    farcaster?: { username: string }
   } | null
   
   // Traditional wallet data
@@ -215,7 +211,7 @@ interface UnifiedWalletState {
 interface CrossmintConfig {
   clientApiKey: string
   environment: 'staging' | 'production'
-  loginMethods: Array<'google' | 'twitter' | 'farcaster' | 'email' | 'web3:solana-only'>
+  loginMethods: Array<'google' | 'email' | 'web3:solana-only'>
   walletConfig: {
     chain: 'solana'
     signer: {
@@ -322,8 +318,6 @@ const ERROR_CODES = {
 ### Manual Testing Checklist
 
 - [ ] Social login with Google
-- [ ] Social login with Twitter/X
-- [ ] Social login with Farcaster
 - [ ] Email OTP login
 - [ ] Traditional wallet connection (Phantom)
 - [ ] Traditional wallet connection (Solflare)

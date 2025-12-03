@@ -41,11 +41,11 @@ export interface CrossmintUser {
   /** Phone number (if provided) */
   phoneNumber?: string
 
-  /** Twitter profile information (if authenticated via Twitter) */
-  twitter?: { username: string }
+  // /** Twitter profile information (if authenticated via Twitter) */
+  // twitter?: { username: string }
 
-  /** Farcaster profile information (if authenticated via Farcaster) */
-  farcaster?: { username: string }
+  // /** Farcaster profile information (if authenticated via Farcaster) */
+  // farcaster?: { username: string }
 }
 
 /**
@@ -199,8 +199,28 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
 
   // Determine which wallet type is active
   const walletType: WalletType = useMemo(() => {
+    // Debug logging
+    console.log('[UnifiedWallet] Determining wallet type:', {
+      crossmintStatus: crossmintAuth.status,
+      crossmintWalletAddress: crossmintWallet?.address,
+      crossmintWalletChain: crossmintWallet?.chain,
+      adapterConnected: adapterWallet.connected,
+      adapterPublicKey: adapterWallet.publicKey?.toBase58(),
+    })
+
     // Check if Crossmint wallet is connected
-    if (crossmintAuth.status === 'logged-in' && crossmintWallet?.address) {
+    // Note: Wallet might still be creating, so check status first
+    if (crossmintAuth.status === 'logged-in') {
+      // If wallet address exists, we're fully connected
+      if (crossmintWallet?.address) {
+        console.log('[UnifiedWallet] Crossmint wallet fully connected')
+        return 'crossmint'
+      }
+      
+      // If logged in but no wallet yet, it might still be creating
+      // Check if wallet is being created
+      console.log('[UnifiedWallet] Crossmint logged in, waiting for wallet...')
+      // Still return crossmint type so UI updates
       return 'crossmint'
     }
 
@@ -213,20 +233,30 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
   }, [
     crossmintAuth.status,
     crossmintWallet?.address,
+    crossmintWallet?.chain,
     adapterWallet.connected,
     adapterWallet.publicKey,
   ])
 
   // Get public key based on wallet type
   const publicKey = useMemo(() => {
-    if (walletType === 'crossmint' && crossmintWallet?.address) {
-      try {
-        return new PublicKey(crossmintWallet.address)
+    if (walletType === 'crossmint') {
+      // If wallet address exists, parse it
+      if (crossmintWallet?.address) {
+        try {
+          const pubKey = new PublicKey(crossmintWallet.address)
+          console.log('[UnifiedWallet] Crossmint wallet address:', pubKey.toBase58())
+          return pubKey
+        }
+        catch (error) {
+          console.error('[UnifiedWallet] Failed to parse Crossmint wallet address:', error)
+          return null
+        }
       }
-      catch (error) {
-        console.error('Failed to parse Crossmint wallet address:', error)
-        return null
-      }
+      
+      // Wallet is still being created
+      console.log('[UnifiedWallet] Crossmint wallet address not yet available')
+      return null
     }
 
     if (walletType === 'adapter') {
@@ -251,8 +281,8 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
       userId: crossmintAuth.user.id || '',
       email: crossmintAuth.user.email,
       phoneNumber: crossmintAuth.user.phoneNumber,
-      twitter: crossmintAuth.user.twitter,
-      farcaster: crossmintAuth.user.farcaster,
+      // twitter: crossmintAuth.user.twitter,
+      // farcaster: crossmintAuth.user.farcaster,
     }
   }, [walletType, crossmintAuth.user])
 
@@ -465,19 +495,33 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
     restoreSession()
   }, [sessionRestored])
 
+  // Monitor Crossmint wallet creation
+  useEffect(() => {
+    if (crossmintAuth.status === 'logged-in' && crossmintWallet?.address) {
+      console.log('[UnifiedWallet] Crossmint auth status: logged-in')
+      console.log('[UnifiedWallet] Crossmint wallet:', {
+        address: crossmintWallet?.address,
+        chain: crossmintWallet?.chain,
+        publicKey: crossmintWallet?.publicKey,
+      })
+      
+      if (!crossmintWallet?.address) {
+        console.log('[UnifiedWallet] Waiting for Crossmint wallet to be created...')
+        // The wallet should be created automatically by CrossmintWalletProvider
+        // with createOnLogin prop
+      } else {
+        console.log('[UnifiedWallet] Crossmint wallet is ready!')
+      }
+    }
+  }, [crossmintAuth.status, crossmintWallet?.address, crossmintWallet?.chain])
+
   // Store session metadata when Crossmint user authenticates
   useEffect(() => {
     if (walletType === 'crossmint' && crossmintAuth.status === 'logged-in' && crossmintAuth.user) {
       // Determine auth method from user data
-      let authMethod: 'google' | 'twitter' | 'farcaster' | 'email' | 'web3' | undefined
+      let authMethod: 'google' | 'email' | 'web3' | undefined
 
-      if (crossmintAuth.user.twitter) {
-        authMethod = 'twitter'
-      }
-      else if (crossmintAuth.user.farcaster) {
-        authMethod = 'farcaster'
-      }
-      else if (crossmintAuth.user.email) {
+      if (crossmintAuth.user.email) {
         authMethod = 'email'
       }
 

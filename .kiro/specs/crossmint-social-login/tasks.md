@@ -10,7 +10,7 @@
   - [x] 2.1 Wrap application with CrossmintProvider in main.tsx
     - Import Crossmint provider components
     - Configure CrossmintProvider with API key from environment
-    - Configure CrossmintAuthProvider with login methods (google, twitter, farcaster, email, web3:solana-only)
+    - Configure CrossmintAuthProvider with login methods (google, email, web3:solana-only)
     - Configure CrossmintWalletProvider with Solana chain and PASSKEY signer
     - Maintain existing Solana wallet adapter providers
     - _Requirements: 1.1, 2.1, 5.1, 5.2_
@@ -40,7 +40,7 @@
 - [x] 4. Create authentication modal component
   - [x] 4.1 Build AuthModal component
     - Create modal UI with social login section
-    - Add Google, Twitter/X, Farcaster, and email login buttons using Crossmint components
+    - Add Google and email login buttons using Crossmint components
     - Add separator between social and wallet options
     - Add traditional wallet connection buttons (Phantom, Solflare)
     - Implement modal open/close state management

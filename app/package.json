@@ -11,7 +11,9 @@
     "lint": "eslint . --fix",
     "test": "vitest --run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "verify:crossmint": "node scripts/verify-crossmint-config.js",
+    "diagnose:twitter": "node scripts/diagnose-twitter-login.js"
   },
   "dependencies": {
     "@crossmint/client-sdk-react-ui": "^2.6.4",

@@ -2,13 +2,13 @@
 
 ## Introduction
 
-This feature adds social login capabilities to the CryptoScore prediction market platform using Crossmint authentication. Users will be able to authenticate using social providers (Google, Twitter/X, Farcaster) or email OTP in addition to the existing Solana wallet connection methods. The integration will create Crossmint-managed wallets for users who authenticate via social login, enabling them to interact with the Solana-based prediction markets without needing to manage their own crypto wallets.
+This feature adds social login capabilities to the CryptoScore prediction market platform using Crossmint authentication. Users will be able to authenticate using Google or email OTP in addition to the existing Solana wallet connection methods. The integration will create Crossmint-managed wallets for users who authenticate via social login, enabling them to interact with the Solana-based prediction markets without needing to manage their own crypto wallets.
 
 ## Glossary
 
 - **CryptoScore_Platform**: The existing Solana-based sports prediction market application
 - **Crossmint_Auth_System**: The Crossmint authentication service that provides social login and wallet management
-- **Social_Login**: Authentication method using third-party providers (Google, Twitter/X, Farcaster, email OTP)
+- **Social_Login**: Authentication method using third-party providers (Google, email OTP)
 - **Crossmint_Wallet**: A Solana wallet created and managed by Crossmint on behalf of authenticated users
 - **Legacy_Wallet_Connection**: The existing wallet connection flow using Phantom, Solflare, and other Solana wallet adapters
 - **Unified_Auth_Interface**: The combined authentication UI that supports both social login and traditional wallet connections
@@ -17,12 +17,12 @@ This feature adds social login capabilities to the CryptoScore prediction market
 
 ### Requirement 1
 
-**User Story:** As a new user without a crypto wallet, I want to sign in using my Google, Twitter, or email account, so that I can participate in prediction markets without setting up a crypto wallet
+**User Story:** As a new user without a crypto wallet, I want to sign in using my Google or email account, so that I can participate in prediction markets without setting up a crypto wallet
 
 #### Acceptance Criteria
 
 1. WHEN a user clicks the login button, THE Unified_Auth_Interface SHALL display options for both social login methods and traditional wallet connections
-2. WHEN a user selects a social login method (Google, Twitter/X, Farcaster, or email OTP), THE Crossmint_Auth_System SHALL initiate the authentication flow for the selected provider
+2. WHEN a user selects a social login method (Google or email OTP), THE Crossmint_Auth_System SHALL initiate the authentication flow for the selected provider
 3. WHEN a user completes social authentication successfully, THE Crossmint_Auth_System SHALL create a Crossmint_Wallet for the user if one does not exist
 4. WHEN a user completes social authentication successfully, THE CryptoScore_Platform SHALL store the user session and display the user as authenticated
 5. WHEN a user with an active social login session returns to the application, THE CryptoScore_Platform SHALL automatically restore the user session without requiring re-authentication

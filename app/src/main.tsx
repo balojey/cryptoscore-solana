@@ -22,7 +22,6 @@ import {
   CROSSMINT_CLIENT_API_KEY,
   CROSSMINT_ENVIRONMENT,
   CROSSMINT_LOGIN_METHODS,
-  CROSSMINT_WALLET_CONFIG,
   isCrossmintEnabled,
 } from './config/crossmint'
 import {
@@ -99,8 +98,20 @@ function Root() {
       {crossmintEnabled ? (
         // Wrap with Crossmint providers when enabled
         <CrossmintProvider apiKey={CROSSMINT_CLIENT_API_KEY}>
-          <CrossmintAuthProvider loginMethods={CROSSMINT_LOGIN_METHODS}>
-            <CrossmintWalletProvider createOnLogin={CROSSMINT_WALLET_CONFIG}>
+          <CrossmintAuthProvider
+            loginMethods={CROSSMINT_LOGIN_METHODS}
+            appearance={{
+              borderRadius: 'md',
+            }}
+          >
+            <CrossmintWalletProvider 
+              createOnLogin={{
+                chain: 'solana',
+                signer: {
+                  type: 'email',
+                },
+              }}
+            >
               <ConnectionProvider endpoint={endpoint}>
                 <WalletProvider wallets={wallets} autoConnect>
                   <WalletModalProvider>
