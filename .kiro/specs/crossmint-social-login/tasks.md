@@ -37,8 +37,8 @@
     - Implement wallet state synchronization
     - _Requirements: 2.3, 2.4, 3.1_
 
-- [ ] 4. Create authentication modal component
-  - [ ] 4.1 Build AuthModal component
+- [x] 4. Create authentication modal component
+  - [x] 4.1 Build AuthModal component
     - Create modal UI with social login section
     - Add Google, Twitter/X, Farcaster, and email login buttons using Crossmint components
     - Add separator between social and wallet options
@@ -46,7 +46,7 @@
     - Implement modal open/close state management
     - _Requirements: 1.1, 1.2, 2.1_
 
-  - [ ] 4.2 Implement authentication flow handlers
+  - [x] 4.2 Implement authentication flow handlers
     - Handle social login button clicks using Crossmint useAuth hook
     - Handle traditional wallet connection using existing wallet adapter
     - Display loading states during authentication
