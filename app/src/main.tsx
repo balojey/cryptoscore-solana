@@ -10,8 +10,19 @@ import { clusterApiUrl } from '@solana/web3.js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React, { useMemo } from 'react'
 import ReactDOM from 'react-dom/client'
+import { 
+  CrossmintProvider,
+  CrossmintAuthProvider,
+  CrossmintWalletProvider,
+} from '@crossmint/client-sdk-react-ui'
 
 import App from './App.tsx'
+import { 
+  CROSSMINT_CLIENT_API_KEY,
+  CROSSMINT_LOGIN_METHODS,
+  CROSSMINT_WALLET_CONFIG,
+  isCrossmintEnabled,
+} from './config/crossmint'
 
 import './style.css'
 import '@solana/wallet-adapter-react-ui/styles.css'
@@ -40,17 +51,40 @@ function Root() {
     [network],
   )
 
+  // Check if Crossmint is enabled
+  const crossmintEnabled = isCrossmintEnabled()
+
   return (
     <React.StrictMode>
-      <ConnectionProvider endpoint={endpoint}>
-        <WalletProvider wallets={wallets} autoConnect>
-          <WalletModalProvider>
-            <QueryClientProvider client={queryClient}>
-              <App />
-            </QueryClientProvider>
-          </WalletModalProvider>
-        </WalletProvider>
-      </ConnectionProvider>
+      {crossmintEnabled ? (
+        // Wrap with Crossmint providers when enabled
+        <CrossmintProvider apiKey={CROSSMINT_CLIENT_API_KEY}>
+          <CrossmintAuthProvider loginMethods={CROSSMINT_LOGIN_METHODS}>
+            <CrossmintWalletProvider createOnLogin={CROSSMINT_WALLET_CONFIG}>
+              <ConnectionProvider endpoint={endpoint}>
+                <WalletProvider wallets={wallets} autoConnect>
+                  <WalletModalProvider>
+                    <QueryClientProvider client={queryClient}>
+                      <App />
+                    </QueryClientProvider>
+                  </WalletModalProvider>
+                </WalletProvider>
+              </ConnectionProvider>
+            </CrossmintWalletProvider>
+          </CrossmintAuthProvider>
+        </CrossmintProvider>
+      ) : (
+        // Use existing providers when Crossmint is not configured
+        <ConnectionProvider endpoint={endpoint}>
+          <WalletProvider wallets={wallets} autoConnect>
+            <WalletModalProvider>
+              <QueryClientProvider client={queryClient}>
+                <App />
+              </QueryClientProvider>
+            </WalletModalProvider>
+          </WalletProvider>
+        </ConnectionProvider>
+      )}
     </React.StrictMode>
   )
 }
