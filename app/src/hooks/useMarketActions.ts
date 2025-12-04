@@ -11,6 +11,7 @@ import { SolanaErrorHandler } from '../lib/solana/error-handler'
 import { InstructionEncoder } from '../lib/solana/instruction-encoder'
 import { PDAUtils } from '../lib/solana/pda-utils'
 import { TransactionBuilder } from '../lib/solana/transaction-builder'
+import { TransactionSerializer } from '../lib/solana/transaction-serializer'
 import { SolanaUtils } from '../lib/solana/utils'
 import { MatchOutcome, PredictionChoice } from '../types/solana-program-types'
 
@@ -46,7 +47,7 @@ export interface SimulationResult {
 
 export function useMarketActions() {
   const { connection } = useConnection()
-  const { publicKey, signTransaction, walletType } = useUnifiedWallet()
+  const { publicKey, walletType, crossmintWallet, adapterWallet } = useUnifiedWallet()
   const queryClient = useQueryClient()
   const [isLoading, setIsLoading] = useState(false)
   const [txSignature, setTxSignature] = useState<string | null>(null)
@@ -91,13 +92,14 @@ export function useMarketActions() {
   }, [connection])
 
   /**
-   * Sign and send a transaction using the unified wallet interface
-   * Handles both Crossmint and adapter wallets
+   * Submit a transaction using the appropriate wallet method
+   * Handles both Crossmint and adapter wallets with wallet-type-aware logic
    */
-  const signAndSendTransaction = useCallback(async (
+  const submitTransaction = useCallback(async (
     transaction: any,
     operationName: string,
   ): Promise<string> => {
+    // Validate wallet connection
     if (!publicKey) {
       const error = WalletErrorHandler.parseError(
         new Error('Wallet not connected'),
@@ -107,31 +109,58 @@ export function useMarketActions() {
       throw error
     }
 
-    try {
-      // For adapter wallets, use the standard sign and send flow
-      if (walletType === 'adapter') {
-        // Sign the transaction
-        toast.info('Please approve the transaction in your wallet...')
-        const signedTx = await signTransaction(transaction)
+    // Log transaction submission details
+    console.log(`[${operationName}] Submitting transaction with wallet type: ${walletType}`)
+    TransactionSerializer.logDetails(transaction, operationName)
 
-        // Send the signed transaction
+    try {
+      // Handle Crossmint wallet transaction flow
+      if (walletType === 'crossmint') {
+        if (!crossmintWallet) {
+          throw new Error('Crossmint wallet not available')
+        }
+
+        console.log(`[${operationName}] Using Crossmint wallet flow`)
+        
+        // Show user feedback
+        toast.info('Please approve the transaction...')
+
+        // Serialize transaction to Base58 format for Crossmint
+        const base58Tx = TransactionSerializer.toBase58(transaction)
+        console.log(`[${operationName}] Transaction serialized (${TransactionSerializer.getSize(transaction)} bytes)`)
+
+        // Send using Crossmint SDK
         toast.info('Sending transaction...')
-        const signature = await connection.sendRawTransaction(signedTx.serialize(), {
-          skipPreflight: false,
-          preflightCommitment: 'confirmed',
+        const result = await crossmintWallet.send({
+          transaction: base58Tx,
         })
 
+        console.log(`[${operationName}] Crossmint response:`, result)
+
+        // Extract signature from Crossmint response
+        const signature = result.txId || result.signature
+
+        if (!signature) {
+          throw new Error('No transaction signature returned from Crossmint')
+        }
+
+        console.log(`[${operationName}] Transaction signature: ${signature}`)
         return signature
       }
 
-      // For Crossmint wallets, we need to use a different approach
-      // Crossmint handles signing internally, so we just send the transaction
-      if (walletType === 'crossmint') {
-        // Crossmint wallets require using their SDK's transaction methods
-        // For now, we'll sign and send using the standard flow
-        // The Crossmint wallet adapter should handle the signing internally
-        toast.info('Please approve the transaction...')
-        const signedTx = await signTransaction(transaction)
+      // Handle adapter wallet transaction flow
+      if (walletType === 'adapter') {
+        if (!adapterWallet?.signTransaction) {
+          throw new Error('Adapter wallet does not support transaction signing')
+        }
+
+        console.log(`[${operationName}] Using adapter wallet flow`)
+
+        // Show user feedback
+        toast.info('Please approve the transaction in your wallet...')
+
+        // Sign the transaction using adapter wallet
+        const signedTx = await adapterWallet.signTransaction(transaction)
 
         // Send the signed transaction
         toast.info('Sending transaction...')
@@ -140,35 +169,30 @@ export function useMarketActions() {
           preflightCommitment: 'confirmed',
         })
 
+        console.log(`[${operationName}] Transaction signature: ${signature}`)
         return signature
       }
 
       throw new Error('Unknown wallet type')
     }
     catch (error) {
-      // Parse the error using WalletErrorHandler
-      const walletError = WalletErrorHandler.parseError(error, walletType, operationName)
+      // Parse the error using appropriate handler based on wallet type
+      const walletError = walletType === 'crossmint'
+        ? WalletErrorHandler.parseCrossmintError(error, operationName)
+        : WalletErrorHandler.parseError(error, walletType, operationName)
 
       // Log the error for debugging
-      WalletErrorHandler.logError(error, operationName, walletType)
+      WalletErrorHandler.logError(walletError, operationName, walletType)
 
-      // Handle specific error types
-      if (walletError.code === WALLET_ERROR_CODES.TRANSACTION_REJECTED) {
-        toast.error('Transaction was rejected')
-      }
-      else if (walletError.code === WALLET_ERROR_CODES.INSUFFICIENT_FUNDS) {
-        toast.error('Insufficient funds to complete this transaction')
-      }
-      else if (walletError.code === WALLET_ERROR_CODES.NETWORK_ERROR) {
-        toast.error('Network error. Please check your connection and try again.')
-      }
-      else if (WalletErrorHandler.requiresReauth(walletError)) {
-        toast.error('Your session has expired. Please sign in again.')
-      }
+      // Get user-friendly error message
+      const userMessage = WalletErrorHandler.getUserMessage(walletError)
+
+      // Display user-friendly error message with toast
+      toast.error(userMessage)
 
       throw walletError
     }
-  }, [publicKey, walletType, signTransaction, connection])
+  }, [publicKey, walletType, crossmintWallet, adapterWallet, connection])
 
   /**
    * Create a new prediction market
@@ -244,8 +268,8 @@ export function useMarketActions() {
         return null
       }
 
-      // Sign and send transaction using unified wallet interface
-      const signature = await signAndSendTransaction(transaction, 'createMarket')
+      // Submit transaction using wallet-type-aware method
+      const signature = await submitTransaction(transaction, 'createMarket')
 
       console.log('Transaction sent:', signature)
       toast.info('Confirming transaction...')
@@ -302,7 +326,7 @@ export function useMarketActions() {
     finally {
       setIsLoading(false)
     }
-  }, [connection, publicKey, queryClient, simulateBeforeSend, signAndSendTransaction])
+  }, [connection, publicKey, queryClient, simulateBeforeSend, submitTransaction, walletType])
 
   /**
    * Join an existing market with a prediction
@@ -374,8 +398,8 @@ export function useMarketActions() {
         return null
       }
 
-      // Sign and send transaction using unified wallet interface
-      const signature = await signAndSendTransaction(transaction, 'joinMarket')
+      // Submit transaction using wallet-type-aware method
+      const signature = await submitTransaction(transaction, 'joinMarket')
 
       console.log('Transaction sent:', signature)
       toast.info('Confirming transaction...')
@@ -432,7 +456,7 @@ export function useMarketActions() {
     finally {
       setIsLoading(false)
     }
-  }, [connection, publicKey, queryClient, simulateBeforeSend, signAndSendTransaction])
+  }, [connection, publicKey, queryClient, simulateBeforeSend, submitTransaction, walletType])
 
   /**
    * Resolve a market with the match outcome
@@ -496,8 +520,8 @@ export function useMarketActions() {
         return null
       }
 
-      // Sign and send transaction using unified wallet interface
-      const signature = await signAndSendTransaction(transaction, 'resolveMarket')
+      // Submit transaction using wallet-type-aware method
+      const signature = await submitTransaction(transaction, 'resolveMarket')
 
       console.log('Transaction sent:', signature)
       toast.info('Confirming transaction...')
@@ -554,7 +578,7 @@ export function useMarketActions() {
     finally {
       setIsLoading(false)
     }
-  }, [connection, publicKey, queryClient, simulateBeforeSend, signAndSendTransaction])
+  }, [connection, publicKey, queryClient, simulateBeforeSend, submitTransaction, walletType])
 
   /**
    * Withdraw rewards from a resolved market
@@ -616,8 +640,8 @@ export function useMarketActions() {
         return null
       }
 
-      // Sign and send transaction using unified wallet interface
-      const signature = await signAndSendTransaction(transaction, 'withdrawRewards')
+      // Submit transaction using wallet-type-aware method
+      const signature = await submitTransaction(transaction, 'withdrawRewards')
 
       console.log('Transaction sent:', signature)
       toast.info('Confirming transaction...')
@@ -675,7 +699,7 @@ export function useMarketActions() {
     finally {
       setIsLoading(false)
     }
-  }, [connection, publicKey, queryClient, simulateBeforeSend, signAndSendTransaction])
+  }, [connection, publicKey, queryClient, simulateBeforeSend, submitTransaction, walletType])
 
   /**
    * Get Solana Explorer link for a transaction

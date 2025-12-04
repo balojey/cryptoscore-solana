@@ -27,20 +27,20 @@
     - Remove related error handling code
     - _Requirements: 5.1, 5.2_
 
-- [ ] 3. Implement wallet-type-aware transaction submission in useMarketActions
-  - [ ] 3.1 Update useMarketActions to get crossmintWallet from context
+- [x] 3. Implement wallet-type-aware transaction submission in useMarketActions
+  - [x] 3.1 Update useMarketActions to get crossmintWallet from context
     - Import crossmintWallet from useUnifiedWallet hook
     - Remove direct signTransaction usage
     - Update hook dependencies
     - _Requirements: 1.1, 1.3, 5.1_
 
-  - [ ] 3.2 Create submitTransaction method that detects wallet type
+  - [x] 3.2 Create submitTransaction method that detects wallet type
     - Implement wallet type detection (crossmint vs adapter)
     - Add error handling for wallet not connected
     - Add logging for transaction submission
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-  - [ ] 3.3 Implement Crossmint transaction flow in submitTransaction
+  - [x] 3.3 Implement Crossmint transaction flow in submitTransaction
     - Serialize transaction using TransactionSerializer.toBase58()
     - Call crossmintWallet.send() with serialized transaction
     - Extract signature from Crossmint response (txId or signature field)
@@ -48,28 +48,28 @@
     - Add toast notifications for user feedback
     - _Requirements: 1.2, 1.3, 1.4, 1.5, 6.2, 6.3_
 
-  - [ ] 3.4 Implement adapter wallet transaction flow in submitTransaction
+  - [x] 3.4 Implement adapter wallet transaction flow in submitTransaction
     - Keep existing signTransaction + sendRawTransaction flow
     - Maintain backward compatibility
     - Add toast notifications for user feedback
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-  - [ ] 3.5 Replace signAndSendTransaction calls with submitTransaction
+  - [x] 3.5 Replace signAndSendTransaction calls with submitTransaction
     - Update createMarket to use submitTransaction
     - Update joinMarket to use submitTransaction
     - Update resolveMarket to use submitTransaction
     - Update withdrawRewards to use submitTransaction
     - _Requirements: 1.1, 2.1, 3.1, 3.2_
 
-- [ ] 4. Enhance error handling for Crossmint transactions
-  - [ ] 4.1 Add Crossmint-specific error codes to WalletErrorHandler
+- [x] 4. Enhance error handling for Crossmint transactions
+  - [x] 4.1 Add Crossmint-specific error codes to WalletErrorHandler
     - Add CROSSMINT_API_ERROR error code
     - Add CROSSMINT_SIGNING_ERROR error code
     - Add CROSSMINT_WALLET_NOT_READY error code
     - Add TRANSACTION_SERIALIZATION_ERROR error code
     - _Requirements: 7.1, 7.6_
 
-  - [ ] 4.2 Implement parseCrossmintError method
+  - [x] 4.2 Implement parseCrossmintError method
     - Parse Crossmint API error responses
     - Map error messages to error codes
     - Handle user rejection errors
@@ -78,14 +78,14 @@
     - Handle session expiration errors
     - _Requirements: 1.6, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6_
 
-  - [ ] 4.3 Update error handling in submitTransaction
+  - [x] 4.3 Update error handling in submitTransaction
     - Use parseCrossmintError for Crossmint wallet errors
     - Use existing parseError for adapter wallet errors
     - Log errors with WalletErrorHandler.logError()
     - Display user-friendly error messages with toast
     - _Requirements: 1.6, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6_
 
-- [ ] 5. Update transaction confirmation and user feedback
+- [-] 5. Update transaction confirmation and user feedback
   - [ ] 5.1 Add detailed toast notifications for transaction stages
     - Add "Preparing transaction" toast when building transaction
     - Add "Approve transaction" toast when waiting for user approval

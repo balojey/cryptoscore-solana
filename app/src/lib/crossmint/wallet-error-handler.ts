@@ -44,6 +44,12 @@ export const WALLET_ERROR_CODES = {
   INVALID_API_KEY: 'INVALID_API_KEY',
   MISSING_ENVIRONMENT: 'MISSING_ENVIRONMENT',
 
+  // Crossmint-specific errors
+  CROSSMINT_API_ERROR: 'CROSSMINT_API_ERROR',
+  CROSSMINT_SIGNING_ERROR: 'CROSSMINT_SIGNING_ERROR',
+  CROSSMINT_WALLET_NOT_READY: 'CROSSMINT_WALLET_NOT_READY',
+  TRANSACTION_SERIALIZATION_ERROR: 'TRANSACTION_SERIALIZATION_ERROR',
+
   // Generic errors
   UNKNOWN_ERROR: 'UNKNOWN_ERROR',
 } as const
@@ -106,6 +112,12 @@ const ERROR_MESSAGES: Record<WalletErrorCode, string> = {
   [WALLET_ERROR_CODES.CONFIG_ERROR]: 'Configuration error. Please contact support.',
   [WALLET_ERROR_CODES.INVALID_API_KEY]: 'Invalid API key. Please check your configuration.',
   [WALLET_ERROR_CODES.MISSING_ENVIRONMENT]: 'Missing environment configuration. Please contact support.',
+
+  // Crossmint-specific errors
+  [WALLET_ERROR_CODES.CROSSMINT_API_ERROR]: 'Crossmint API error. Please try again.',
+  [WALLET_ERROR_CODES.CROSSMINT_SIGNING_ERROR]: 'Failed to sign transaction with Crossmint. Please try again.',
+  [WALLET_ERROR_CODES.CROSSMINT_WALLET_NOT_READY]: 'Crossmint wallet is not ready. Please wait a moment and try again.',
+  [WALLET_ERROR_CODES.TRANSACTION_SERIALIZATION_ERROR]: 'Failed to prepare transaction. Please try again.',
 
   // Generic errors
   [WALLET_ERROR_CODES.UNKNOWN_ERROR]: 'An unexpected error occurred. Please try again.',
@@ -326,6 +338,234 @@ export class WalletErrorHandler {
       errorString,
       WALLET_ERROR_CODES.UNKNOWN_ERROR,
       walletType,
+      error,
+    )
+  }
+
+  /**
+   * Parse Crossmint-specific errors
+   *
+   * Analyzes errors from Crossmint API and wallet operations to determine
+   * the appropriate error code and create a structured WalletError object.
+   *
+   * @param error - The error to parse (can be any type)
+   * @param context - Optional context string for debugging
+   * @returns Structured WalletError with appropriate Crossmint error code
+   *
+   * @example
+   * ```typescript
+   * try {
+   *   await crossmintWallet.send({ transaction: base58Tx })
+   * } catch (error) {
+   *   const walletError = WalletErrorHandler.parseCrossmintError(error, 'createMarket')
+   *   console.log(walletError.code) // e.g., 'CROSSMINT_API_ERROR'
+   * }
+   * ```
+   */
+  static parseCrossmintError(error: unknown, context?: string): WalletError {
+    // If it's already a WalletError, return it
+    if (error instanceof WalletError) {
+      return error
+    }
+
+    // Handle errors with response data (API errors)
+    if (error && typeof error === 'object' && 'response' in error) {
+      const response = (error as any).response
+
+      // Check for API error message in response data
+      if (response?.data?.message) {
+        const message = String(response.data.message).toLowerCase()
+
+        // User rejection
+        if (message.includes('reject') || message.includes('denied') || message.includes('declined') || message.includes('cancel')) {
+          return new WalletError(
+            'Transaction was rejected',
+            WALLET_ERROR_CODES.TRANSACTION_REJECTED,
+            'crossmint',
+            error,
+          )
+        }
+
+        // Insufficient funds
+        if (message.includes('insufficient') || message.includes('balance') || message.includes('funds')) {
+          return new WalletError(
+            'Insufficient funds to complete this transaction',
+            WALLET_ERROR_CODES.INSUFFICIENT_FUNDS,
+            'crossmint',
+            error,
+          )
+        }
+
+        // Network errors
+        if (message.includes('network') || message.includes('connection') || message.includes('timeout')) {
+          return new WalletError(
+            'Network error. Please check your connection and try again.',
+            WALLET_ERROR_CODES.NETWORK_ERROR,
+            'crossmint',
+            error,
+          )
+        }
+
+        // Session expiration
+        if (message.includes('session') || message.includes('expired') || message.includes('token') || message.includes('auth')) {
+          return new WalletError(
+            'Your session has expired. Please sign in again.',
+            WALLET_ERROR_CODES.SESSION_EXPIRED,
+            'crossmint',
+            error,
+          )
+        }
+
+        // Wallet not ready
+        if (message.includes('wallet not ready') || message.includes('not initialized') || message.includes('not available')) {
+          return new WalletError(
+            'Crossmint wallet is not ready. Please wait a moment and try again.',
+            WALLET_ERROR_CODES.CROSSMINT_WALLET_NOT_READY,
+            'crossmint',
+            error,
+          )
+        }
+
+        // Signing errors
+        if (message.includes('sign') || message.includes('signature')) {
+          return new WalletError(
+            'Failed to sign transaction with Crossmint',
+            WALLET_ERROR_CODES.CROSSMINT_SIGNING_ERROR,
+            'crossmint',
+            error,
+          )
+        }
+
+        // Serialization errors
+        if (message.includes('serializ') || message.includes('invalid transaction') || message.includes('malformed')) {
+          return new WalletError(
+            'Failed to prepare transaction',
+            WALLET_ERROR_CODES.TRANSACTION_SERIALIZATION_ERROR,
+            'crossmint',
+            error,
+          )
+        }
+
+        // Generic API error with the actual message
+        return new WalletError(
+          response.data.message,
+          WALLET_ERROR_CODES.CROSSMINT_API_ERROR,
+          'crossmint',
+          error,
+        )
+      }
+
+      // Check for error message in response
+      if (response?.error) {
+        const errorMsg = String(response.error).toLowerCase()
+
+        if (errorMsg.includes('reject') || errorMsg.includes('denied')) {
+          return new WalletError(
+            'Transaction was rejected',
+            WALLET_ERROR_CODES.TRANSACTION_REJECTED,
+            'crossmint',
+            error,
+          )
+        }
+
+        return new WalletError(
+          String(response.error),
+          WALLET_ERROR_CODES.CROSSMINT_API_ERROR,
+          'crossmint',
+          error,
+        )
+      }
+    }
+
+    // Handle standard Error objects
+    if (error instanceof Error) {
+      const errorMessage = error.message.toLowerCase()
+
+      // User rejection
+      if (errorMessage.includes('reject') || errorMessage.includes('denied') || errorMessage.includes('declined') || errorMessage.includes('cancel')) {
+        return new WalletError(
+          'Transaction was rejected',
+          WALLET_ERROR_CODES.TRANSACTION_REJECTED,
+          'crossmint',
+          error,
+        )
+      }
+
+      // Insufficient funds
+      if (errorMessage.includes('insufficient') || errorMessage.includes('balance') || errorMessage.includes('funds')) {
+        return new WalletError(
+          'Insufficient funds to complete this transaction',
+          WALLET_ERROR_CODES.INSUFFICIENT_FUNDS,
+          'crossmint',
+          error,
+        )
+      }
+
+      // Network errors
+      if (errorMessage.includes('network') || errorMessage.includes('connection') || errorMessage.includes('timeout') || errorMessage.includes('fetch')) {
+        return new WalletError(
+          'Network error. Please check your connection and try again.',
+          WALLET_ERROR_CODES.NETWORK_ERROR,
+          'crossmint',
+          error,
+        )
+      }
+
+      // Session expiration
+      if (errorMessage.includes('session') || errorMessage.includes('expired') || errorMessage.includes('token') || errorMessage.includes('auth')) {
+        return new WalletError(
+          'Your session has expired. Please sign in again.',
+          WALLET_ERROR_CODES.SESSION_EXPIRED,
+          'crossmint',
+          error,
+        )
+      }
+
+      // Wallet not ready
+      if (errorMessage.includes('wallet not ready') || errorMessage.includes('not initialized') || errorMessage.includes('not available') || errorMessage.includes('wallet not connected')) {
+        return new WalletError(
+          'Crossmint wallet is not ready. Please wait a moment and try again.',
+          WALLET_ERROR_CODES.CROSSMINT_WALLET_NOT_READY,
+          'crossmint',
+          error,
+        )
+      }
+
+      // Signing errors
+      if (errorMessage.includes('sign') || errorMessage.includes('signature')) {
+        return new WalletError(
+          'Failed to sign transaction with Crossmint',
+          WALLET_ERROR_CODES.CROSSMINT_SIGNING_ERROR,
+          'crossmint',
+          error,
+        )
+      }
+
+      // Serialization errors
+      if (errorMessage.includes('serializ') || errorMessage.includes('invalid transaction') || errorMessage.includes('malformed')) {
+        return new WalletError(
+          'Failed to prepare transaction',
+          WALLET_ERROR_CODES.TRANSACTION_SERIALIZATION_ERROR,
+          'crossmint',
+          error,
+        )
+      }
+
+      // Default Crossmint error with original message
+      return new WalletError(
+        error.message,
+        WALLET_ERROR_CODES.CROSSMINT_API_ERROR,
+        'crossmint',
+        error,
+      )
+    }
+
+    // Handle non-Error objects
+    const errorString = String(error)
+    return new WalletError(
+      errorString,
+      WALLET_ERROR_CODES.CROSSMINT_API_ERROR,
+      'crossmint',
       error,
     )
   }
