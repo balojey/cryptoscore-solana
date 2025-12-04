@@ -7,21 +7,21 @@
   - Add logDetails() method for debugging
   - _Requirements: 1.2, 2.2, 3.3_
 
-- [ ] 2. Update UnifiedWalletContext to expose Crossmint wallet
-  - [ ] 2.1 Remove incompatible signTransaction and signAllTransactions methods from interface
+- [x] 2. Update UnifiedWalletContext to expose Crossmint wallet
+  - [x] 2.1 Remove incompatible signTransaction and signAllTransactions methods from interface
     - Remove signTransaction from UnifiedWalletContextType interface
     - Remove signAllTransactions from UnifiedWalletContextType interface
     - Update JSDoc comments to reflect changes
     - _Requirements: 5.1, 5.2, 5.3_
 
-  - [ ] 2.2 Add crossmintWallet and adapterWallet to context interface
+  - [x] 2.2 Add crossmintWallet and adapterWallet to context interface
     - Add crossmintWallet property to UnifiedWalletContextType interface
     - Add adapterWallet property to UnifiedWalletContextType interface
     - Export these properties from the context provider
     - Update context value to include wallet objects
     - _Requirements: 1.3, 5.1_
 
-  - [ ] 2.3 Remove signTransaction and signAllTransactions implementations
+  - [x] 2.3 Remove signTransaction and signAllTransactions implementations
     - Remove signTransaction callback from UnifiedWalletProvider
     - Remove signAllTransactions callback from UnifiedWalletProvider
     - Remove related error handling code

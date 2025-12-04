@@ -6,7 +6,6 @@
  * the application to work seamlessly with both authentication methods.
  */
 
-import type { Transaction, VersionedTransaction } from '@solana/web3.js'
 import { useAuth, useWallet as useCrossmintWallet } from '@crossmint/client-sdk-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { PublicKey } from '@solana/web3.js'
@@ -101,41 +100,40 @@ export interface UnifiedWalletContextType {
    */
   disconnect: () => Promise<void>
 
-  // Transaction methods
+  // Direct wallet access
   /**
-   * Sign a transaction with the connected wallet
-   *
-   * @param transaction - Transaction to sign
-   * @returns Signed transaction
-   * @throws Error if wallet doesn't support signing or if using Crossmint
-   *
-   * Note: Crossmint wallets don't support direct transaction signing.
-   * Use Crossmint SDK's transaction methods directly for Crossmint wallets.
+   * Direct access to the Crossmint wallet instance
+   * 
+   * Use this for Crossmint-specific operations like transaction submission.
+   * Available only when walletType is 'crossmint'.
+   * 
+   * @example
+   * ```tsx
+   * const { crossmintWallet, walletType } = useUnifiedWallet()
+   * 
+   * if (walletType === 'crossmint' && crossmintWallet) {
+   *   const result = await crossmintWallet.send({ transaction: base58Tx })
+   * }
+   * ```
    */
-  signTransaction: <T extends Transaction | VersionedTransaction>(transaction: T) => Promise<T>
+  crossmintWallet: any | null
 
   /**
-   * Sign multiple transactions with the connected wallet
-   *
-   * @param transactions - Array of transactions to sign
-   * @returns Array of signed transactions
-   * @throws Error if wallet doesn't support signing multiple transactions
-   *
-   * Note: Not supported for Crossmint wallets
+   * Direct access to the Solana wallet adapter instance
+   * 
+   * Use this for adapter-specific operations like transaction signing.
+   * Available only when walletType is 'adapter'.
+   * 
+   * @example
+   * ```tsx
+   * const { adapterWallet, walletType } = useUnifiedWallet()
+   * 
+   * if (walletType === 'adapter' && adapterWallet?.signTransaction) {
+   *   const signed = await adapterWallet.signTransaction(transaction)
+   * }
+   * ```
    */
-  signAllTransactions: <T extends Transaction | VersionedTransaction>(transactions: T[]) => Promise<T[]>
-
-  /**
-   * Send a transaction using the connected wallet
-   *
-   * @param transaction - Transaction to send
-   * @returns Transaction signature
-   * @throws Error if wallet doesn't support sending transactions
-   *
-   * Note: Implementation varies by wallet type. For Crossmint wallets,
-   * use the Crossmint SDK's transaction methods directly.
-   */
-  sendTransaction: (transaction: Transaction | VersionedTransaction) => Promise<string>
+  adapterWallet: any | null
 }
 
 /**
@@ -363,94 +361,7 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
     }
   }, [walletType, crossmintAuth, adapterWallet])
 
-  // Sign transaction - delegates to appropriate wallet
-  const signTransaction = useCallback(async <T extends Transaction | VersionedTransaction>(
-    transaction: T,
-  ): Promise<T> => {
-    if (!connected) {
-      const error = WalletErrorHandler.parseError(
-        new Error('Wallet not connected'),
-        walletType,
-        'signTransaction',
-      )
-      throw error
-    }
 
-    if (walletType === 'crossmint') {
-      // Crossmint wallets use a different transaction model
-      // They handle signing internally through their send() method
-      // Applications should use the Crossmint wallet directly via useCrossmintWallet hook
-      const error = WalletErrorHandler.parseError(
-        new Error('Crossmint wallets do not support direct transaction signing. Use sendTransaction instead.'),
-        'crossmint',
-        'signTransaction',
-      )
-      error.code = WALLET_ERROR_CODES.CONNECTION_FAILED
-      throw error
-    }
-
-    if (walletType === 'adapter') {
-      // Use adapter wallet to sign
-      if (!adapterWallet.signTransaction) {
-        throw new Error('Wallet does not support transaction signing')
-      }
-      return await adapterWallet.signTransaction(transaction) as T
-    }
-
-    throw new Error('No wallet connected')
-  }, [connected, walletType, adapterWallet])
-
-  // Sign all transactions - delegates to appropriate wallet
-  const signAllTransactions = useCallback(async <T extends Transaction | VersionedTransaction>(
-    transactions: T[],
-  ): Promise<T[]> => {
-    if (!connected) {
-      throw new Error('Wallet not connected')
-    }
-
-    if (walletType === 'crossmint') {
-      // Crossmint wallets use a different transaction model
-      throw new Error('Crossmint wallets do not support signing multiple transactions')
-    }
-
-    if (walletType === 'adapter') {
-      // Use adapter wallet to sign all
-      if (!adapterWallet.signAllTransactions) {
-        throw new Error('Wallet does not support signing multiple transactions')
-      }
-      return await adapterWallet.signAllTransactions(transactions) as T[]
-    }
-
-    throw new Error('No wallet connected')
-  }, [connected, walletType, adapterWallet])
-
-  // Send transaction - delegates to appropriate wallet
-  const sendTransaction = useCallback(async (
-    transaction: Transaction | VersionedTransaction,
-  ): Promise<string> => {
-    if (!connected) {
-      throw new Error('Wallet not connected')
-    }
-
-    if (walletType === 'crossmint') {
-      // Crossmint wallets use their own transaction API
-      // This method is not directly compatible with Solana Transaction objects
-      // Applications should use Crossmint's wallet.send() method directly for Crossmint wallets
-      throw new Error('Crossmint wallets require using the Crossmint SDK transaction methods directly')
-    }
-
-    if (walletType === 'adapter') {
-      // Use adapter wallet to send
-      if (!adapterWallet.sendTransaction) {
-        throw new Error('Wallet does not support sending transactions')
-      }
-      // Note: adapter sendTransaction requires connection and options
-      // We'll need to get the connection from context or pass it
-      throw new Error('Adapter sendTransaction requires connection - use signTransaction instead')
-    }
-
-    throw new Error('No wallet connected')
-  }, [connected, walletType, adapterWallet])
 
   // Restore session on mount
   useEffect(() => {
@@ -665,9 +576,8 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
       walletIcon,
       connect,
       disconnect,
-      signTransaction,
-      signAllTransactions,
-      sendTransaction,
+      crossmintWallet: walletType === 'crossmint' ? crossmintWallet : null,
+      adapterWallet: walletType === 'adapter' ? adapterWallet : null,
     }),
     [
       connected,
@@ -681,9 +591,8 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
       walletIcon,
       connect,
       disconnect,
-      signTransaction,
-      signAllTransactions,
-      sendTransaction,
+      crossmintWallet,
+      adapterWallet,
     ],
   )
 
