@@ -1,6 +1,6 @@
 import type { MarketDashboardInfo } from '../../types'
-import { useWallet } from '@solana/wallet-adapter-react'
 import { PublicKey } from '@solana/web3.js'
+import { useUnifiedWallet } from '../../contexts/UnifiedWalletContext'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -17,7 +17,7 @@ interface PortfolioSummaryProps {
 }
 
 export default function PortfolioSummary({ userAddress, joinedMarkets = [], allMarkets }: PortfolioSummaryProps) {
-  const { publicKey } = useWallet()
+  const { publicKey } = useUnifiedWallet()
   const { connection } = useSolanaConnection()
   const { formatCurrency, currency } = useCurrency()
   const walletAddress = userAddress || publicKey?.toString()

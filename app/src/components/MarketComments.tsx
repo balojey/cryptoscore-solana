@@ -1,5 +1,5 @@
-import { useWallet } from '@solana/wallet-adapter-react'
 import { useState } from 'react'
+import { useUnifiedWallet } from '../contexts/UnifiedWalletContext'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { shortenAddress } from '../utils/formatters'
@@ -17,7 +17,7 @@ interface MarketCommentsProps {
 }
 
 export default function MarketComments({ marketAddress: _marketAddress }: MarketCommentsProps) {
-  const { publicKey } = useWallet()
+  const { publicKey } = useUnifiedWallet()
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState('')
   const [selectedPrediction, setSelectedPrediction] = useState<'HOME' | 'DRAW' | 'AWAY' | undefined>()

@@ -228,6 +228,12 @@ export const CROSSMINT_API_SCOPES = [
   'users.create',
   'users.read',
   'wallets.read',
+  'wallets:transactions.create',
+  'wallets:transactions.sign',
+  'wallets:transactions.read',
+  'wallets:signatures.create',
+  'wallets:signatures.read',
+  'wallets:messages.sign'
 ] as const
 
 /**

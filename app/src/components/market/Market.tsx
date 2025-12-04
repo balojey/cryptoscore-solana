@@ -1,6 +1,6 @@
 import type { MarketProps } from '../../types'
-import { useWallet } from '@solana/wallet-adapter-react'
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
+import { useUnifiedWallet } from '../../contexts/UnifiedWalletContext'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -19,7 +19,7 @@ import { useMarketActions } from '../../hooks/useMarketActions'
 import { MarqueeText } from '../MarqueeText'
 
 export function Market({ match, userHasMarket, marketAddress, refetchMarkets }: MarketProps) {
-  const { publicKey: userAddress } = useWallet()
+  const { publicKey: userAddress } = useUnifiedWallet()
   const [isCreating, setIsCreating] = useState(false)
   const [newlyCreatedMarket, setNewlyCreatedMarket] = useState<{ matchId: number, address: string } | null>(null)
   const [entryFee, setEntryFee] = useState('0.1') // Default to 0.1 SOL

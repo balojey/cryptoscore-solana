@@ -1,7 +1,7 @@
 import type { FilterOptions } from '../components/market/MarketFilters'
 import type { MarketDashboardInfo } from '../types'
-import { useWallet } from '@solana/wallet-adapter-react'
 import { useState } from 'react'
+import { useUnifiedWallet } from '../contexts/UnifiedWalletContext'
 import { Link } from 'react-router-dom'
 import EnhancedMarketCard, { EnhancedMarketCardSkeleton } from '../components/cards/EnhancedMarketCard'
 import PortfolioSummary from '../components/cards/PortfolioSummary'
@@ -64,7 +64,7 @@ function MarketList({ markets, isLoading, emptyMessage, emptyIcon }: {
 }
 
 export function Dashboard() {
-  const { publicKey } = useWallet()
+  const { publicKey, walletType, connected } = useUnifiedWallet()
   const [activeTab, setActiveTab] = useState<'created' | 'joined'>('created')
   const [filters, setFilters] = useState<FilterOptions>({
     status: 'all',
@@ -83,7 +83,33 @@ export function Dashboard() {
   const filteredCreatedMarkets = useFilteredMarkets<MarketDashboardInfo>(createdMarkets, filters)
   const filteredJoinedMarkets = useFilteredMarkets<MarketDashboardInfo>(joinedMarkets, filters)
 
-  if (!publicKey) {
+  // Show loading state if user is logged in with Crossmint but wallet is still being created
+  if (walletType === 'crossmint' && !publicKey) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--bg-primary)' }}
+      >
+        <div className="text-center max-w-md mx-auto px-4">
+          <div
+            className="w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center"
+            style={{ background: 'var(--bg-secondary)' }}
+          >
+            <span className="icon-[mdi--loading] w-12 h-12 animate-spin" style={{ color: 'var(--accent-cyan)' }} />
+          </div>
+          <h1 className="font-jakarta text-3xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+            Setting Up Your Wallet
+          </h1>
+          <p className="text-lg mb-6" style={{ color: 'var(--text-secondary)' }}>
+            Please wait while we create your embedded wallet...
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show connect prompt if no wallet is connected
+  if (!connected || !publicKey) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"

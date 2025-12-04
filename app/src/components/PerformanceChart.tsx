@@ -1,6 +1,6 @@
 import type { MarketDashboardInfo } from '../types'
-import { useWallet } from '@solana/wallet-adapter-react'
 import { useMemo } from 'react'
+import { useUnifiedWallet } from '../contexts/UnifiedWalletContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface PerformanceChartProps {
@@ -8,7 +8,7 @@ interface PerformanceChartProps {
 }
 
 export default function PerformanceChart({ markets }: PerformanceChartProps) {
-  const { publicKey } = useWallet()
+  const { publicKey } = useUnifiedWallet()
 
   // Calculate wins and losses from market data
   // In Solana, we'll fetch user predictions from the market accounts

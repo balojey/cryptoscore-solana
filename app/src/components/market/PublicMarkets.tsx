@@ -1,7 +1,7 @@
 import type { Market } from '../../types'
 import type { FilterOptions } from './MarketFilters'
-import { useWallet } from '@solana/wallet-adapter-react'
 import { useMemo, useState } from 'react'
+import { useUnifiedWallet } from '../../contexts/UnifiedWalletContext'
 import { useFilteredMarkets } from '../../hooks/useFilteredMarkets'
 import { useAllMarkets } from '../../hooks/useMarketData'
 import EnhancedMarketCard, { EnhancedMarketCardSkeleton } from '../cards/EnhancedMarketCard'
@@ -11,7 +11,7 @@ import MarketFilters from './MarketFilters'
 const PAGE_SIZE = 12 // Can increase now since we're not hitting gas limits
 
 export default function PublicMarkets() {
-  const { publicKey } = useWallet()
+  const { publicKey } = useUnifiedWallet()
   const [currentPage, setCurrentPage] = useState(0)
   const [filters, setFilters] = useState<FilterOptions>({
     status: 'all',

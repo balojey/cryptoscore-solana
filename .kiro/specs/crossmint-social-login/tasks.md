@@ -76,12 +76,14 @@
     - Ensure joinMarket works with both wallet types
     - Ensure resolveMarket works with both wallet types
     - Ensure withdrawRewards works with both wallet types
+    - **Fixed**: Implemented Crossmint wallet.send() method for transaction signing
     - _Requirements: 3.2, 3.3, 3.4, 3.5_
 
   - [x] 6.2 Update other hooks that use wallet functionality
     - Update useSolanaProgram hook if needed
     - Update any other hooks that directly access wallet adapter
     - Ensure all transaction flows work with unified wallet interface
+    - **Fixed**: Crossmint transactions now use SDK's send() method instead of signTransaction
     - _Requirements: 3.2, 3.3, 3.4, 3.5_
 
 - [x] 7. Implement error handling and user feedback

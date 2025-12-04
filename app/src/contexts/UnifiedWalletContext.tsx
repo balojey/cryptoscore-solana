@@ -7,7 +7,7 @@
  */
 
 import type { Transaction, VersionedTransaction } from '@solana/web3.js'
-import { useAuth, useWallet as useCrossmintWallet, type Wallet, type Chain } from '@crossmint/client-sdk-react-ui'
+import { useAuth, useWallet as useCrossmintWallet } from '@crossmint/client-sdk-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { PublicKey } from '@solana/web3.js'
 import React, { createContext, use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -368,14 +368,25 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
     transaction: T,
   ): Promise<T> => {
     if (!connected) {
-      throw new Error('Wallet not connected')
+      const error = WalletErrorHandler.parseError(
+        new Error('Wallet not connected'),
+        walletType,
+        'signTransaction',
+      )
+      throw error
     }
 
     if (walletType === 'crossmint') {
       // Crossmint wallets use a different transaction model
-      // They handle signing internally through their sendTransaction method
-      // For now, we'll throw an error and require using sendTransaction instead
-      throw new Error('Crossmint wallets do not support direct transaction signing. Use sendTransaction instead.')
+      // They handle signing internally through their send() method
+      // Applications should use the Crossmint wallet directly via useCrossmintWallet hook
+      const error = WalletErrorHandler.parseError(
+        new Error('Crossmint wallets do not support direct transaction signing. Use sendTransaction instead.'),
+        'crossmint',
+        'signTransaction',
+      )
+      error.code = WALLET_ERROR_CODES.CONNECTION_FAILED
+      throw error
     }
 
     if (walletType === 'adapter') {
@@ -502,7 +513,6 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
       console.log('[UnifiedWallet] Crossmint wallet:', {
         address: crossmintWallet?.address,
         chain: crossmintWallet?.chain,
-        publicKey: crossmintWallet?.publicKey,
       })
       
       if (!crossmintWallet?.address) {

@@ -1,6 +1,6 @@
 import type { Match } from '../types'
-import { useWallet } from '@solana/wallet-adapter-react'
 import React, { useEffect, useState } from 'react'
+import { useUnifiedWallet } from '../contexts/UnifiedWalletContext'
 import { Link, useParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -485,7 +485,7 @@ function PageSkeleton() {
 
 export function MarketDetail() {
   const { marketAddress } = useParams<{ marketAddress: string }>()
-  const { publicKey: userAddress } = useWallet()
+  const { publicKey: userAddress } = useUnifiedWallet()
   const { joinMarket, resolveMarket, withdrawRewards, getExplorerLink, isLoading, txSignature } = useMarketActions()
   const { data: marketData, isLoading: isLoadingMarket, error: marketError, refetch: refetchMarket } = useMarketData(marketAddress)
   const { currency, exchangeRates } = useCurrency()

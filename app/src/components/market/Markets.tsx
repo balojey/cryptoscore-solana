@@ -1,6 +1,6 @@
 import type { Match } from '../../types'
-import { useWallet } from '@solana/wallet-adapter-react'
 import { useEffect, useMemo, useState } from 'react'
+import { useUnifiedWallet } from '../../contexts/UnifiedWalletContext'
 import { useAllMarkets } from '../../hooks/useMarketData'
 import { getRandomApiKey } from '../../utils/apiKey'
 import SearchBar from '../SearchBar'
@@ -79,7 +79,7 @@ export function Markets() {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
-  const { publicKey: userAddress } = useWallet()
+  const { publicKey: userAddress } = useUnifiedWallet()
 
   // Fetch all markets from Solana Dashboard program
   const { data: allMarketsData, refetch: refetchAllMarkets } = useAllMarkets()

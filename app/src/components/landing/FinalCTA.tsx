@@ -1,9 +1,9 @@
-import { useWallet } from '@solana/wallet-adapter-react'
 import { Link } from 'react-router-dom'
+import { useUnifiedWallet } from '../../contexts/UnifiedWalletContext'
 import Connect from '../Connect'
 
 export default function FinalCTA() {
-  const { connected } = useWallet()
+  const { connected } = useUnifiedWallet()
 
   return (
     <section

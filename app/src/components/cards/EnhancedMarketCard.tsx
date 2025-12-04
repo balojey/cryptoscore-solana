@@ -1,6 +1,6 @@
 import type { Market } from '../../types'
-import { useWallet } from '@solana/wallet-adapter-react'
 import { Link } from 'react-router-dom'
+import { useUnifiedWallet } from '../../contexts/UnifiedWalletContext'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import {
@@ -180,7 +180,7 @@ function PredictionBar({
 }
 
 export default function EnhancedMarketCard({ market }: EnhancedMarketCardProps) {
-  const { publicKey: userAddress } = useWallet()
+  const { publicKey: userAddress } = useUnifiedWallet()
   const { data: matchData, loading, error } = useMatchData(Number(market.matchId))
   const distribution = usePredictionDistribution(market.marketAddress)
   const { data: marketData } = useMarketData(market.marketAddress)
