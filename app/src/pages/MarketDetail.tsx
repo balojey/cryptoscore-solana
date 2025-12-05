@@ -15,7 +15,6 @@ import { useMarketActions } from '../hooks/useMarketActions'
 import { useMarketData } from '../hooks/useMarketData'
 import { useMatchData } from '../hooks/useMatchData'
 import { useParticipantData } from '../hooks/useParticipantData'
-import { useUserRewards } from '../hooks/useUserRewards'
 import { formatCurrency, formatWithSOLEquivalent, shortenAddress } from '../utils/formatters'
 
 // --- SUB-COMPONENTS ---
@@ -505,22 +504,34 @@ export function MarketDetail() {
 
   // Get user's prediction and rewards
   const { data: participantData } = useParticipantData(marketAddress, userAddress?.toString())
-  const { data: rewardsData } = useUserRewards(marketAddress)
 
   // Derive prediction info from participant data
   const hasJoined = !!participantData
   const predictionName = participantData?.prediction?.toUpperCase() || 'NONE'
 
+  // Calculate reward eligibility based on participant data and market data
+  const isUserWinner = marketData?.status === 'Resolved'
+    && participantData
+    && marketData.outcome
+    && participantData.prediction === marketData.outcome
+  const hasUserWithdrawn = participantData?.hasWithdrawn || false
+  const canUserWithdraw = isUserWinner && !hasUserWithdrawn
+
   // Debug logging
   useEffect(() => {
-    console.log('Participant Data:', {
+    console.log('Market Detail Debug:', {
       participantData,
       hasJoined,
       predictionName,
       userAddress: userAddress?.toString(),
       marketAddress,
+      marketOutcome: marketData?.outcome,
+      marketStatus: marketData?.status,
+      isUserWinner,
+      hasUserWithdrawn,
+      canUserWithdraw,
     })
-  }, [participantData, hasJoined, predictionName, userAddress, marketAddress])
+  }, [participantData, hasJoined, predictionName, userAddress, marketAddress, marketData, isUserWinner, hasUserWithdrawn, canUserWithdraw])
 
   // Market info
   const marketInfo = marketData ? {
@@ -539,7 +550,6 @@ export function MarketDetail() {
   const homeCount = marketData?.homeCount || 0
   const awayCount = marketData?.awayCount || 0
   const drawCount = marketData?.drawCount || 0
-  const userRewardBalance = rewardsData?.hasRewards ? 1 : 0 // Simplified check
 
   // Update action status based on transaction state
   useEffect(() => {
@@ -691,19 +701,19 @@ export function MarketDetail() {
     const isCreator = userAddress && marketInfo?.creator === userAddress.toBase58()
 
     if (marketStatus) { // Resolved
-      // Use the rewards data from the hook
-      const userIsWinner = rewardsData?.isWinner || false
-      const canWithdraw = rewardsData?.canWithdraw || false
-      const hasWithdrawn = rewardsData?.hasWithdrawn || false
+      // Determine if creator can withdraw fees
+      const creatorCanWithdraw = isCreator && marketData && marketData.totalPool > 0
 
-      // Allow withdraw for participants (winners) and creator
-      const canUserWithdraw = (userIsWinner && canWithdraw) || (isCreator && canWithdraw)
-      const hasUserWithdrawn = (userIsWinner && hasWithdrawn) || (isCreator && hasWithdrawn)
+      // Show withdraw button for winners or creator who haven't withdrawn
+      const showWithdrawButton = (canUserWithdraw && !hasUserWithdrawn) || creatorCanWithdraw
+
+      // Show withdrawn status only if user was a winner and has withdrawn
+      const showWithdrawnStatus = isUserWinner && hasUserWithdrawn
 
       return (
         <div className="flex items-center gap-4">
           <Button variant="secondary" disabled>Resolved</Button>
-          {canUserWithdraw
+          {showWithdrawButton
             ? (
                 <Button variant="success" onClick={handleWithdraw} className="gap-2" disabled={isLoading}>
                   <span className="icon-[mdi--cash-multiple] w-5 h-5" />
@@ -711,7 +721,7 @@ export function MarketDetail() {
                 </Button>
               )
             : null}
-          {hasUserWithdrawn
+          {showWithdrawnStatus
             ? (
                 <div className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--accent-green)' }}>
                   <span className="icon-[mdi--check-circle] w-5 h-5" />
@@ -719,7 +729,7 @@ export function MarketDetail() {
                 </div>
               )
             : null}
-          {!userIsWinner && isUserParticipant && !isCreator
+          {!isUserWinner && isUserParticipant && !isCreator
             ? (
                 <div className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text-tertiary)' }}>
                   <span className="icon-[mdi--close-circle] w-5 h-5" />

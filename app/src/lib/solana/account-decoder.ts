@@ -69,8 +69,9 @@ const ParticipantSchema = {
     market: { array: { type: 'u8', len: 32 } },
     user: { array: { type: 'u8', len: 32 } },
     prediction: 'u8',
+    joinedAt: 'i64',
     hasWithdrawn: 'bool',
-    joinedAt: 'u64',
+    bump: 'u8',
   },
 }
 
@@ -141,15 +142,17 @@ export interface Market {
  * @property {PublicKey} market - Market PDA
  * @property {PublicKey} user - Participant's public key
  * @property {number} prediction - User's prediction (0 = HOME, 1 = DRAW, 2 = AWAY)
- * @property {boolean} hasWithdrawn - Whether user has withdrawn rewards
  * @property {bigint} joinedAt - Timestamp when user joined (Unix timestamp)
+ * @property {boolean} hasWithdrawn - Whether user has withdrawn rewards
+ * @property {number} bump - PDA bump seed
  */
 export interface Participant {
   market: PublicKey
   user: PublicKey
   prediction: number
-  hasWithdrawn: boolean
   joinedAt: bigint
+  hasWithdrawn: boolean
+  bump: number
 }
 
 /**
@@ -271,8 +274,9 @@ export class AccountDecoder {
       market: new PublicKey(decoded.market),
       user: new PublicKey(decoded.user),
       prediction: decoded.prediction,
-      hasWithdrawn: decoded.hasWithdrawn,
       joinedAt: BigInt(decoded.joinedAt),
+      hasWithdrawn: decoded.hasWithdrawn,
+      bump: decoded.bump,
     }
   }
 
