@@ -396,8 +396,18 @@ export class WalletErrorHandler {
           )
         }
 
+        // Timeout errors (more specific than network errors)
+        if (message.includes('timed out') || message.includes('timeout')) {
+          return new WalletError(
+            'Transaction timed out. Please try again.',
+            WALLET_ERROR_CODES.TRANSACTION_TIMEOUT,
+            'crossmint',
+            error,
+          )
+        }
+
         // Network errors
-        if (message.includes('network') || message.includes('connection') || message.includes('timeout')) {
+        if (message.includes('network') || message.includes('connection')) {
           return new WalletError(
             'Network error. Please check your connection and try again.',
             WALLET_ERROR_CODES.NETWORK_ERROR,

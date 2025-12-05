@@ -85,35 +85,35 @@
     - Display user-friendly error messages with toast
     - _Requirements: 1.6, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6_
 
-- [-] 5. Update transaction confirmation and user feedback
-  - [ ] 5.1 Add detailed toast notifications for transaction stages
+- [x] 5. Update transaction confirmation and user feedback
+  - [x] 5.1 Add detailed toast notifications for transaction stages
     - Add "Preparing transaction" toast when building transaction
     - Add "Approve transaction" toast when waiting for user approval
     - Add "Sending transaction" toast when submitting transaction
     - Add "Confirming transaction" toast when waiting for confirmation
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-  - [ ] 5.2 Update success notifications with explorer links
+  - [x] 5.2 Update success notifications with explorer links
     - Add success toast with transaction signature
     - Add "View" action button that opens Solana Explorer
     - Use SolanaUtils.getExplorerUrl() for correct network
     - _Requirements: 1.5, 6.5_
 
-  - [ ] 5.3 Update error notifications with specific messages
+  - [x] 5.3 Update error notifications with specific messages
     - Display specific error message based on error code
     - Avoid duplicate toast notifications
     - Log detailed error information to console
     - _Requirements: 1.6, 6.6, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 6. Add transaction debugging and logging
-  - [ ] 6.1 Add transaction logging in submitTransaction
+- [x] 6. Add transaction debugging and logging
+  - [x] 6.1 Add transaction logging in submitTransaction
     - Log transaction details before submission
     - Log wallet type being used
     - Log serialized transaction size for Crossmint
     - Log transaction signature after submission
     - _Requirements: 5.5, 8.5_
 
-  - [ ] 6.2 Add simulation result logging
+  - [x] 6.2 Add simulation result logging
     - Log simulation success/failure
     - Log simulation logs if available
     - Log simulation errors with details
