@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("3yLMsy3gJRoYP2RNXgnrXsoFWcqVu6QeTXPejvpcCf1F");
+declare_id!("BJmMs142koLJvkutSzWchPGn2CJNGqTtGQV5g3Xt87PU");
 
 #[program]
 pub mod cryptoscore_market {
@@ -132,9 +132,24 @@ pub mod cryptoscore_market {
         outcome: MatchOutcome,
     ) -> Result<()> {
         let market = &mut ctx.accounts.market;
+        let resolver = ctx.accounts.resolver.key();
         
-        // Validate only creator can resolve
-        require!(ctx.accounts.creator.key() == market.creator, MarketError::UnauthorizedResolver);
+        // Validate resolver is either creator or a participant
+        let is_creator = resolver == market.creator;
+        let is_participant = ctx.accounts.participant.is_some();
+        
+        require!(
+            is_creator || is_participant,
+            MarketError::UnauthorizedResolver
+        );
+        
+        // If participant, validate they actually joined this market
+        if let Some(participant) = &ctx.accounts.participant {
+            require!(
+                participant.market == market.key(),
+                MarketError::UnauthorizedResolver
+            );
+        }
         
         // Validate market is not already resolved
         require!(market.status != MarketStatus::Resolved, MarketError::MarketAlreadyResolved);
@@ -411,7 +426,18 @@ pub struct ResolveMarket<'info> {
     )]
     pub market: Account<'info, Market>,
     
-    pub creator: Signer<'info>,
+    pub resolver: Signer<'info>,
+    
+    /// Optional participant account - if provided, validates resolver is a participant
+    #[account(
+        seeds = [
+            b"participant",
+            market.key().as_ref(),
+            resolver.key().as_ref()
+        ],
+        bump = participant.bump
+    )]
+    pub participant: Option<Account<'info, Participant>>,
 }
 
 #[derive(Accounts)]

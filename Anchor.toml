@@ -11,7 +11,7 @@ cryptoscore_dashboard = "95CjfuYYswDbcjasA1PTUmHhsqFsBQC4JnsiKB8nKJhR"
 
 [programs.devnet]
 cryptoscore_factory = "5zADKCecxATSEsCuH5MJa1JdfXGeBLNwEYnkCbqdaYmZ"
-cryptoscore_market = "3yLMsy3gJRoYP2RNXgnrXsoFWcqVu6QeTXPejvpcCf1F"
+cryptoscore_market = "BJmMs142koLJvkutSzWchPGn2CJNGqTtGQV5g3Xt87PU"
 cryptoscore_dashboard = "DHJASkp8vNuyR5xPSyj1G66xExRjnPBUuUN4QKiTnadZ"
 
 [programs.testnet]
