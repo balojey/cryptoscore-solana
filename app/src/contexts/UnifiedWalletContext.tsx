@@ -344,6 +344,12 @@ export function UnifiedWalletProvider({ children }: UnifiedWalletProviderProps) 
         await adapterWallet.disconnect()
         toast.success('Wallet disconnected')
       }
+
+      // Ensure body scroll is restored after disconnect
+      setTimeout(() => {
+        document.body.style.overflow = ''
+        document.body.style.paddingRight = ''
+      }, 100)
     }
     catch (error) {
       // Use WalletErrorHandler to parse and log the error

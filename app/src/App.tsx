@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import React, { lazy, Suspense } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Content from './components/Content'
 import Footer from './components/layout/Footer'
@@ -7,6 +7,7 @@ import ToastProvider from './components/ui/ToastProvider'
 import { TooltipProvider } from './components/ui/tooltip'
 import { CurrencyProvider } from './contexts/CurrencyContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { useScrollLockCleanup } from './hooks/useScrollLockCleanup'
 
 // Lazy load pages for better performance
 const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })))
@@ -41,6 +42,9 @@ function PageLoader() {
 
 // Inner component that can access CurrencyContext
 function AppContent() {
+  // Prevent body scroll lock issues with modals
+  useScrollLockCleanup()
+
   return (
     <BrowserRouter>
       <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-primary)' }}>

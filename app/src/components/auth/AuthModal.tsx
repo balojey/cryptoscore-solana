@@ -85,6 +85,18 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     }
   }, [crossmintAuth.status, open, onOpenChange])
 
+  // Cleanup: Ensure body scroll is restored when modal closes
+  useEffect(() => {
+    if (!open) {
+      // Small delay to ensure all modal cleanup is complete
+      const timer = setTimeout(() => {
+        document.body.style.overflow = ''
+        document.body.style.paddingRight = ''
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [open])
+
   /**
    * Handle social login via Crossmint
    *
