@@ -1,10 +1,11 @@
 import type { FeeEstimate } from '../lib/solana/transaction-builder'
 import { SolanaWallet } from '@crossmint/wallets-sdk'
 import { useConnection } from '@solana/wallet-adapter-react'
-import { PublicKey, SystemProgram } from '@solana/web3.js'
+import { PublicKey, SystemProgram, TransactionMessage, VersionedTransaction } from '@solana/web3.js'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
+import bs58 from 'bs58'
 import { FACTORY_PROGRAM_ID, MARKET_PROGRAM_ID } from '../config/programs'
 import { useUnifiedWallet } from '../contexts/UnifiedWalletContext'
 import { WALLET_ERROR_CODES, WalletErrorHandler } from '../lib/crossmint/wallet-error-handler'
@@ -148,18 +149,34 @@ export function useMarketActions() {
           recentBlockhash: transaction.recentBlockhash,
         })
 
-        // Send using Crossmint SDK with correct API
-        // Pass the transaction object directly (can be serialized or non-serialized)
+        // Convert legacy Transaction to VersionedTransaction for Crossmint
+        // Crossmint SDK expects VersionedTransaction type
+        console.log(`[${operationName}] Converting to VersionedTransaction...`)
+        const { blockhash } = await connection.getLatestBlockhash('confirmed')
+        
+        const messageV0 = new TransactionMessage({
+          payerKey: publicKey,
+          recentBlockhash: blockhash,
+          instructions: transaction.instructions,
+        }).compileToV0Message()
+        
+        const versionedTransaction = new VersionedTransaction(messageV0)
+        
+        console.log(`[${operationName}] Created VersionedTransaction`)
+
+        // Send using Crossmint SDK with serialized transaction to avoid version conflicts
+        // Serialize the transaction to base58 string (Solana standard)
+        const serializedTransaction = bs58.encode(versionedTransaction.serialize())
+        console.log(`[${operationName}] Serialized transaction (${serializedTransaction.length} chars)`)
+
         toast.info('Sending transaction', {
           description: 'Submitting to the network...',
         })
         
         try {
-          console.log('1................')
           const result = await solanaWallet.sendTransaction({
-            transaction: transaction,
+            serializedTransaction,
           })
-          console.log('2..............')
 
           console.log(`[${operationName}] Crossmint response:`, result)
 
