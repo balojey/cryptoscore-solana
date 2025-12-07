@@ -10,14 +10,34 @@ export const MarqueeText: React.FC<MarqueeTextProps> = ({ text, threshold, class
   const useMarquee = text.length > threshold
 
   if (!useMarquee) {
-    return <h4 className={`${className} truncate w-full`} title={text}>{text}</h4>
+    return <h4 className={`${className} truncate`} title={text}>{text}</h4>
   }
 
   return (
-    <div className={`w-full overflow-hidden relative ${className}`} style={{ height: '1.5rem' }}>
-      <div className="absolute whitespace-nowrap animate-marquee will-change-transform">
-        <span className="mx-4">{text}</span>
-        <span className="mx-4">{text}</span>
+    <div 
+      className={className}
+      style={{ 
+        overflow: 'hidden',
+        width: '100%',
+        minWidth: 0
+      }}
+    >
+      <style>{`
+        @keyframes marquee {
+          0% { transform: translateX(0%); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+      <div 
+        style={{ 
+          animation: 'marquee 10s linear infinite',
+          display: 'inline-block',
+          whiteSpace: 'nowrap',
+          willChange: 'transform'
+        }}
+      >
+        <span style={{ display: 'inline-block', paddingRight: '2rem' }}>{text}</span>
+        <span style={{ display: 'inline-block', paddingRight: '2rem' }}>{text}</span>
       </div>
     </div>
   )

@@ -126,7 +126,7 @@ export function Market({ match, userHasMarket, marketAddress, refetchMarkets }: 
   const isLoading = isCreateMarketLoading
 
   const TeamDisplay = ({ team }: { team: { name: string, crest: string } }) => (
-    <div className="flex flex-col items-center gap-2 w-2/5 text-center">
+    <div className="flex flex-col items-center gap-2 w-2/5 text-center min-w-0">
       <div
         className="w-12 h-12 rounded-lg flex items-center justify-center p-2"
         style={{ background: 'var(--bg-secondary)' }}
@@ -138,7 +138,7 @@ export function Market({ match, userHasMarket, marketAddress, refetchMarkets }: 
           onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/50' }}
         />
       </div>
-      <div style={{ color: 'var(--text-primary)' }}>
+      <div className="w-full min-w-0" style={{ color: 'var(--text-primary)' }}>
         <MarqueeText text={team.name} threshold={10} className="font-sans font-bold text-sm" />
       </div>
     </div>
