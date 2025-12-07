@@ -2,7 +2,8 @@ import type { MarketData } from '../../hooks/useMarketData'
 import type { Market } from '../../types'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAllMarkets } from '../../hooks/useMarketData'
+import { useAllMarkets, useUserParticipantMarkets } from '../../hooks/useMarketData'
+import { useUnifiedWallet } from '../../contexts/UnifiedWalletContext'
 import EnhancedMarketCard, { EnhancedMarketCardSkeleton } from '../cards/EnhancedMarketCard'
 import ErrorBanner from '../terminal/ErrorBanner'
 
@@ -28,15 +29,47 @@ export default function FeaturedMarketsPreview() {
   const [showError, setShowError] = useState(true)
   const [cachedMarkets, setCachedMarkets] = useState<Market[] | null>(null)
 
+  // Get current user's wallet
+  const { walletAddress } = useUnifiedWallet()
+
   // Fetch all markets using the new Anchor-free hook
   const { data: marketsData, isLoading, isError, refetch } = useAllMarkets()
 
-  // Transform market data to expected format
+  // Fetch markets where user is a participant (to check access to private markets)
+  const { data: userParticipantMarkets } = useUserParticipantMarkets(walletAddress || undefined)
+
+  // Transform market data to expected format and filter private markets
   const transformedMarkets = useMemo(() => {
     if (!marketsData || !Array.isArray(marketsData))
       return null
-    return marketsData.map(transformMarketData)
-  }, [marketsData])
+
+    // Create a set of market addresses where user is a participant
+    const userParticipantMarketAddresses = new Set(
+      userParticipantMarkets?.map(m => m.marketAddress) || []
+    )
+
+    // Filter out private markets that user isn't authorized to see
+    const filteredMarkets = marketsData.filter((marketData) => {
+      // Show all public markets
+      if (marketData.isPublic) {
+        return true
+      }
+
+      // For private markets, only show if:
+      // 1. User is the creator
+      // 2. User is a participant
+      if (walletAddress) {
+        const isCreator = marketData.creator.toLowerCase() === walletAddress.toLowerCase()
+        const isParticipant = userParticipantMarketAddresses.has(marketData.marketAddress)
+        return isCreator || isParticipant
+      }
+
+      // Hide private markets from unauthenticated users
+      return false
+    })
+
+    return filteredMarkets.map(transformMarketData)
+  }, [marketsData, walletAddress, userParticipantMarkets])
 
   // Cache successful data fetches
   useEffect(() => {

@@ -10,8 +10,10 @@ import MetricsBar from '../components/terminal/MetricsBar'
 import TerminalHeader from '../components/terminal/TerminalHeader'
 import TopMovers from '../components/terminal/TopMovers'
 import { DASHBOARD_PROGRAM_ID } from '../config/programs'
+import { useUnifiedWallet } from '../contexts/UnifiedWalletContext'
 import { useAllMarkets } from '../hooks/useDashboardData'
 import { useSimpleRealtimeMarkets } from '../hooks/useEnhancedRealtimeMarkets'
+import { useUserParticipantMarkets } from '../hooks/useMarketData'
 
 type Timeframe = '24h' | '7d' | '30d' | 'all'
 type MetricType = 'tvl' | 'volume' | 'participants'
@@ -28,10 +30,39 @@ export function TradingTerminal() {
   // Fetch all markets for chart data from Solana Dashboard program
   const { data: marketsData, isLoading: isLoadingMarkets, error: fetchError, refetch } = useAllMarkets()
 
-  // Markets are already in the correct format from useAllMarkets
+  // Get current user's wallet and participant markets for private market filtering
+  const { publicKey } = useUnifiedWallet()
+  const { data: userParticipantMarkets } = useUserParticipantMarkets(publicKey?.toString())
+
+  // Filter markets to exclude private markets user isn't authorized to see
   const markets: Market[] = useMemo(() => {
-    return marketsData || []
-  }, [marketsData])
+    if (!marketsData) return []
+
+    // Create a set of market addresses where user is a participant
+    const userParticipantMarketAddresses = new Set(
+      userParticipantMarkets?.map(m => m.marketAddress) || []
+    )
+
+    // Filter out private markets that user isn't authorized to see
+    return marketsData.filter((marketData) => {
+      // Show all public markets
+      if (marketData.isPublic) {
+        return true
+      }
+
+      // For private markets, only show if:
+      // 1. User is the creator
+      // 2. User is a participant
+      if (publicKey) {
+        const isCreator = marketData.creator.toLowerCase() === publicKey.toString().toLowerCase()
+        const isParticipant = userParticipantMarketAddresses.has(marketData.marketAddress)
+        return isCreator || isParticipant
+      }
+
+      // Hide private markets from unauthenticated users
+      return false
+    })
+  }, [marketsData, publicKey, userParticipantMarkets])
 
   // Cache successful data fetches
   useEffect(() => {
