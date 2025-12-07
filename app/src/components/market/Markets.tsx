@@ -100,14 +100,23 @@ export function Markets() {
     return marketMap
   }, [allMarketsData, userAddress])
 
-  // Filter matches based on search query
+  // Filter matches based on search query and exclude past matches
   const filteredMatches = useMemo(() => {
+    const now = new Date()
+    
+    // First filter out matches that have already started
+    const upcomingMatches = matches.filter((match) => {
+      const matchDate = new Date(match.utcDate)
+      return matchDate > now
+    })
+
+    // Then apply search filter if query exists
     if (!searchQuery.trim()) {
-      return matches
+      return upcomingMatches
     }
 
     const query = searchQuery.toLowerCase()
-    return matches.filter((match) => {
+    return upcomingMatches.filter((match) => {
       const homeTeam = match.homeTeam?.name?.toLowerCase() || ''
       const awayTeam = match.awayTeam?.name?.toLowerCase() || ''
       const competition = match.competition?.name?.toLowerCase() || ''
