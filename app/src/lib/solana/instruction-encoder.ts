@@ -193,14 +193,22 @@ export class InstructionEncoder {
    * @param {ResolveMarketParams} params - Market resolution parameters
    * @param {object} accounts - Required accounts for the instruction
    * @param {PublicKey} accounts.market - Market PDA
-   * @param {PublicKey} accounts.creator - Creator wallet (signer, must be market creator)
+   * @param {PublicKey} accounts.resolver - Resolver (signer) - can be creator or participant
+   * @param {PublicKey} [accounts.participant] - Optional participant PDA (required if resolver is not creator)
    * @returns {TransactionInstruction} Encoded instruction
    *
    * @example
    * ```typescript
+   * // Creator resolving
    * const ix = encoder.resolveMarket(
    *   { outcome: 0 }, // 0 = HOME, 1 = DRAW, 2 = AWAY
-   *   { market, creator }
+   *   { market, resolver: creator }
+   * )
+   * 
+   * // Participant resolving
+   * const ix = encoder.resolveMarket(
+   *   { outcome: 0 },
+   *   { market, resolver: participant, participant: participantPda }
    * )
    * ```
    */
@@ -208,7 +216,8 @@ export class InstructionEncoder {
     params: ResolveMarketParams,
     accounts: {
       market: PublicKey
-      creator: PublicKey
+      resolver: PublicKey
+      participant?: PublicKey
     },
   ): TransactionInstruction {
     const instructionData = new ResolveMarketData(params)
@@ -217,12 +226,19 @@ export class InstructionEncoder {
       Buffer.from(serialize(ResolveMarketSchema, instructionData)),
     ])
 
-    // Account order: 1. market, 2. creator
+    // Account order: 1. market, 2. resolver, 3. participant (optional)
+    const keys = [
+      { pubkey: accounts.market, isSigner: false, isWritable: true },
+      { pubkey: accounts.resolver, isSigner: true, isWritable: false },
+    ]
+
+    // Add participant account if provided
+    if (accounts.participant) {
+      keys.push({ pubkey: accounts.participant, isSigner: false, isWritable: false })
+    }
+
     return new TransactionInstruction({
-      keys: [
-        { pubkey: accounts.market, isSigner: false, isWritable: true },
-        { pubkey: accounts.creator, isSigner: true, isWritable: false },
-      ],
+      keys,
       programId: this.programId,
       data,
     })

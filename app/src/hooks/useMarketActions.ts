@@ -617,13 +617,34 @@ export function useMarketActions() {
           ? MatchOutcome.Draw
           : MatchOutcome.Away
 
+      // Try to derive the participant PDA - if it exists, include it
+      // The Rust program will validate if the resolver is authorized (creator or participant)
+      const pdaUtils = new PDAUtils(marketProgramId)
+      let participantPda: PublicKey | undefined
+
+      try {
+        const { pda } = await pdaUtils.findParticipantPDA(marketPubkey, publicKey)
+        
+        // Check if the participant account actually exists on-chain
+        const accountInfo = await connection.getAccountInfo(pda)
+        if (accountInfo && accountInfo.data.length > 0) {
+          participantPda = pda
+          console.log('Participant account exists, including PDA:', participantPda.toString())
+        } else {
+          console.log('Participant PDA derived but account does not exist on-chain')
+        }
+      } catch (error) {
+        console.log('Could not derive participant PDA:', error)
+      }
+
       // Build instruction using InstructionEncoder
       const encoder = new InstructionEncoder(marketProgramId)
       const resolveMarketInstruction = encoder.resolveMarket(
         { outcome: outcomeValue },
         {
           market: marketPubkey,
-          creator: publicKey,
+          resolver: publicKey,
+          participant: participantPda, // Optional - will be included if user is participant
         },
       )
 
