@@ -5,7 +5,6 @@ import { Link, useParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useCurrency } from '@/hooks/useCurrency'
-import PoolTrendChart from '../components/charts/PoolTrendChart'
 import PredictionDistributionChart from '../components/charts/PredictionDistributionChart'
 import MarketComments from '../components/MarketComments'
 import SharePrediction from '../components/SharePrediction'
@@ -958,24 +957,8 @@ export function MarketDetail() {
             />
 
             {/* Data Visualizations */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               <PredictionDistributionChart markets={marketData
-                ? [{
-                    marketAddress: marketAddress!,
-                    matchId: BigInt(marketData.matchId),
-                    creator: marketData.creator,
-                    entryFee: BigInt(marketData.entryFee),
-                    isPublic: marketData.isPublic,
-                    startTime: BigInt(marketData.kickoffTime),
-                    resolved: marketData.status === 'Resolved',
-                    participantsCount: BigInt(marketData.participantCount),
-                    homeCount: BigInt(marketData.homeCount),
-                    awayCount: BigInt(marketData.awayCount),
-                    drawCount: BigInt(marketData.drawCount),
-                  }]
-                : []}
-              />
-              <PoolTrendChart markets={marketData
                 ? [{
                     marketAddress: marketAddress!,
                     matchId: BigInt(marketData.matchId),
