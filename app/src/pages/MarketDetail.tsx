@@ -1,4 +1,4 @@
-import type { Match } from '../types'
+
 import React, { useEffect, useState } from 'react'
 import { useUnifiedWallet } from '../contexts/UnifiedWalletContext'
 import { Link, useParams } from 'react-router-dom'
@@ -13,13 +13,76 @@ import Confetti from '../components/ui/Confetti'
 import { getAccountExplorerUrl } from '../config/programs'
 import { useMarketActions } from '../hooks/useMarketActions'
 import { useMarketData } from '../hooks/useMarketData'
-import { useMatchData } from '../hooks/useMatchData'
+import { useMatchData, type EnhancedMatchData } from '../hooks/useMatchData'
 import { useParticipantData } from '../hooks/useParticipantData'
+import { useResolutionEligibility } from '../hooks/useResolutionEligibility'
 import { formatCurrency, formatWithSOLEquivalent, shortenAddress } from '../utils/formatters'
 
 // --- SUB-COMPONENTS ---
 
-function MatchHeader({ matchData }: { matchData: Match }) {
+function MatchHeader({ matchData }: { matchData: EnhancedMatchData }) {
+  const getMatchStatusBadge = () => {
+    if (matchData.isFinished) {
+      if (matchData.hasValidScore) {
+        return <Badge variant="success">Final Score</Badge>
+      } else {
+        return <Badge variant="warning">Finished</Badge>
+      }
+    }
+    
+    if (matchData.status === 'IN_PLAY' || matchData.status === 'LIVE') {
+      return <Badge variant="warning">Live</Badge>
+    }
+    
+    return <Badge variant="info">Scheduled</Badge>
+  }
+
+  const getScoreDisplay = () => {
+    if (matchData.hasValidScore) {
+      return (
+        <div className="font-jakarta text-5xl font-bold pt-6 flex items-center gap-4" style={{ color: 'var(--text-primary)' }}>
+          <span>{matchData.score.fullTime.home}</span>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: '2rem' }}>-</span>
+          <span>{matchData.score.fullTime.away}</span>
+        </div>
+      )
+    }
+    
+    return (
+      <div className="font-jakarta text-5xl font-bold pt-6" style={{ color: 'var(--text-tertiary)' }}>
+        VS
+      </div>
+    )
+  }
+
+  const getMatchResultIndicator = () => {
+    if (!matchData.isFinished || !matchData.hasValidScore || !matchData.matchResult) {
+      return null
+    }
+
+    const resultColor = matchData.matchResult === 'Home' 
+      ? 'var(--accent-green)' 
+      : matchData.matchResult === 'Away' 
+        ? 'var(--accent-red)' 
+        : 'var(--accent-amber)'
+
+    return (
+      <div className="text-center mt-4">
+        <div 
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold"
+          style={{ 
+            background: `${resultColor}20`,
+            color: resultColor,
+            border: `1px solid ${resultColor}40`
+          }}
+        >
+          <span className="icon-[mdi--trophy] w-4 h-4" />
+          {matchData.matchResult === 'Draw' ? 'Draw' : `${matchData.matchResult} Team Wins`}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="card">
       <div className="text-center mb-6">
@@ -28,6 +91,9 @@ function MatchHeader({ matchData }: { matchData: Match }) {
           <p className="font-sans text-base font-medium" style={{ color: 'var(--text-secondary)' }}>
             {matchData.competition.name}
           </p>
+          <div className="ml-2">
+            {getMatchStatusBadge()}
+          </div>
         </div>
         <p className="font-sans text-sm" style={{ color: 'var(--text-tertiary)' }}>
           {new Date(matchData.utcDate).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}
@@ -49,9 +115,7 @@ function MatchHeader({ matchData }: { matchData: Match }) {
             {matchData.homeTeam.name}
           </h2>
         </div>
-        <div className="font-jakarta text-5xl font-bold pt-6" style={{ color: 'var(--text-tertiary)' }}>
-          VS
-        </div>
+        {getScoreDisplay()}
         <div className="flex flex-col items-center gap-4 w-1/3 text-center">
           <div
             className="w-28 h-28 rounded-xl flex items-center justify-center p-4"
@@ -68,6 +132,7 @@ function MatchHeader({ matchData }: { matchData: Match }) {
           </h2>
         </div>
       </div>
+      {getMatchResultIndicator()}
     </div>
   )
 }
@@ -84,7 +149,7 @@ interface MarketStatsProps {
   drawCount: bigint | number | undefined
   userPrediction: string
   userHasJoined: boolean
-  matchData: Match
+  matchData: EnhancedMatchData
   entryFeeValue: number
   currency: 'SOL' | 'USD' | 'NGN'
   exchangeRates: { SOL_USD: number, SOL_NGN: number } | null
@@ -105,11 +170,40 @@ function MarketStats({ marketInfo, poolSize, participantsCount, marketStatus, is
     if (marketStatus)
       return <Badge variant="success">Resolved</Badge>
     // Check if match has ended but market is not resolved
-    if ((matchData as any)?.status === 'FINISHED')
+    if (matchData.isFinished)
       return <Badge variant="warning">Unresolved</Badge>
     if (isMatchStarted)
       return <Badge variant="warning">Live</Badge>
     return <Badge variant="info">Open</Badge>
+  }
+
+  const getUserPredictionOutcome = () => {
+    if (!userHasJoined || !userPrediction || !matchData.isFinished || !matchData.hasValidScore || !matchData.matchResult) {
+      return null
+    }
+
+    const isCorrect = userPrediction.toUpperCase() === matchData.matchResult.toUpperCase()
+    
+    return (
+      <InfoRow
+        label="Prediction Outcome"
+        value={(
+          <div className="flex items-center gap-2">
+            <span
+              className={`icon-[${isCorrect ? 'mdi--check-circle' : 'mdi--close-circle'}] w-4 h-4`}
+              style={{ color: isCorrect ? 'var(--accent-green)' : 'var(--accent-red)' }}
+            />
+            <span
+              className="font-sans font-bold text-sm"
+              style={{ color: isCorrect ? 'var(--accent-green)' : 'var(--accent-red)' }}
+            >
+              {isCorrect ? 'Correct' : 'Incorrect'}
+            </span>
+          </div>
+        )}
+        icon={isCorrect ? 'mdi--trophy' : 'mdi--close'}
+      />
+    )
   }
 
   // Calculate prediction percentages
@@ -199,6 +293,7 @@ function MarketStats({ marketInfo, poolSize, participantsCount, marketStatus, is
                 : 'mdi--equal'}
           />
         )}
+        {getUserPredictionOutcome()}
       </div>
 
       {/* User's Prediction */}
@@ -395,7 +490,15 @@ function MarketStats({ marketInfo, poolSize, participantsCount, marketStatus, is
   )
 }
 
-function ActionPanel({ matchData, marketStatus, isMatchStarted, isUserParticipant, selectedTeam, setSelectedTeam, renderButtons }: any) {
+function ActionPanel({ matchData, marketStatus, isMatchStarted, isUserParticipant, selectedTeam, setSelectedTeam, renderButtons }: {
+  matchData: EnhancedMatchData
+  marketStatus: boolean
+  isMatchStarted: boolean
+  isUserParticipant: boolean
+  selectedTeam: number | null
+  setSelectedTeam: (team: number | null) => void
+  renderButtons: () => React.ReactNode
+}) {
   if (marketStatus || isMatchStarted) {
     return (
       <div className="card text-center">
@@ -517,6 +620,28 @@ export function MarketDetail() {
   const hasUserWithdrawn = participantData?.hasWithdrawn || false
   const canUserWithdraw = isUserWinner && !hasUserWithdrawn
 
+  // Market info
+  const marketInfo = marketData ? {
+    creator: marketData.creator,
+    matchId: marketData.matchId,
+    entryFee: marketData.entryFee, // Already in lamports from the hook
+    isPublic: marketData.isPublic,
+    startTime: marketData.kickoffTime,
+  } : null
+
+  // Check if user is the creator
+  const isCreator = userAddress && marketInfo?.creator === userAddress.toBase58()
+
+  // Determine resolution eligibility
+  const resolutionEligibility = useResolutionEligibility({
+    matchData,
+    marketStatus: marketData?.status === 'Resolved',
+    isUserCreator: !!isCreator,
+    isUserParticipant: hasJoined,
+    userPrediction: participantData?.prediction as 'Home' | 'Draw' | 'Away' | undefined,
+    userAddress: userAddress?.toString()
+  })
+
   // Debug logging
   useEffect(() => {
     console.log('Market Detail Debug:', {
@@ -530,17 +655,9 @@ export function MarketDetail() {
       isUserWinner,
       hasUserWithdrawn,
       canUserWithdraw,
+      resolutionEligibility,
     })
-  }, [participantData, hasJoined, predictionName, userAddress, marketAddress, marketData, isUserWinner, hasUserWithdrawn, canUserWithdraw])
-
-  // Market info
-  const marketInfo = marketData ? {
-    creator: marketData.creator,
-    matchId: marketData.matchId,
-    entryFee: marketData.entryFee, // Already in lamports from the hook
-    isPublic: marketData.isPublic,
-    startTime: marketData.kickoffTime,
-  } : null
+  }, [participantData, hasJoined, predictionName, userAddress, marketAddress, marketData, isUserWinner, hasUserWithdrawn, canUserWithdraw, resolutionEligibility])
 
   const marketStatus = marketData?.status === 'Resolved'
   const participantsCount = marketData?.participantCount || 0
@@ -618,27 +735,22 @@ export function MarketDetail() {
   }, 'Failed to join market.')
 
   const handleResolveMarket = () => handleAction(async () => {
-    if (!matchData || (matchData as any).status !== 'FINISHED') {
-      setActionStatus({ type: 'error', message: 'Match has not finished yet.' })
+    if (!resolutionEligibility.canResolve) {
+      setActionStatus({ type: 'error', message: resolutionEligibility.reason })
       return null
     }
     if (!marketAddress) {
       setActionStatus({ type: 'error', message: 'Market address not found.' })
       return null
     }
-
-    const winnerTag = (matchData as any)?.score?.winner
-    let outcome: 'Home' | 'Away' | 'Draw'
-    if (winnerTag === 'HOME_TEAM')
-      outcome = 'Home'
-    else if (winnerTag === 'AWAY_TEAM')
-      outcome = 'Away'
-    else
-      outcome = 'Draw'
+    if (!matchData?.matchResult) {
+      setActionStatus({ type: 'error', message: 'Match result not available.' })
+      return null
+    }
 
     return await resolveMarket({
       marketAddress,
-      outcome,
+      outcome: matchData.matchResult,
     })
   }, 'Failed to resolve market.')
 
@@ -697,9 +809,6 @@ export function MarketDetail() {
   }
 
   const renderButtons = (): React.ReactNode => {
-    // Check if user is the creator
-    const isCreator = userAddress && marketInfo?.creator === userAddress.toBase58()
-
     if (marketStatus) { // Resolved
       // Note: Creator fee withdrawal is not implemented in the Solana program yet
       // Only show withdraw button for winning participants
@@ -748,16 +857,31 @@ export function MarketDetail() {
     }
 
     if (isMatchStarted) {
-      // Allow any participant or creator to resolve the market when match is finished
-      const canResolve = (isUserParticipant || isCreator) && (matchData as any)?.status === 'FINISHED'
-      if (canResolve) {
+      // Show resolve button based on eligibility logic
+      if (resolutionEligibility.showResolveButton) {
         return (
-          <Button variant="default" onClick={handleResolveMarket} className="gap-2">
+          <Button 
+            variant="default" 
+            onClick={handleResolveMarket} 
+            className="gap-2"
+            disabled={!resolutionEligibility.canResolve}
+          >
             <span className="icon-[mdi--check-decagram] w-5 h-5" />
             Resolve Market
           </Button>
         )
       }
+      
+      // Show why user can't resolve if they're a participant or creator
+      if ((isUserParticipant || isCreator) && !resolutionEligibility.showResolveButton) {
+        return (
+          <div className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text-tertiary)' }}>
+            <span className="icon-[mdi--information-outline] w-5 h-5" />
+            <span>{resolutionEligibility.reason}</span>
+          </div>
+        )
+      }
+      
       return <Button variant="secondary" disabled>Market Closed</Button>
     }
 

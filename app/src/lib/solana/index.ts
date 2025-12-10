@@ -8,6 +8,7 @@
 export * from './account-decoder'
 export * from './borsh-schemas'
 export * from './error-handler'
+export * from './fee-utils'
 export * from './instruction-encoder'
 export * from './pda-utils'
 export * from './transaction-builder'

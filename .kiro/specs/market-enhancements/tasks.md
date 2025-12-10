@@ -1,18 +1,18 @@
 # Implementation Plan
 
-- [-] 1. Enhanced Market Resolution with Automated Fee Distribution
+- [x] 1. Enhanced Market Resolution with Automated Fee Distribution
   - Create enhanced resolution function with atomic fee distribution to creator, platform, and participant pool
   - Add platform address configuration and fee calculation utilities
   - Implement multi-transfer transaction logic within single atomic operation
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 1.1 Add fee distribution configuration and utilities
+- [x] 1.1 Add fee distribution configuration and utilities
   - Create fee distribution constants and configuration
   - Add platform address constant "2xUfnnyizenM7a9jWHtgxdCWCTE11afRUhX5YeFSrVTn"
   - Implement fee calculation utilities for creator, platform, and participant shares
   - _Requirements: 1.1, 1.2_
 
-- [ ] 1.2 Enhance resolveMarket function with fee distribution
+- [x] 1.2 Enhance resolveMarket function with fee distribution
   - Modify useMarketActions.ts resolveMarket function to include fee distribution logic
   - Add multiple transfer instructions to single transaction
   - Implement atomic transaction with creator fee, platform fee, and remaining pool distribution
@@ -25,28 +25,28 @@
   - Test error scenarios for fee distribution failures
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 2. Match Score Integration and Intelligent Resolution Controls
+- [x] 2. Match Score Integration and Intelligent Resolution Controls
   - Enhance match data fetching to include scores and finished status
   - Implement resolution eligibility logic based on user predictions and match outcomes
   - Add conditional resolution button display based on user's potential rewards
   - Display match scores and prediction outcome status in UI
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 2.1 Enhance match data fetching with scores
+- [x] 2.1 Enhance match data fetching with scores
   - Modify useMatchData hook to fetch match scores from football-data.org API
   - Add score parsing and winner determination logic
   - Handle cases where scores are not yet available for finished matches
   - Add proper error handling for API failures
   - _Requirements: 2.1, 2.2_
 
-- [ ] 2.2 Implement resolution eligibility logic
+- [x] 2.2 Implement resolution eligibility logic
   - Create utility function to determine if user can resolve market
   - Check if user has winning prediction based on match result
   - Implement logic to hide resolve button for users with no potential rewards
   - Add resolution eligibility state management
   - _Requirements: 2.3, 2.4, 2.5_
 
-- [ ] 2.3 Update MarketDetail page with score display and intelligent controls
+- [x] 2.3 Update MarketDetail page with score display and intelligent controls
   - Add match score display when match is finished
   - Show user's prediction outcome status (correct/incorrect)
   - Implement conditional resolve button based on eligibility
