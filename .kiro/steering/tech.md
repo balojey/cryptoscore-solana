@@ -1,94 +1,90 @@
 # Technology Stack
 
-## Blockchain
+## Backend (Solana Programs)
 
-- **Solana**: Layer 1 blockchain (devnet/testnet/mainnet-beta)
-- **Anchor Framework 0.30+**: Rust framework for Solana program development
-- **Rust**: Smart contract language (latest stable)
-- **Solana CLI 1.18+**: Command-line tools for deployment and testing
+- **Framework**: Anchor v0.30+ (Rust-based Solana development framework)
+- **Language**: Rust (latest stable)
+- **Blockchain**: Solana (supports localnet, devnet, testnet, mainnet-beta)
+- **Programs**: Three separate programs for modular architecture
+  - `cryptoscore_factory`: Market creation and management
+  - `cryptoscore_market`: Individual market operations
+  - `cryptoscore_dashboard`: Data aggregation and analytics
 
 ## Frontend
 
-- **React 19.2**: UI framework with latest features
-- **TypeScript 5.9**: Strict mode enabled for type safety
-- **Vite 7.1**: Build tool and dev server
-- **Tailwind CSS 4.1**: Utility-first styling with custom design tokens
-- **@solana/web3.js 1.95**: Solana JavaScript SDK
-- **@solana/wallet-adapter-react**: Wallet integration (Phantom, Solflare, Backpack, etc.)
-- **TanStack Query 5.90**: Data fetching, caching, and real-time updates
-- **React Router 7.9**: Client-side routing
-- **Radix UI**: Accessible component primitives
-- **Recharts 3.4**: Data visualization and charts
+- **Framework**: React 19+ with TypeScript
+- **Build Tool**: Vite 7+ with hot reload
+- **Styling**: Tailwind CSS v4+ with custom design tokens
+- **UI Components**: Radix UI primitives with shadcn/ui patterns
+- **State Management**: TanStack Query for server state, React Context for app state
+- **Routing**: React Router DOM v7+
+- **Wallet Integration**: Solana Wallet Adapter + Crossmint SDK
 
 ## Development Tools
 
-- **ESLint**: @antfu/eslint-config for code linting
-- **Prettier**: Code formatting
-- **Vitest**: Unit and integration testing
-- **ts-mocha**: Anchor program testing
+- **Package Manager**: Yarn (preferred) or npm
+- **Linting**: ESLint with Antfu config, Prettier for formatting
+- **Testing**: Vitest for frontend, Anchor test framework for programs
+- **TypeScript**: Strict mode enabled with path aliases (`@/*`)
 
 ## Common Commands
 
-### Root (Solana Programs)
-
+### Solana Programs
 ```bash
-# Build programs
+# Build all programs
 yarn build
-yarn build:verify  # Build with verification
 
-# Test programs
+# Build with verification
+yarn build:verify
+
+# Run tests
 yarn test
 
-# Deploy
-yarn deploy:localnet   # Local validator
-yarn deploy:devnet     # Devnet
-yarn deploy:mainnet    # Mainnet
+# Deploy to different networks
+yarn deploy:localnet
+yarn deploy:devnet
+yarn deploy:testnet
+yarn deploy:mainnet
 
 # Network configuration
 yarn configure:devnet
+yarn configure:localnet
+yarn configure:testnet
 yarn configure:mainnet
 
-# Local validator
-yarn localnet          # Start validator
-yarn stop:validator    # Stop validator
+# Start local validator
+yarn localnet
 
-# IDL management
-yarn idl:sync          # Copy IDLs to frontend
+# Export IDLs to frontend
+yarn idl:sync
 ```
 
-### Frontend (app/)
-
+### Frontend App
 ```bash
-# Development
-npm run dev            # Start dev server (localhost:5173)
+# Navigate to app directory first
+cd app/
 
-# Build
-npm run build          # TypeScript compile + Vite build
-npm run preview        # Preview production build
+# Development server
+yarn dev
 
-# Testing
-npm run test           # Run tests once
-npm run test:watch     # Watch mode
+# Build for production
+yarn build
+
+# Type check + build
+yarn build:check
+
+# Run tests
+yarn test
+yarn test:watch
 
 # Linting
-npm run lint           # ESLint with auto-fix
+yarn lint
 ```
 
-## Build System
+## Key Dependencies
 
-- **Anchor**: Compiles Rust programs to BPF bytecode, generates IDLs
-- **Vite**: Bundles frontend with code splitting and optimizations
-- **TypeScript**: Strict type checking before build
-- **Manual chunks**: Vendor code separated for better caching (react, wagmi, recharts)
-
-## Environment Variables
-
-Frontend requires `.env` file:
-
-```env
-VITE_FACTORY_PROGRAM_ID=<deployed_factory_id>
-VITE_MARKET_PROGRAM_ID=<deployed_market_id>
-VITE_DASHBOARD_PROGRAM_ID=<deployed_dashboard_id>
-VITE_SOLANA_NETWORK=devnet
-VITE_SOLANA_RPC_URL=https://api.devnet.solana.com
-```
+- **Solana**: `@solana/web3.js`, `@solana/wallet-adapter-*`
+- **Anchor**: `@coral-xyz/anchor`
+- **React**: `react`, `react-dom`, `react-router-dom`
+- **UI**: `@radix-ui/*`, `lucide-react`, `tailwindcss`
+- **Utils**: `clsx`, `tailwind-merge`, `borsh`, `bs58`

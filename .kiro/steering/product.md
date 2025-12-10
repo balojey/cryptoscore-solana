@@ -1,21 +1,24 @@
 # Product Overview
 
-CryptoScore is a decentralized sports prediction market platform built on Solana blockchain. Users can create, join, and participate in prediction markets for sports matches, with outcomes resolved on-chain and rewards distributed automatically.
+CryptoScore is a decentralized prediction market platform built on Solana blockchain for sports betting and predictions. The platform allows users to create and participate in prediction markets for football matches and other sporting events.
 
 ## Core Features
 
-- **Market Creation**: Users create prediction markets for sports matches with customizable entry fees and visibility (public/private)
-- **Predictions**: Participants join markets by submitting predictions (home win, away win, draw) and staking entry fees
-- **Resolution**: Market creators resolve matches with final outcomes after completion
-- **Rewards**: Winners automatically withdraw their share of the prize pool (minus platform fees)
-- **Dashboard**: Real-time tracking of markets, user statistics, leaderboards, and portfolio performance
+- **Prediction Markets**: Users can create markets for football matches with customizable entry fees and time windows
+- **Multi-outcome Betting**: Support for Home/Draw/Away predictions with dynamic odds based on participation
+- **Decentralized Architecture**: Three Solana programs handle factory operations, market logic, and dashboard aggregation
+- **Real-time Updates**: WebSocket integration for live market data and participant tracking
+- **Wallet Integration**: Support for multiple Solana wallets via Crossmint and native wallet adapters
 
-## Architecture
+## Key Components
 
-Three Solana programs power the platform:
+- **Factory Program**: Creates and manages prediction markets
+- **Market Program**: Handles individual market operations, predictions, and resolutions
+- **Dashboard Program**: Aggregates data across markets for analytics and leaderboards
+- **Frontend App**: React-based web application for user interaction
 
-1. **Factory Program**: Creates markets and maintains a registry of all markets
-2. **Market Program**: Handles predictions, resolution, and reward distribution
-3. **Dashboard Program**: Aggregates data for queries and statistics
+## Target Users
 
-The frontend is a React-based Web3 trading terminal with real-time updates, multiple themes, and comprehensive market analytics.
+- Sports betting enthusiasts seeking decentralized alternatives
+- Crypto users interested in prediction markets
+- Football fans wanting to engage with match predictions

@@ -1,127 +1,87 @@
 # Project Structure
 
-## Root Organization
+## Root Level Organization
 
 ```
-.
-├── programs/          # Solana programs (Anchor/Rust)
-├── app/              # Frontend application (React/TypeScript)
-├── tests/            # Integration tests for programs
-├── scripts/          # Deployment and utility scripts
-├── migrations/       # Deployment migrations
-├── deployments/      # Deployment artifacts (program IDs)
-└── target/           # Rust build output (gitignored)
+├── programs/           # Solana programs (Rust/Anchor)
+├── app/               # Frontend React application
+├── tests/             # Integration tests
+├── scripts/           # Deployment and utility scripts
+├── migrations/        # Deployment migrations
+├── deployments/       # Network deployment artifacts
+└── solana/           # Solana-specific configuration
 ```
 
-## Solana Programs (`programs/`)
+## Solana Programs (`/programs/`)
 
-Three independent Anchor programs:
-
+Each program follows Anchor conventions:
 ```
 programs/
-├── factory/          # Market creation and registry
-│   ├── src/lib.rs   # Program logic
-│   └── Cargo.toml
-├── market/           # Predictions and resolution
-│   ├── src/lib.rs
-│   └── Cargo.toml
-└── dashboard/        # Data aggregation
-    ├── src/lib.rs
-    └── Cargo.toml
+├── factory/           # Market creation program
+│   ├── src/lib.rs    # Main program logic
+│   └── Cargo.toml    # Rust dependencies
+├── market/            # Individual market operations
+└── dashboard/         # Data aggregation program
 ```
 
-### Program Conventions
+## Frontend Application (`/app/`)
 
-- **PDA Seeds**: Use descriptive byte strings (`b"factory"`, `b"market"`, `b"participant"`)
-- **Account Sizes**: Calculate with discriminator (8 bytes) + fields
-- **Error Handling**: Custom error enums with descriptive messages
-- **Events**: Emit events for important state changes (indexed fields for filtering)
-- **Validation**: Validate all inputs (non-zero fees, future timestamps, string lengths)
-- **Bump Seeds**: Store bump in account for efficient PDA derivation
-
-## Frontend (`app/`)
-
-React application with feature-based organization:
-
+React application with clear separation of concerns:
 ```
-app/
-├── src/
-│   ├── components/      # React components
-│   │   ├── ui/         # Reusable UI primitives (Radix-based)
-│   │   ├── cards/      # Market and portfolio cards
-│   │   ├── charts/     # Data visualization
-│   │   ├── market/     # Market-specific components
-│   │   ├── terminal/   # Trading terminal components
-│   │   └── landing/    # Landing page sections
-│   ├── pages/          # Route components
-│   ├── hooks/          # Custom React hooks
-│   ├── lib/            # Utilities and helpers
-│   │   └── solana/     # Solana-specific utilities
-│   ├── config/         # Configuration (programs, networks)
-│   ├── contexts/       # React contexts (theme, etc.)
-│   ├── styles/         # CSS files
-│   │   ├── tokens.css  # Design system variables
-│   │   ├── components.css
-│   │   └── animations.css
-│   ├── types/          # TypeScript type definitions
-│   ├── utils/          # Helper functions
-│   └── idl/            # Anchor IDL files (copied from programs)
-├── public/             # Static assets
-├── docs/               # Documentation
-└── abi/                # Legacy contract ABIs (deprecated)
+app/src/
+├── components/        # Reusable UI components
+│   ├── ui/           # Base UI primitives (shadcn/ui)
+│   ├── auth/         # Authentication components
+│   ├── cards/        # Card-based components
+│   ├── charts/       # Data visualization
+│   ├── landing/      # Landing page sections
+│   ├── layout/       # Layout components
+│   ├── market/       # Market-specific components
+│   └── terminal/     # Trading terminal components
+├── pages/            # Route components
+├── hooks/            # Custom React hooks
+├── contexts/         # React context providers
+├── lib/              # Utility libraries
+│   ├── solana/       # Solana-specific utilities
+│   └── crossmint/    # Crossmint integration
+├── config/           # Configuration files
+├── types/            # TypeScript type definitions
+├── utils/            # General utilities
+├── styles/           # CSS files
+└── idl/              # Generated IDL files from programs
 ```
 
-### Frontend Conventions
+## Key Conventions
 
-- **Path Alias**: Use `@/` for imports from `src/` (e.g., `@/components/ui/button`)
-- **Component Files**: PascalCase (e.g., `MarketCard.tsx`)
-- **Hook Files**: camelCase with `use` prefix (e.g., `useMarketData.ts`)
-- **Utility Files**: camelCase (e.g., `formatters.ts`)
-- **Type Files**: Suffix with `.types.ts` or use `types.ts`
-- **Styling**: Tailwind utility classes + CSS variables from `tokens.css`
-- **State Management**: TanStack Query for server state, React hooks for local state
-- **Error Handling**: Try-catch with user-friendly toast notifications
+### File Naming
+- **Components**: PascalCase (e.g., `MarketCard.tsx`)
+- **Hooks**: camelCase with `use` prefix (e.g., `useMarketData.ts`)
+- **Utilities**: camelCase (e.g., `formatters.ts`)
+- **Types**: camelCase (e.g., `solana-program-types.ts`)
 
-## Key Files
+### Import Patterns
+- Use `@/` alias for src imports: `import { cn } from '@/lib/utils'`
+- Group imports: external libraries, internal modules, relative imports
+- Prefer named exports over default exports for utilities
 
-- **Anchor.toml**: Program IDs for all networks, test configuration
-- **package.json** (root): Solana program scripts (build, deploy, test)
-- **app/package.json**: Frontend dependencies and scripts
-- **app/vite.config.ts**: Build configuration, path aliases, chunk splitting
-- **app/tsconfig.json**: TypeScript strict mode, path aliases
-- **.env files**: Network-specific environment variables
+### Component Structure
+- Use functional components with TypeScript
+- Props interfaces defined inline or exported
+- Custom hooks for complex logic
+- Consistent error boundaries and loading states
 
-## Testing
+### Solana Integration
+- IDL files auto-generated in `app/src/idl/`
+- Program interactions in `lib/solana/`
+- Account decoding utilities centralized
+- Network configuration in `config/`
 
-```
-tests/
-├── cryptoscore.ts           # Basic program tests
-├── integration/             # End-to-end integration tests
-│   ├── end-to-end.ts
-│   ├── comprehensive-e2e.ts
-│   └── stress-tests.ts
-└── utils/                   # Test utilities
-    ├── test-setup.ts
-    ├── test-accounts.ts
-    └── test-assertions.ts
-```
+### Testing
+- Unit tests co-located with source files in `__tests__/` folders
+- Integration tests in `/tests/` directory
+- E2E tests in `app/src/__tests__/e2e/`
 
-Frontend tests in `app/src/__tests__/` (e2e tests for WebSocket, market flows).
-
-## Scripts
-
-```
-scripts/
-├── deploy.ts              # Multi-network deployment
-├── configure-network.ts   # Network configuration
-├── export-idls.ts        # IDL export and management
-├── build-verify.ts       # Build verification
-└── copy-idls.js          # Copy IDLs to frontend
-```
-
-## Deployment Artifacts
-
-- **deployments/**: JSON files with deployed program IDs per network
-- **target/idl/**: Generated IDL files from Anchor build
-- **app/src/idl/**: IDL files copied for frontend use
-- **app/dist/**: Production build output (gitignored)
+### Configuration Files
+- Environment-specific `.env` files at root and app level
+- Network configurations in `Anchor.toml`
+- Build configurations in `vite.config.ts` and `tsconfig.json`
