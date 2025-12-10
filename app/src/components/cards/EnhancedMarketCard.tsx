@@ -8,10 +8,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { UserPredictionBadge } from '@/components/ui/UserPredictionBadge'
 import { useCurrency } from '@/hooks/useCurrency'
 import { useMarketData, useUserParticipantMarkets } from '../../hooks/useMarketData'
 import { useMatchData } from '../../hooks/useMatchData'
+import { useParticipantData } from '../../hooks/useParticipantData'
 import { formatCurrency, formatSOL, formatWithSOLEquivalent, shortenAddress } from '../../utils/formatters'
+import { determinePredictionOutcome } from '../../utils/prediction-outcome'
 
 interface EnhancedMarketCardProps {
   market: Market
@@ -183,14 +186,19 @@ export default function EnhancedMarketCard({ market }: EnhancedMarketCardProps) 
   const { publicKey: userAddress } = useUnifiedWallet()
   const { data: matchData, loading, error } = useMatchData(Number(market.matchId))
   const distribution = usePredictionDistribution(market.marketAddress)
-  const { data: marketData } = useMarketData(market.marketAddress)
   const { data: userParticipantMarkets } = useUserParticipantMarkets(userAddress?.toString())
+  const { data: participantData } = useParticipantData(market.marketAddress, userAddress?.toString())
   const { currency, exchangeRates } = useCurrency()
 
   // Check if user has joined this market
   const hasJoined = userParticipantMarkets?.some(
     m => m.marketAddress === market.marketAddress,
   ) || false
+
+  // Determine prediction outcome for user
+  const predictionOutcome = participantData 
+    ? determinePredictionOutcome(participantData.prediction, matchData)
+    : null
 
   if (loading) {
     return <EnhancedMarketCardSkeleton />
@@ -254,8 +262,23 @@ export default function EnhancedMarketCard({ market }: EnhancedMarketCardProps) 
             </div>
           </div>
 
+          {/* User Prediction Badge - Show prominently when user has joined */}
+          {hasJoined && participantData && (
+            <div className="mb-4 flex justify-center">
+              <UserPredictionBadge
+                prediction={participantData.prediction}
+                homeTeam={matchData.homeTeam.name}
+                awayTeam={matchData.awayTeam.name}
+                isCorrect={predictionOutcome?.isCorrect}
+                matchResult={predictionOutcome?.matchResult}
+                isMatchFinished={matchData.isFinished && matchData.hasValidScore}
+                className="shadow-sm"
+              />
+            </div>
+          )}
+
           {/* Teams */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <div className="team-display flex-1">
               <img
                 src={`https://corsproxy.io/?${matchData.homeTeam.crest}`}
@@ -267,7 +290,18 @@ export default function EnhancedMarketCard({ market }: EnhancedMarketCardProps) 
             </div>
 
             <div className="px-4">
-              <span className="text-2xl font-bold" style={{ color: 'var(--text-tertiary)' }}>VS</span>
+              {matchData.isFinished && matchData.hasValidScore && matchData.score ? (
+                <div className="text-center">
+                  <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                    {matchData.score.fullTime.home} - {matchData.score.fullTime.away}
+                  </div>
+                  <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                    Final
+                  </div>
+                </div>
+              ) : (
+                <span className="text-2xl font-bold" style={{ color: 'var(--text-tertiary)' }}>VS</span>
+              )}
             </div>
 
             <div className="team-display flex-1">
@@ -281,8 +315,25 @@ export default function EnhancedMarketCard({ market }: EnhancedMarketCardProps) 
             </div>
           </div>
 
+          {/* Match Result Indicator - Show when match is finished */}
+          {matchData.isFinished && matchData.hasValidScore && matchData.matchResult && (
+            <div className="mb-4 text-center">
+              <Badge 
+                variant={matchData.matchResult === 'Draw' ? 'warning' : 'info'}
+                className="text-xs"
+              >
+                {matchData.matchResult === 'Home' 
+                  ? `${matchData.homeTeam.name} Won`
+                  : matchData.matchResult === 'Away'
+                  ? `${matchData.awayTeam.name} Won`
+                  : 'Match Ended in Draw'
+                }
+              </Badge>
+            </div>
+          )}
+
           {/* Prediction Distribution */}
-          <div className="mb-6">
+          <div className="mb-4">
             <PredictionBar
               distribution={distribution}
               homeTeam={matchData.homeTeam.name}

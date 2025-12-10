@@ -59,28 +59,28 @@
   - Test UI behavior with different user prediction scenarios
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 3. User Prediction Display on Market Cards
+- [x] 3. User Prediction Display on Market Cards
   - Enhance EnhancedMarketCard to show user's prediction when they have joined
   - Add visual indicators for different prediction types (Home/Draw/Away)
   - Implement prediction outcome status when match results are available
   - Ensure consistent styling across all market card displays
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 3.1 Create user prediction badge component
+- [x] 3.1 Create user prediction badge component
   - Design and implement UserPredictionBadge component
   - Add distinct visual styling for Home, Draw, and Away predictions
   - Include prediction outcome status (correct/incorrect) when match is finished
   - Ensure accessibility and responsive design
   - _Requirements: 3.1, 3.2, 3.3, 3.5_
 
-- [ ] 3.2 Enhance EnhancedMarketCard with prediction display
+- [x] 3.2 Enhance EnhancedMarketCard with prediction display
   - Integrate UserPredictionBadge into EnhancedMarketCard component
   - Fetch user's prediction data using existing useParticipantData hook
   - Show prediction badge only when user has joined the market
   - Position badge prominently on the market card
   - _Requirements: 3.1, 3.3, 3.4, 3.5_
 
-- [ ] 3.3 Add prediction outcome status integration
+- [x] 3.3 Add prediction outcome status integration
   - Connect match result data with user prediction display
   - Show correct/incorrect status when match is finished
   - Add visual feedback for winning vs losing predictions
