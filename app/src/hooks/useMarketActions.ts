@@ -536,6 +536,7 @@ export function useMarketActions() {
       })
       queryClient.invalidateQueries({ queryKey: ['markets'] })
       queryClient.invalidateQueries({ queryKey: ['market', 'details', params.marketAddress] })
+      queryClient.invalidateQueries({ queryKey: ['participant', params.marketAddress, publicKey.toString()] })
 
       return signature
     }
@@ -861,6 +862,7 @@ export function useMarketActions() {
       })
       queryClient.invalidateQueries({ queryKey: ['markets'] })
       queryClient.invalidateQueries({ queryKey: ['market', 'details', marketAddress] })
+      queryClient.invalidateQueries({ queryKey: ['participant', marketAddress, publicKey.toString()] })
       queryClient.invalidateQueries({ queryKey: ['user'] })
 
       return signature

@@ -56,7 +56,7 @@ function parseOutcome(outcome: number): 'Home' | 'Draw' | 'Away' | null {
  * Hook for fetching detailed information for a specific market
  */
 export function useMarketData(marketAddress?: string) {
-  const { connection, isConnected } = useSolanaConnection()
+  const { connection } = useSolanaConnection()
 
   return useQuery({
     queryKey: ['market', 'details', marketAddress],

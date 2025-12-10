@@ -701,11 +701,9 @@ export function MarketDetail() {
     const isCreator = userAddress && marketInfo?.creator === userAddress.toBase58()
 
     if (marketStatus) { // Resolved
-      // Determine if creator can withdraw fees
-      const creatorCanWithdraw = isCreator && marketData && marketData.totalPool > 0
-
-      // Show withdraw button for winners or creator who haven't withdrawn
-      const showWithdrawButton = (canUserWithdraw && !hasUserWithdrawn) || creatorCanWithdraw
+      // Note: Creator fee withdrawal is not implemented in the Solana program yet
+      // Only show withdraw button for winning participants
+      const showWithdrawButton = canUserWithdraw && !hasUserWithdrawn
 
       // Show withdrawn status only if user was a winner and has withdrawn
       const showWithdrawnStatus = isUserWinner && hasUserWithdrawn
@@ -717,7 +715,7 @@ export function MarketDetail() {
             ? (
                 <Button variant="success" onClick={handleWithdraw} className="gap-2" disabled={isLoading}>
                   <span className="icon-[mdi--cash-multiple] w-5 h-5" />
-                  {isLoading ? 'Withdrawing...' : isCreator ? 'Withdraw Fees' : 'Withdraw Rewards'}
+                  {isLoading ? 'Withdrawing...' : 'Withdraw Rewards'}
                 </Button>
               )
             : null}
@@ -734,6 +732,14 @@ export function MarketDetail() {
                 <div className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text-tertiary)' }}>
                   <span className="icon-[mdi--close-circle] w-5 h-5" />
                   <span>Not a winner</span>
+                </div>
+              )
+            : null}
+          {isCreator && marketData && marketData.totalPool > 0
+            ? (
+                <div className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text-tertiary)' }}>
+                  <span className="icon-[mdi--information-outline] w-5 h-5" />
+                  <span>Creator fees remain in market</span>
                 </div>
               )
             : null}
