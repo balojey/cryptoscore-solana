@@ -17,6 +17,7 @@ import { useMatchData, type EnhancedMatchData } from '../hooks/useMatchData'
 import { useParticipantData } from '../hooks/useParticipantData'
 import { useResolutionEligibility } from '../hooks/useResolutionEligibility'
 import { formatCurrency, formatWithSOLEquivalent, shortenAddress } from '../utils/formatters'
+import { CreateSimilarMarketDialog, type CreateSimilarMarketParams } from '../components/CreateSimilarMarketDialog'
 
 // --- SUB-COMPONENTS ---
 
@@ -588,7 +589,7 @@ function PageSkeleton() {
 export function MarketDetail() {
   const { marketAddress } = useParams<{ marketAddress: string }>()
   const { publicKey: userAddress } = useUnifiedWallet()
-  const { joinMarket, resolveMarket, withdrawRewards, getExplorerLink, isLoading, txSignature } = useMarketActions()
+  const { joinMarket, resolveMarket, withdrawRewards, createSimilarMarket, getExplorerLink, isLoading, txSignature } = useMarketActions()
   const { data: marketData, isLoading: isLoadingMarket, error: marketError, refetch: refetchMarket } = useMarketData(marketAddress)
   const { currency, exchangeRates } = useCurrency()
 
@@ -599,6 +600,7 @@ export function MarketDetail() {
     signature?: string
   } | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
+  const [showCreateSimilarDialog, setShowCreateSimilarDialog] = useState(false)
 
   // Extract match data from market data
   const { data: matchData, loading: isLoadingMatch, error: matchError } = useMatchData(
@@ -768,6 +770,28 @@ export function MarketDetail() {
     }
     return signature
   }, 'Failed to withdraw funds.')
+
+  const handleCreateSimilarMarket = async (params: CreateSimilarMarketParams) => {
+    try {
+      const signature = await createSimilarMarket(params)
+      if (signature) {
+        setActionStatus({
+          type: 'success',
+          message: 'Similar market created successfully!',
+          signature,
+        })
+        // Navigate to the new market or provide link
+        // Note: We would need the new market address to navigate, which isn't returned by the current implementation
+        // For now, we'll just show success message
+      }
+    } catch (error: any) {
+      console.error('Failed to create similar market:', error)
+      setActionStatus({
+        type: 'error',
+        message: error.message || 'Failed to create similar market',
+      })
+    }
+  }
 
   const isLoadingData = isLoadingMarket || isLoadingMatch
   const isError = marketError || matchError
@@ -991,6 +1015,16 @@ export function MarketDetail() {
                     : undefined
                 }
               />
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateSimilarDialog(true)}
+                className="gap-2"
+                disabled={!userAddress || isMatchStarted}
+                title={isMatchStarted ? "Cannot create similar market after match has started" : "Create a similar market for this match"}
+              >
+                <span className="icon-[mdi--content-copy] w-4 h-4" />
+                Create Similar
+              </Button>
             </div>
 
             <MarketComments marketAddress={marketAddress!} />
@@ -1055,6 +1089,15 @@ export function MarketDetail() {
             )}
           </div>
         </div>
+
+        {/* Create Similar Market Dialog */}
+        <CreateSimilarMarketDialog
+          open={showCreateSimilarDialog}
+          onOpenChange={setShowCreateSimilarDialog}
+          matchData={matchData}
+          onCreateMarket={handleCreateSimilarMarket}
+          isLoading={isLoading}
+        />
       </div>
     </div>
   )

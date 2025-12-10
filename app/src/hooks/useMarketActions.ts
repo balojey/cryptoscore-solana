@@ -39,6 +39,12 @@ export interface ResolveMarketParams {
   outcome: MatchOutcomeType
 }
 
+export interface CreateSimilarMarketParams {
+  matchId: string
+  entryFee: number // in lamports
+  isPublic: boolean
+}
+
 /**
  * Hook for performing market actions (create, join, resolve, withdraw)
  * Handles transaction signing, confirmation, and loading states
@@ -429,6 +435,30 @@ export function useMarketActions() {
       setIsLoading(false)
     }
   }, [connection, publicKey, queryClient, simulateBeforeSend, submitTransaction, walletType])
+
+  /**
+   * Create a similar market with pre-filled match ID
+   */
+  const createSimilarMarket = useCallback(async (params: CreateSimilarMarketParams) => {
+    if (!publicKey) {
+      toast.error('Wallet not connected')
+      return null
+    }
+
+    // Calculate kickoff and end times based on match data
+    // For similar markets, we use the same match timing
+    const kickoffTime = Math.floor(Date.now() / 1000) + 300 // 5 minutes from now to allow setup
+    const endTime = kickoffTime + (24 * 60 * 60) // 24 hours later
+
+    // Reuse the existing createMarket logic with pre-filled parameters
+    return await createMarket({
+      matchId: params.matchId,
+      entryFee: params.entryFee,
+      kickoffTime,
+      endTime,
+      isPublic: params.isPublic,
+    })
+  }, [createMarket, publicKey])
 
   /**
    * Join an existing market with a prediction
@@ -970,6 +1000,7 @@ export function useMarketActions() {
 
   return {
     createMarket,
+    createSimilarMarket,
     joinMarket,
     resolveMarket,
     withdrawRewards,

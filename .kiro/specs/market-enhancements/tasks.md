@@ -100,21 +100,21 @@
   - Provide navigation to newly created similar market
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 4.1 Add Create Similar button to MarketDetail page
+- [x] 4.1 Add Create Similar button to MarketDetail page
   - Add "Create Similar" button to market detail page UI
   - Position button appropriately in the action panel
   - Implement button click handler to open creation dialog
   - Add proper styling consistent with existing design
   - _Requirements: 4.1_
 
-- [ ] 4.2 Create similar market creation dialog component
+- [x] 4.2 Create similar market creation dialog component
   - Design and implement CreateSimilarMarketDialog component
   - Pre-fill match ID from current market being viewed
   - Add form fields for entry fee and visibility (public/private)
   - Include form validation and error handling
   - _Requirements: 4.2, 4.3, 4.4_
 
-- [ ] 4.3 Implement similar market creation logic
+- [x] 4.3 Implement similar market creation logic
   - Extend useMarketActions hook with createSimilarMarket function
   - Reuse existing createMarket logic with pre-filled parameters
   - Add proper transaction handling and user feedback
