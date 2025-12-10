@@ -19,7 +19,23 @@ import { CreateSimilarMarketDialog, type CreateSimilarMarketParams } from '../co
 
 // --- SUB-COMPONENTS ---
 
-function MatchHeader({ matchData }: { matchData: EnhancedMatchData }) {
+function MatchHeader({ 
+  matchData, 
+  marketAddress, 
+  userAddress, 
+  isUserParticipant, 
+  selectedTeam, 
+  isMatchStarted, 
+  onShowCreateSimilarDialog 
+}: { 
+  matchData: EnhancedMatchData
+  marketAddress: string
+  userAddress: any
+  isUserParticipant: boolean
+  selectedTeam: number | null
+  isMatchStarted: boolean
+  onShowCreateSimilarDialog: () => void
+}) {
   const getMatchStatusBadge = () => {
     if (matchData.isFinished) {
       if (matchData.hasValidScore) {
@@ -132,6 +148,33 @@ function MatchHeader({ matchData }: { matchData: EnhancedMatchData }) {
         </div>
       </div>
       {getMatchResultIndicator()}
+      
+      {/* Social Features */}
+      <div className="flex items-center justify-center gap-4 mt-6">
+        <SharePrediction
+          marketAddress={marketAddress}
+          matchInfo={{
+            homeTeam: matchData.homeTeam.name,
+            awayTeam: matchData.awayTeam.name,
+            competition: matchData.competition.name,
+          }}
+          prediction={
+            isUserParticipant && selectedTeam
+              ? (selectedTeam === 1 ? 'HOME' : selectedTeam === 2 ? 'AWAY' : 'DRAW')
+              : undefined
+          }
+        />
+        <Button
+          variant="outline"
+          onClick={onShowCreateSimilarDialog}
+          className="gap-2"
+          disabled={!userAddress || isMatchStarted}
+          title={isMatchStarted ? "Cannot create similar market after match has started" : "Create a similar market for this match"}
+        >
+          <span className="icon-[mdi--content-copy] w-4 h-4" />
+          Create Similar
+        </Button>
+      </div>
     </div>
   )
 }
@@ -944,7 +987,15 @@ export function MarketDetail() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <MatchHeader matchData={matchData} />
+            <MatchHeader 
+              matchData={matchData}
+              marketAddress={marketAddress!}
+              userAddress={userAddress}
+              isUserParticipant={isUserParticipant}
+              selectedTeam={selectedTeam}
+              isMatchStarted={isMatchStarted}
+              onShowCreateSimilarDialog={() => setShowCreateSimilarDialog(true)}
+            />
             <ActionPanel
               matchData={matchData}
               marketStatus={marketStatus}
@@ -974,34 +1025,6 @@ export function MarketDetail() {
                 : []}
               />
             </div>
-
-            {/* Social Features */}
-            <div className="flex items-center gap-4">
-              <SharePrediction
-                marketAddress={marketAddress!}
-                matchInfo={{
-                  homeTeam: matchData.homeTeam.name,
-                  awayTeam: matchData.awayTeam.name,
-                  competition: matchData.competition.name,
-                }}
-                prediction={
-                  isUserParticipant && selectedTeam
-                    ? (selectedTeam === 1 ? 'HOME' : selectedTeam === 2 ? 'AWAY' : 'DRAW')
-                    : undefined
-                }
-              />
-              <Button
-                variant="outline"
-                onClick={() => setShowCreateSimilarDialog(true)}
-                className="gap-2"
-                disabled={!userAddress || isMatchStarted}
-                title={isMatchStarted ? "Cannot create similar market after match has started" : "Create a similar market for this match"}
-              >
-                <span className="icon-[mdi--content-copy] w-4 h-4" />
-                Create Similar
-              </Button>
-            </div>
-
 
           </div>
           <div className="lg:col-span-1">
