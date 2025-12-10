@@ -1,147 +1,81 @@
-# CryptoScore Solana
+# CryptoScore
 
-CryptoScore prediction markets on Solana blockchain using Anchor framework. This workspace contains both Solana programs (smart contracts) and a complete frontend application adapted from the original dapp-react codebase.
+Decentralized sports prediction markets on Solana blockchain. Built with Anchor framework and React.
 
-## 🏗️ Architecture
+🎥 **[Watch Demo](https://youtu.be/kkQOds2JSD4)** - See CryptoScore in action
 
-```
-solana/
-├── programs/           # Solana programs (Anchor/Rust)
-│   ├── factory/        # Factory program - creates markets
-│   ├── market/         # Market program - handles predictions
-│   └── dashboard/      # Dashboard program - data aggregation
-├── app/               # Frontend application (React/TypeScript)
-├── tests/             # Integration tests
-├── scripts/           # Deployment and utility scripts
-└── migrations/        # Deployment migrations
-```
+## Architecture
 
-## 🚀 Quick Start
+- **Programs** (`/programs/`) - Three Solana programs for modular market operations
+- **Frontend** (`/app/`) - React TypeScript application with Web3 integration
+- **Tests** (`/tests/`) - Comprehensive test suite for all programs
+
+## Quick Start
 
 ### Prerequisites
 
-- [Rust](https://rustup.rs/) (latest stable)
-- [Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools) (v1.18+)
+- [Rust](https://rustup.rs/) + [Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools) (v1.18+)
 - [Anchor CLI](https://www.anchor-lang.com/docs/installation) (v0.30+)
-- [Node.js](https://nodejs.org/) (v18+)
-- [Yarn](https://yarnpkg.com/) package manager
+- [Node.js](https://nodejs.org/) (v18+) + [Yarn](https://yarnpkg.com/)
 
-### Installation
+### Setup
 
-1. **Clone and install dependencies:**
 ```bash
-cd solana/
+# Install dependencies
 yarn install
-```
 
-2. **Configure Solana CLI:**
-```bash
-# Set to devnet for development
+# Configure Solana for devnet
 solana config set --url devnet
-
-# Create a keypair if you don't have one
 solana-keygen new
-
-# Get some SOL for testing
 solana airdrop 2
-```
 
-3. **Build programs:**
-```bash
+# Build and test programs
 yarn build
-# or with verification
-yarn build:verify
-```
-
-4. **Run tests:**
-```bash
 yarn test
 ```
 
-## 🌐 Network Configuration
-
-### Available Networks
-
-- **localnet** - Local development (solana-test-validator)
-- **devnet** - Solana devnet for testing
-- **testnet** - Solana testnet for staging
-- **mainnet-beta** - Solana mainnet for production
-
-### Configure for Network
+### Development
 
 ```bash
-# Configure for devnet (default)
-yarn configure:devnet
-
-# Configure for other networks
-yarn configure:localnet
-yarn configure:testnet
-yarn configure:mainnet
-
-# List all available networks
-yarn configure:list
-
-# Check current network
-yarn configure:current
-```
-
-## 🚀 Deployment
-
-### Local Development
-
-1. **Start local validator:**
-```bash
+# Start local validator
 yarn localnet
-# In another terminal, keep this running
-```
 
-2. **Deploy to localnet:**
-```bash
+# Deploy to localnet
 yarn deploy:localnet
+
+# Start frontend (in another terminal)
+cd app/
+yarn dev
 ```
 
-### Devnet Deployment
+## Networks
+
+Configure and deploy to different Solana networks:
 
 ```bash
-# Ensure you have devnet SOL
-solana airdrop 2 --url devnet
+# Configure network
+yarn configure:devnet    # Development
+yarn configure:testnet   # Staging  
+yarn configure:mainnet   # Production
 
-# Deploy to devnet
+# Deploy to network
 yarn deploy:devnet
-```
-
-### Production Deployment
-
-```bash
-# Configure for mainnet
-yarn configure:mainnet
-
-# Deploy to mainnet (requires mainnet SOL)
+yarn deploy:testnet
 yarn deploy:mainnet
 ```
 
-## 📋 Available Scripts
+## Scripts
 
-### Build & Verification
+**Build & Test**
 - `yarn build` - Build all programs
-- `yarn build:verify` - Build with verification
-- `yarn verify` - Verify build artifacts
-
-### Testing
 - `yarn test` - Run all tests
-- `yarn test:unit` - Run unit tests only
-- `yarn test:integration` - Run integration tests only
+- `yarn build:verify` - Build with verification
 
-### Deployment
+**Deployment**
 - `yarn deploy:localnet` - Deploy to local validator
 - `yarn deploy:devnet` - Deploy to devnet
-- `yarn deploy:testnet` - Deploy to testnet  
 - `yarn deploy:mainnet` - Deploy to mainnet
 
-### Network Configuration
-- `yarn configure:localnet` - Configure for localnet
-- `yarn
-- [Anchor Documentation](https://www.anchor-lang.com/)
-- [Solana Documentation](https://docs.solana.com/)
-- [Solana Cookbook](https://solanacookbook.com/)
-- [Anchor Examples](https://github.com/coral-xyz/anchor/tree/master/examples)
+**Utilities**
+- `yarn localnet` - Start local Solana validator
+- `yarn idl:sync` - Export IDLs to frontend
