@@ -16,6 +16,7 @@ describe('instructionEncoder', () => {
     user: PublicKey
     participant: PublicKey
     resolver: PublicKey
+    platform: PublicKey
   }
 
   beforeEach(() => {
@@ -29,6 +30,7 @@ describe('instructionEncoder', () => {
       user: new PublicKey('11111111111111111111111111111115'),
       participant: new PublicKey('11111111111111111111111111111116'),
       resolver: new PublicKey('11111111111111111111111111111117'),
+      platform: new PublicKey('2xUfnnyizenM7a9jWHtgxdCWCTE11afRUhX5YeFSrVTn'),
     }
   })
 
@@ -195,11 +197,13 @@ describe('instructionEncoder', () => {
       const instruction = encoder.resolveMarket(params, {
         market: testAccounts.market,
         resolver: testAccounts.resolver,
+        creator: testAccounts.creator,
+        platform: testAccounts.platform,
       })
 
       expect(instruction).toBeDefined()
       expect(instruction.programId).toEqual(programId)
-      expect(instruction.keys.length).toBe(2)
+      expect(instruction.keys.length).toBe(4)
       expect(instruction.data.length).toBeGreaterThan(8)
     })
 
@@ -209,6 +213,8 @@ describe('instructionEncoder', () => {
       const instruction = encoder.resolveMarket(params, {
         market: testAccounts.market,
         resolver: testAccounts.resolver,
+        creator: testAccounts.creator,
+        platform: testAccounts.platform,
       })
 
       expect(instruction).toBeDefined()
@@ -220,6 +226,8 @@ describe('instructionEncoder', () => {
       const instruction = encoder.resolveMarket(params, {
         market: testAccounts.market,
         resolver: testAccounts.resolver,
+        creator: testAccounts.creator,
+        platform: testAccounts.platform,
       })
 
       expect(instruction).toBeDefined()
@@ -231,6 +239,8 @@ describe('instructionEncoder', () => {
       const instruction = encoder.resolveMarket(params, {
         market: testAccounts.market,
         resolver: testAccounts.resolver,
+        creator: testAccounts.creator,
+        platform: testAccounts.platform,
       })
 
       // Market: writable, not signer
@@ -242,6 +252,16 @@ describe('instructionEncoder', () => {
       expect(instruction.keys[1].pubkey).toEqual(testAccounts.resolver)
       expect(instruction.keys[1].isWritable).toBe(false)
       expect(instruction.keys[1].isSigner).toBe(true)
+
+      // Creator: writable, not signer
+      expect(instruction.keys[2].pubkey).toEqual(testAccounts.creator)
+      expect(instruction.keys[2].isWritable).toBe(true)
+      expect(instruction.keys[2].isSigner).toBe(false)
+
+      // Platform: writable, not signer
+      expect(instruction.keys[3].pubkey).toEqual(testAccounts.platform)
+      expect(instruction.keys[3].isWritable).toBe(true)
+      expect(instruction.keys[3].isSigner).toBe(false)
     })
   })
 
@@ -324,6 +344,8 @@ describe('instructionEncoder', () => {
         {
           market: testAccounts.market,
           resolver: testAccounts.resolver,
+          creator: testAccounts.creator,
+          platform: testAccounts.platform,
         },
       )
 

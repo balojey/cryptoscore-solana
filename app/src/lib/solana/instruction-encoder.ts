@@ -188,12 +188,14 @@ export class InstructionEncoder {
   }
 
   /**
-   * Encode ResolveMarket instruction
+   * Encode ResolveMarket instruction with on-chain fee distribution
    *
    * @param {ResolveMarketParams} params - Market resolution parameters
    * @param {object} accounts - Required accounts for the instruction
    * @param {PublicKey} accounts.market - Market PDA
    * @param {PublicKey} accounts.resolver - Resolver (signer) - can be creator or participant
+   * @param {PublicKey} accounts.creator - Market creator's address for fee distribution
+   * @param {PublicKey} accounts.platform - Platform address for fee distribution
    * @param {PublicKey} [accounts.participant] - Optional participant PDA (required if resolver is not creator)
    * @returns {TransactionInstruction} Encoded instruction
    *
@@ -202,13 +204,13 @@ export class InstructionEncoder {
    * // Creator resolving
    * const ix = encoder.resolveMarket(
    *   { outcome: 0 }, // 0 = HOME, 1 = DRAW, 2 = AWAY
-   *   { market, resolver: creator }
+   *   { market, resolver: creator, creator, platform }
    * )
    * 
    * // Participant resolving
    * const ix = encoder.resolveMarket(
    *   { outcome: 0 },
-   *   { market, resolver: participant, participant: participantPda }
+   *   { market, resolver: participant, creator, platform, participant: participantPda }
    * )
    * ```
    */
@@ -217,6 +219,8 @@ export class InstructionEncoder {
     accounts: {
       market: PublicKey
       resolver: PublicKey
+      creator: PublicKey
+      platform: PublicKey
       participant?: PublicKey
     },
   ): TransactionInstruction {
@@ -226,10 +230,12 @@ export class InstructionEncoder {
       Buffer.from(serialize(ResolveMarketSchema, instructionData)),
     ])
 
-    // Account order: 1. market, 2. resolver, 3. participant (optional)
+    // Account order: 1. market, 2. resolver, 3. creator, 4. platform, 5. participant (optional)
     const keys = [
       { pubkey: accounts.market, isSigner: false, isWritable: true },
       { pubkey: accounts.resolver, isSigner: true, isWritable: false },
+      { pubkey: accounts.creator, isSigner: false, isWritable: true },
+      { pubkey: accounts.platform, isSigner: false, isWritable: true },
     ]
 
     // Add participant account if provided

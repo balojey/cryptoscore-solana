@@ -11,7 +11,7 @@ import { useUnifiedWallet } from '../contexts/UnifiedWalletContext'
 import { WALLET_ERROR_CODES, WalletErrorHandler } from '../lib/crossmint/wallet-error-handler'
 import { AccountDecoder } from '../lib/solana/account-decoder'
 import { SolanaErrorHandler } from '../lib/solana/error-handler'
-import { calculateFeeDistributionWithAddresses, createFeeDistributionInstructions, getFeeDistributionSummary } from '../lib/solana/fee-utils'
+
 import { InstructionEncoder } from '../lib/solana/instruction-encoder'
 import { PDAUtils } from '../lib/solana/pda-utils'
 import { TransactionBuilder } from '../lib/solana/transaction-builder'
@@ -637,7 +637,7 @@ export function useMarketActions() {
     try {
       // Show preparing transaction toast
       toast.info('Preparing transaction', {
-        description: 'Building transaction with fee distribution...',
+        description: 'Building market resolution with on-chain fee distribution...',
       })
 
       const marketPubkey = new PublicKey(params.marketAddress)
@@ -660,15 +660,15 @@ export function useMarketActions() {
         marketAddress: marketPubkey.toString()
       })
 
-      // Calculate fee distribution
-      const feeDistribution = calculateFeeDistributionWithAddresses(
-        totalPool,
-        creatorAddress
-      )
+      // Get platform address for fee distribution
+      const platformAddress = new PublicKey('2xUfnnyizenM7a9jWHtgxdCWCTE11afRUhX5YeFSrVTn')
 
-      // Log fee distribution details
-      const distributionSummary = getFeeDistributionSummary(feeDistribution)
-      console.log('Fee distribution breakdown:', distributionSummary)
+      console.log('Market data for on-chain fee distribution:', {
+        creator: creatorAddress.toString(),
+        platform: platformAddress.toString(),
+        totalPool: SolanaUtils.formatSol(Number(totalPool)),
+        marketAddress: marketPubkey.toString()
+      })
 
       // Convert outcome to enum value
       const outcomeValue = params.outcome === 'Home'
@@ -697,38 +697,29 @@ export function useMarketActions() {
         console.log('Could not derive participant PDA:', error)
       }
 
-      // Build instruction using InstructionEncoder
+      // Build instruction using InstructionEncoder with on-chain fee distribution
       const encoder = new InstructionEncoder(marketProgramId)
       const resolveMarketInstruction = encoder.resolveMarket(
         { outcome: outcomeValue },
         {
           market: marketPubkey,
           resolver: publicKey,
+          creator: creatorAddress,
+          platform: platformAddress,
           participant: participantPda, // Optional - will be included if user is participant
         },
       )
 
-      // Build transaction with enhanced compute limits for fee distribution
+      // Build transaction with standard compute limits (on-chain fee distribution is more efficient)
       const builder = new TransactionBuilder({
-        computeUnitLimit: 300000, // Increased for multiple transfers
+        computeUnitLimit: 200000, // Standard limit for single instruction
         computeUnitPrice: 1,
       })
 
-      // Add the resolve market instruction first
+      // Add the resolve market instruction (fees are distributed on-chain)
       builder.addInstruction(resolveMarketInstruction)
 
-      // Add fee distribution transfer instructions
-      const feeTransferInstructions = createFeeDistributionInstructions(
-        marketPubkey, // Market PDA holds the funds
-        feeDistribution
-      )
-
-      // Add each fee transfer instruction to the transaction
-      feeTransferInstructions.forEach(instruction => {
-        builder.addInstruction(instruction)
-      })
-
-      console.log(`Added ${feeTransferInstructions.length} fee distribution instructions to transaction`)
+      console.log('Added resolve market instruction with on-chain fee distribution')
 
       // Estimate fee before building final transaction
       const feeEstimate = await builder.previewFee(connection, publicKey)
@@ -745,14 +736,14 @@ export function useMarketActions() {
       transaction.feePayer = publicKey
 
       // Simulate transaction before sending
-      const shouldProceed = await simulateBeforeSend(transaction, 'resolveMarketWithFees')
+      const shouldProceed = await simulateBeforeSend(transaction, 'resolveMarket')
       if (!shouldProceed) {
         toast.error('Transaction cancelled by user')
         return null
       }
 
       // Submit transaction using wallet-type-aware method
-      const signature = await submitTransaction(transaction, 'resolveMarketWithFees')
+      const signature = await submitTransaction(transaction, 'resolveMarket')
 
       console.log('Transaction sent:', signature)
       toast.info('Confirming transaction', {
@@ -772,9 +763,9 @@ export function useMarketActions() {
 
       setTxSignature(signature)
 
-      // Handle success with enhanced messaging about fee distribution
-      toast.success('Market resolved with fee distribution!', {
-        description: `Creator fee: ${distributionSummary.creatorFee.amount}, Platform fee: ${distributionSummary.platformFee.amount}`,
+      // Handle success with on-chain fee distribution messaging
+      toast.success('Market resolved successfully!', {
+        description: 'Fees automatically distributed on-chain to creator and platform',
         action: {
           label: 'View',
           onClick: () => {

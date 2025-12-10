@@ -126,7 +126,7 @@ pub mod cryptoscore_market {
         Ok(())
     }
 
-    /// Resolve market with match outcome
+    /// Resolve market with match outcome and distribute fees
     pub fn resolve_market(
         ctx: Context<ResolveMarket>,
         outcome: MatchOutcome,
@@ -158,6 +158,55 @@ pub mod cryptoscore_market {
         let current_time = Clock::get()?.unix_timestamp;
         require!(current_time >= market.end_time, MarketError::MarketNotEnded);
         
+        // Calculate and distribute fees before updating market status
+        let total_pool = market.total_pool;
+        
+        // Calculate fees (2% creator + 3% platform = 5% total)
+        let creator_fee = total_pool.checked_mul(200).unwrap() / 10000; // 2%
+        let platform_fee = total_pool.checked_mul(300).unwrap() / 10000; // 3%
+        let total_fees = creator_fee.checked_add(platform_fee)
+            .ok_or(MarketError::CalculationError)?;
+        
+        // Validate we have enough funds for fees
+        require!(
+            market.to_account_info().lamports() >= total_fees,
+            MarketError::InsufficientFunds
+        );
+        
+        // Transfer creator fee
+        if creator_fee > 0 {
+            **market.to_account_info().try_borrow_mut_lamports()? = market
+                .to_account_info()
+                .lamports()
+                .checked_sub(creator_fee)
+                .ok_or(MarketError::InsufficientFunds)?;
+            
+            **ctx.accounts.creator.to_account_info().try_borrow_mut_lamports()? = ctx
+                .accounts
+                .creator
+                .to_account_info()
+                .lamports()
+                .checked_add(creator_fee)
+                .ok_or(MarketError::CalculationError)?;
+        }
+        
+        // Transfer platform fee
+        if platform_fee > 0 {
+            **market.to_account_info().try_borrow_mut_lamports()? = market
+                .to_account_info()
+                .lamports()
+                .checked_sub(platform_fee)
+                .ok_or(MarketError::InsufficientFunds)?;
+            
+            **ctx.accounts.platform.to_account_info().try_borrow_mut_lamports()? = ctx
+                .accounts
+                .platform
+                .to_account_info()
+                .lamports()
+                .checked_add(platform_fee)
+                .ok_or(MarketError::CalculationError)?;
+        }
+        
         // Update market status and outcome
         market.status = MarketStatus::Resolved;
         market.outcome = Some(outcome.clone());
@@ -169,16 +218,27 @@ pub mod cryptoscore_market {
             MatchOutcome::Away => market.away_count,
         };
         
-        // Emit event
+        // Emit events
         emit!(MarketResolved {
             market: market.key(),
-            outcome,
+            outcome: outcome.clone(),
             winner_count,
             total_pool: market.total_pool,
         });
         
+        emit!(FeesDistributed {
+            market: market.key(),
+            creator: market.creator,
+            creator_fee,
+            platform: ctx.accounts.platform.key(),
+            platform_fee,
+            total_fees,
+        });
+        
         msg!("Market resolved with outcome: {:?}, winners: {}", 
             market.outcome, winner_count);
+        msg!("Fees distributed - Creator: {} lamports, Platform: {} lamports", 
+            creator_fee, platform_fee);
         
         Ok(())
     }
@@ -208,13 +268,13 @@ pub mod cryptoscore_market {
         // Validate there are winners
         require!(winner_count > 0, MarketError::NoWinners);
         
-        // Calculate fees (1% creator + 1% platform = 2% total)
-        let creator_fee = market.total_pool.checked_mul(100).unwrap() / 10000; // 1%
-        let platform_fee = market.total_pool.checked_mul(100).unwrap() / 10000; // 1%
+        // Calculate fees (2% creator + 3% platform = 5% total)
+        let creator_fee = market.total_pool.checked_mul(200).unwrap() / 10000; // 2%
+        let platform_fee = market.total_pool.checked_mul(300).unwrap() / 10000; // 3%
         let total_fees = creator_fee.checked_add(platform_fee)
             .ok_or(MarketError::CalculationError)?;
         
-        // Calculate prize pool after fees
+        // Calculate prize pool after fees (fees already distributed during resolution)
         let prize_pool = market.total_pool.checked_sub(total_fees)
             .ok_or(MarketError::CalculationError)?;
         
@@ -428,6 +488,19 @@ pub struct ResolveMarket<'info> {
     
     pub resolver: Signer<'info>,
     
+    /// Market creator account for fee distribution
+    /// CHECK: This account is validated against market.creator
+    #[account(
+        mut,
+        constraint = creator.key() == market.creator @ MarketError::InvalidCreator
+    )]
+    pub creator: AccountInfo<'info>,
+    
+    /// Platform account for fee distribution
+    /// CHECK: This is the platform's designated fee collection account
+    #[account(mut)]
+    pub platform: AccountInfo<'info>,
+    
     /// Optional participant account - if provided, validates resolver is a participant
     #[account(
         seeds = [
@@ -500,6 +573,19 @@ pub struct RewardClaimed {
     pub amount: u64,
 }
 
+#[event]
+pub struct FeesDistributed {
+    #[index]
+    pub market: Pubkey,
+    #[index]
+    pub creator: Pubkey,
+    pub creator_fee: u64,
+    #[index]
+    pub platform: Pubkey,
+    pub platform_fee: u64,
+    pub total_fees: u64,
+}
+
 // Error Codes
 
 #[error_code]
@@ -544,4 +630,6 @@ pub enum MarketError {
     CalculationError,
     #[msg("Insufficient funds in market")]
     InsufficientFunds,
+    #[msg("Invalid creator account")]
+    InvalidCreator,
 }
