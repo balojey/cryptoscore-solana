@@ -651,10 +651,26 @@ export function MarketDetail() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [showCreateSimilarDialog, setShowCreateSimilarDialog] = useState(false)
 
+  // Scroll to top when component mounts or market address changes
+  useEffect(() => {
+    // Immediate scroll to top
+    window.scrollTo(0, 0)
+  }, [marketAddress])
+
   // Extract match data from market data
   const { data: matchData, loading: isLoadingMatch, error: matchError } = useMatchData(
     marketData ? Number(marketData.matchId) : 0,
   )
+
+  // Scroll to top once data is loaded to ensure MatchHeader is visible
+  useEffect(() => {
+    if (matchData && marketData && !isLoadingMarket && !isLoadingMatch) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        window.scrollTo(0, 0)
+      }, 100)
+    }
+  }, [matchData, marketData, isLoadingMarket, isLoadingMatch])
 
   // Get user's prediction and rewards
   const { data: participantData } = useParticipantData(marketAddress, userAddress?.toString())
