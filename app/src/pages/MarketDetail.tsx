@@ -868,14 +868,7 @@ export function MarketDetail() {
                 </div>
               )
             : null}
-          {isCreator && marketData && marketData.totalPool > 0
-            ? (
-                <div className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text-tertiary)' }}>
-                  <span className="icon-[mdi--information-outline] w-5 h-5" />
-                  <span>Creator fees remain in market</span>
-                </div>
-              )
-            : null}
+
         </div>
       )
     }
