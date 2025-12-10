@@ -1020,7 +1020,7 @@ export function MarketDetail() {
               </Button>
             </div>
 
-            <MarketComments marketAddress={marketAddress!} />
+
           </div>
           <div className="lg:col-span-1">
             <MarketStats

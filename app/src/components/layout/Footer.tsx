@@ -22,7 +22,7 @@ export default function Footer() {
             <span className="icon-[mdi--twitter] size-5" />
           </a>
           <a
-            href="https://github.com/balojey/cryptoscore"
+            href="https://github.com/balojey/cryptoscore-solana"
             target="_blank"
             rel="noopener noreferrer"
             className="transition-colors"
