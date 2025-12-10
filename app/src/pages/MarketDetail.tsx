@@ -55,16 +55,16 @@ function MatchHeader({
   const getScoreDisplay = () => {
     if (matchData.hasValidScore) {
       return (
-        <div className="font-jakarta text-5xl font-bold pt-6 flex items-center gap-4" style={{ color: 'var(--text-primary)' }}>
+        <div className="font-jakarta text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold pt-2 sm:pt-4 lg:pt-6 flex items-center gap-1 sm:gap-2 lg:gap-4" style={{ color: 'var(--text-primary)' }}>
           <span>{matchData.score.fullTime.home}</span>
-          <span style={{ color: 'var(--text-tertiary)', fontSize: '2rem' }}>-</span>
+          <span style={{ color: 'var(--text-tertiary)' }} className="text-lg sm:text-xl lg:text-2xl xl:text-4xl">-</span>
           <span>{matchData.score.fullTime.away}</span>
         </div>
       )
     }
     
     return (
-      <div className="font-jakarta text-5xl font-bold pt-6" style={{ color: 'var(--text-tertiary)' }}>
+      <div className="font-jakarta text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold pt-2 sm:pt-4 lg:pt-6" style={{ color: 'var(--text-tertiary)' }}>
         VS
       </div>
     )
@@ -101,23 +101,28 @@ function MatchHeader({
   return (
     <div className="card">
       <div className="text-center mb-6">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <span className="icon-[mdi--trophy-outline] w-5 h-5" style={{ color: 'var(--accent-amber)' }} />
-          <p className="font-sans text-base font-medium" style={{ color: 'var(--text-secondary)' }}>
-            {matchData.competition.name}
-          </p>
-          <div className="ml-2">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mb-2">
+          <div className="flex items-center gap-2">
+            <span className="icon-[mdi--trophy-outline] w-5 h-5" style={{ color: 'var(--accent-amber)' }} />
+            <p className="font-sans text-sm sm:text-base font-medium" style={{ color: 'var(--text-secondary)' }}>
+              {matchData.competition.name}
+            </p>
+          </div>
+          <div className="sm:ml-2">
             {getMatchStatusBadge()}
           </div>
         </div>
-        <p className="font-sans text-sm" style={{ color: 'var(--text-tertiary)' }}>
-          {new Date(matchData.utcDate).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}
+        <p className="font-sans text-xs sm:text-sm px-4" style={{ color: 'var(--text-tertiary)' }}>
+          {new Date(matchData.utcDate).toLocaleString('en-US', { 
+            dateStyle: window.innerWidth < 640 ? 'short' : 'full', 
+            timeStyle: 'short' 
+          })}
         </p>
       </div>
-      <div className="flex items-center justify-around">
-        <div className="flex flex-col items-center gap-4 w-1/3 text-center">
+      <div className="flex items-center justify-around gap-2 sm:gap-4">
+        <div className="flex flex-col items-center gap-2 sm:gap-3 w-1/3 text-center">
           <div
-            className="w-28 h-28 rounded-xl flex items-center justify-center p-4"
+            className="w-16 h-16 sm:w-20 sm:h-20 lg:w-28 lg:h-28 rounded-xl flex items-center justify-center p-2 sm:p-3 lg:p-4"
             style={{ background: 'var(--bg-secondary)' }}
           >
             <img
@@ -126,14 +131,16 @@ function MatchHeader({
               className="w-full h-full object-contain"
             />
           </div>
-          <h2 className="font-jakarta font-bold text-3xl" style={{ color: 'var(--text-primary)' }}>
+          <h2 className="font-jakarta font-bold text-sm sm:text-lg lg:text-2xl xl:text-3xl px-1" style={{ color: 'var(--text-primary)' }}>
             {matchData.homeTeam.name}
           </h2>
         </div>
-        {getScoreDisplay()}
-        <div className="flex flex-col items-center gap-4 w-1/3 text-center">
+        <div className="flex-shrink-0">
+          {getScoreDisplay()}
+        </div>
+        <div className="flex flex-col items-center gap-2 sm:gap-3 w-1/3 text-center">
           <div
-            className="w-28 h-28 rounded-xl flex items-center justify-center p-4"
+            className="w-16 h-16 sm:w-20 sm:h-20 lg:w-28 lg:h-28 rounded-xl flex items-center justify-center p-2 sm:p-3 lg:p-4"
             style={{ background: 'var(--bg-secondary)' }}
           >
             <img
@@ -142,7 +149,7 @@ function MatchHeader({
               className="w-full h-full object-contain"
             />
           </div>
-          <h2 className="font-jakarta font-bold text-3xl" style={{ color: 'var(--text-primary)' }}>
+          <h2 className="font-jakarta font-bold text-sm sm:text-lg lg:text-2xl xl:text-3xl px-1" style={{ color: 'var(--text-primary)' }}>
             {matchData.awayTeam.name}
           </h2>
         </div>
@@ -150,7 +157,7 @@ function MatchHeader({
       {getMatchResultIndicator()}
       
       {/* Social Features */}
-      <div className="flex items-center justify-center gap-4 mt-6">
+      <div className="flex items-center justify-center gap-3 mt-6">
         <SharePrediction
           marketAddress={marketAddress}
           matchInfo={{
@@ -172,7 +179,8 @@ function MatchHeader({
           title={isMatchStarted ? "Cannot create similar market after match has started" : "Create a similar market for this match"}
         >
           <span className="icon-[mdi--content-copy] w-4 h-4" />
-          Create Similar
+          <span className="hidden xs:inline">Create Similar</span>
+          <span className="xs:hidden">Similar</span>
         </Button>
       </div>
     </div>
