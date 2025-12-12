@@ -14,7 +14,7 @@
   - Test edge cases (zero participants, single participant, large pools)
   - _Requirements: 1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1_
 
-- [ ] 2. Create useWinnings hook for reactive data management
+- [x] 2. Create useWinnings hook for reactive data management
   - Implement hook that combines market data, participant data, and match data
   - Add caching and memoization for expensive calculations
   - Include loading states and error handling
