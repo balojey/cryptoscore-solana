@@ -23,7 +23,7 @@ const features: FeatureItem[] = [
   {
     icon: 'mdi--cash-multiple',
     title: 'Low Fees',
-    description: 'Only 2% platform fee (1% creator, 1% protocol). No hidden charges',
+    description: 'Only 5% platform fee (2% creator, 3% protocol). No hidden charges',
     color: 'var(--accent-amber)',
   },
   {

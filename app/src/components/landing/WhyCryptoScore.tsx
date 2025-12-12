@@ -30,11 +30,11 @@ const benefits: BenefitItem[] = [
   {
     icon: 'mdi--cash-minus',
     title: 'Lower Fees',
-    description: '2% total fee vs 5-10% on traditional platforms. More winnings for you.',
-    expandedDetails: 'Traditional betting platforms charge 5-10% in fees and margins. CryptoScore charges only 2% total (1% creator fee, 1% protocol fee) with complete transparency. No hidden charges, no withdrawal fees, no account maintenance costs.',
+    description: '5% total fee vs 5-10% on traditional platforms. More winnings for you.',
+    expandedDetails: 'Traditional betting platforms charge 5-10% in fees and margins. CryptoScore charges only 5% total (2% creator fee, 3% protocol fee) with complete transparency. No hidden charges, no withdrawal fees, no account maintenance costs.',
     comparison: {
       traditional: '5-10% fees',
-      cryptoscore: '2% fees',
+      cryptoscore: '5% fees',
     },
     color: 'var(--accent-amber)',
   },

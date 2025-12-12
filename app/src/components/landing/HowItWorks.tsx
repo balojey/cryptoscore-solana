@@ -31,7 +31,7 @@ const steps: HowItWorksStep[] = [
     icon: 'mdi--trophy-outline',
     title: 'Win Rewards',
     description: 'Correct predictions split the pool. Winners get paid automatically on-chain',
-    details: 'Instant payouts after match resolution. Only 2% fee (1% creator, 1% protocol).',
+    details: 'Instant payouts after match resolution. Only 5% fee (2% creator, 3% protocol).',
     color: 'var(--accent-green)',
   },
 ]

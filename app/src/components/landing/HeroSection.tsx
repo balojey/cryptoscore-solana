@@ -173,7 +173,7 @@ export default function HeroSection() {
                   className="text-3xl md:text-4xl font-bold font-mono mb-2"
                   style={{ color: 'var(--accent-green)' }}
                 >
-                  2%
+                  5%
                 </div>
                 <div style={{ color: 'var(--text-tertiary)' }}>Platform Fee</div>
               </div>

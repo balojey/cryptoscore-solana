@@ -130,7 +130,7 @@ export default function FinalCTA() {
                   className="text-2xl md:text-3xl font-bold font-mono mb-1"
                   style={{ color: 'var(--accent-green)' }}
                 >
-                  2%
+                  5%
                 </div>
                 <div
                   className="text-sm"

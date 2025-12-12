@@ -98,10 +98,8 @@ export default function LiveMetrics() {
         activeMarkets++
       }
 
-      // Sum total value locked (only for non-resolved markets) - keep in lamports
-      if (market.status !== 'Resolved') {
-        totalValueLockedLamports += market.totalPool
-      }
+      // Sum total value locked (all markets for all time) - keep in lamports
+      totalValueLockedLamports += market.totalPool
 
       // Sum unique participants
       activeTraders += market.participantCount
