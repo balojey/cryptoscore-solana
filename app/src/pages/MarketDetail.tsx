@@ -245,16 +245,16 @@ function WinningsSection({
       <h4 className="font-sans text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>
         Winnings Information
       </h4>
-      <WinningsDisplay
-        marketData={marketData}
-        participantData={participantData}
-        userAddress={userAddress}
-        matchData={matchData}
-        winnings={winnings}
-        variant="compact"
-        className="p-3 rounded-lg"
-        style={{ background: 'var(--bg-secondary)' }}
-      />
+      <div className="p-3 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
+        <WinningsDisplay
+          marketData={marketData}
+          participantData={participantData}
+          userAddress={userAddress}
+          matchData={matchData}
+          winnings={winnings}
+          variant="compact"
+        />
+      </div>
     </div>
   )
 }
@@ -1232,6 +1232,10 @@ export function MarketDetail() {
               selectedTeam={selectedTeam}
               setSelectedTeam={setSelectedTeam}
               renderButtons={renderButtons}
+              marketAddress={marketAddress!}
+              userAddress={userAddress?.toString()}
+              marketData={marketData}
+              participantData={participantData}
             />
 
             {/* Data Visualizations */}
@@ -1272,6 +1276,10 @@ export function MarketDetail() {
               entryFeeValue={entryFeeValue}
               currency={currency}
               exchangeRates={exchangeRates}
+              marketAddress={marketAddress!}
+              userAddress={userAddress?.toString()}
+              marketData={marketData}
+              participantData={participantData}
             />
             {actionStatus && (
               <div
