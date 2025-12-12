@@ -7,11 +7,15 @@
   - Add market state detection logic for different display scenarios
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 6.1, 6.2, 6.3, 6.4, 7.1, 7.2, 7.3, 7.4_
 
-- [ ]* 1.1 Write unit tests for WinningsCalculator
+- [x] 1.1 Write unit tests for WinningsCalculator
   - Test potential winnings calculations for all prediction outcomes
   - Test actual winnings calculations for resolved markets
   - Test creator reward calculations
   - Test edge cases (zero participants, single participant, large pools)
+  - **FIXED**: Corrected potential winnings calculation logic:
+    - **Existing participants**: Get current participant pool (95% of total) ÷ current prediction count
+    - **New users**: Get new participant pool (95% of total + entry fee) ÷ (prediction count + 1)
+    - Added `isExistingParticipant` parameter to distinguish between these cases
   - _Requirements: 1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1_
 
 - [x] 2. Create useWinnings hook for reactive data management

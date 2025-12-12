@@ -58,24 +58,31 @@ describe('WinningsCalculator', () => {
   }
 
   describe('calculatePotentialWinnings', () => {
-    it('should calculate potential winnings for Home prediction', () => {
-      const winnings = WinningsCalculator.calculatePotentialWinnings(mockMarketData, 'Home')
+    it('should calculate potential winnings for Home prediction (new user)', () => {
+      const winnings = WinningsCalculator.calculatePotentialWinnings(mockMarketData, 'Home', false)
       
-      // Participant pool is 95% of total pool = 4.75 SOL
-      // Home has 2 predictions, so each winner gets 2.375 SOL
-      const expectedWinnings = Math.floor((5000000000 * 9500) / 10000 / 2)
+      // New total pool after user joins: 5 SOL + 1 SOL = 6 SOL
+      // New participant pool is 95% of 6 SOL = 5.7 SOL
+      // Home has 2 predictions, user will be 3rd, so each winner gets 5.7 SOL / 3
+      const newTotalPool = 5000000000 + 1000000000 // 6 SOL
+      const newParticipantPool = Math.floor((newTotalPool * 9500) / 10000)
+      const expectedWinnings = Math.floor(newParticipantPool / 3) // 2 existing + 1 new user
       expect(winnings).toBe(expectedWinnings)
     })
 
-    it('should calculate potential winnings for Draw prediction', () => {
-      const winnings = WinningsCalculator.calculatePotentialWinnings(mockMarketData, 'Draw')
+    it('should calculate potential winnings for Draw prediction (new user)', () => {
+      const winnings = WinningsCalculator.calculatePotentialWinnings(mockMarketData, 'Draw', false)
       
-      // Draw has 1 prediction, so winner gets full participant pool
-      const expectedWinnings = Math.floor((5000000000 * 9500) / 10000 / 1)
+      // New total pool after user joins: 5 SOL + 1 SOL = 6 SOL
+      // New participant pool is 95% of 6 SOL = 5.7 SOL
+      // Draw has 1 prediction, user will be 2nd, so each winner gets 5.7 SOL / 2
+      const newTotalPool = 5000000000 + 1000000000 // 6 SOL
+      const newParticipantPool = Math.floor((newTotalPool * 9500) / 10000)
+      const expectedWinnings = Math.floor(newParticipantPool / 2) // 1 existing + 1 new user
       expect(winnings).toBe(expectedWinnings)
     })
 
-    it('should return entry fee plus participant pool for unpredicted outcome', () => {
+    it('should return full participant pool for unpredicted outcome (new user)', () => {
       const marketWithNoPredictions = {
         ...mockMarketData,
         homeCount: 0,
@@ -83,9 +90,24 @@ describe('WinningsCalculator', () => {
         awayCount: 0
       }
       
-      const winnings = WinningsCalculator.calculatePotentialWinnings(marketWithNoPredictions, 'Home')
-      const participantPool = Math.floor((5000000000 * 9500) / 10000)
-      expect(winnings).toBe(participantPool + 1000000000) // participant pool + entry fee
+      const winnings = WinningsCalculator.calculatePotentialWinnings(marketWithNoPredictions, 'Home', false)
+      // New total pool after user joins: 5 SOL + 1 SOL = 6 SOL
+      // New participant pool is 95% of 6 SOL = 5.7 SOL
+      // User would be the only one with this prediction, so gets full participant pool
+      const newTotalPool = 5000000000 + 1000000000 // 6 SOL
+      const newParticipantPool = Math.floor((newTotalPool * 9500) / 10000)
+      expect(winnings).toBe(newParticipantPool)
+    })
+
+    it('should calculate potential winnings for existing participant', () => {
+      const winnings = WinningsCalculator.calculatePotentialWinnings(mockMarketData, 'Home', true)
+      
+      // For existing participants, use current pool and current prediction count
+      // Current participant pool is 95% of 5 SOL = 4.75 SOL
+      // Home has 2 predictions, so each gets 4.75 SOL / 2
+      const currentParticipantPool = Math.floor((5000000000 * 9500) / 10000)
+      const expectedWinnings = Math.floor(currentParticipantPool / 2) // 2 existing Home predictions
+      expect(winnings).toBe(expectedWinnings)
     })
   })
 

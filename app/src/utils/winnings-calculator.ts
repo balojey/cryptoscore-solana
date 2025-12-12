@@ -111,29 +111,47 @@ export class WinningsCalculator {
   }
 
   /**
-   * Calculate potential winnings for a specific prediction (for non-participants)
+   * Calculate potential winnings for a specific prediction
+   * @param marketData - Market data
+   * @param prediction - Prediction type
+   * @param isExistingParticipant - Whether this is for an existing participant (default: false)
    */
   static calculatePotentialWinnings(
     marketData: MarketData, 
-    prediction?: 'Home' | 'Draw' | 'Away'
+    prediction?: 'Home' | 'Draw' | 'Away',
+    isExistingParticipant: boolean = false
   ): number {
     if (!prediction || marketData.participantCount === 0) {
       return marketData.entryFee
     }
 
-    // Calculate participant pool (95% of total pool)
-    const participantPool = this.calculateParticipantPool(marketData.totalPool)
-    
     // Get count for the specific prediction
     const predictionCount = this.getPredictionCount(marketData, prediction)
     
-    // If no one has made this prediction yet, return the full participant pool
-    if (predictionCount === 0) {
-      return participantPool + marketData.entryFee
-    }
+    if (isExistingParticipant) {
+      // For existing participants, use current pool and current prediction count
+      const currentParticipantPool = this.calculateParticipantPool(marketData.totalPool)
+      
+      if (predictionCount === 0) {
+        // This shouldn't happen for existing participants, but handle gracefully
+        return currentParticipantPool
+      }
+      
+      return Math.floor(currentParticipantPool / predictionCount)
+    } else {
+      // For new users, calculate what happens if they join
+      const newTotalPool = marketData.totalPool + marketData.entryFee
+      const newParticipantPool = this.calculateParticipantPool(newTotalPool)
+      
+      // If no one has made this prediction yet, user gets the full participant pool
+      if (predictionCount === 0) {
+        return newParticipantPool
+      }
 
-    // Calculate winnings per winner
-    return Math.floor(participantPool / predictionCount)
+      // Calculate winnings per winner after this user joins (they'll be one of the winners)
+      const newPredictionCount = predictionCount + 1
+      return Math.floor(newParticipantPool / newPredictionCount)
+    }
   }
 
   /**
@@ -414,7 +432,7 @@ export class WinningsCalculator {
     marketData: MarketData, 
     participantData: ParticipantData
   ): WinningsResult {
-    const potentialWinnings = this.calculatePotentialWinnings(marketData, participantData.prediction)
+    const potentialWinnings = this.calculatePotentialWinnings(marketData, participantData.prediction, true)
     
     return {
       type: 'potential',
@@ -430,7 +448,7 @@ export class WinningsCalculator {
     marketData: MarketData, 
     participantData: ParticipantData
   ): WinningsResult {
-    const participantWinnings = this.calculatePotentialWinnings(marketData, participantData.prediction)
+    const participantWinnings = this.calculatePotentialWinnings(marketData, participantData.prediction, true)
     const creatorReward = this.calculateCreatorReward(marketData)
     
     return {

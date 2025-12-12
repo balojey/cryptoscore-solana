@@ -18,6 +18,7 @@ import { useWinnings } from '../hooks/useWinnings'
 import { formatCurrency, formatWithSOLEquivalent, shortenAddress } from '../utils/formatters'
 import { CreateSimilarMarketDialog, type CreateSimilarMarketParams } from '../components/CreateSimilarMarketDialog'
 import { WinningsDisplay } from '../components/WinningsDisplay'
+import { WinningsCalculator } from '../utils/winnings-calculator'
 
 // --- SUB-COMPONENTS ---
 
@@ -707,25 +708,8 @@ function ActionPanelWinnings({
 
 // Helper function to calculate potential winnings for a prediction
 function calculatePotentialWinningsForPrediction(marketData: any, prediction: 'Home' | 'Draw' | 'Away'): number {
-  if (!marketData || marketData.participantCount === 0) {
-    return marketData?.entryFee || 0
-  }
-
-  // Calculate participant pool (95% of total pool)
-  const participantPool = Math.floor((marketData.totalPool * 9500) / 10000) // 95%
-  
-  // Get count for the specific prediction
-  const predictionCount = prediction === 'Home' ? marketData.homeCount : 
-                         prediction === 'Away' ? marketData.awayCount : 
-                         marketData.drawCount
-  
-  // If no one has made this prediction yet, return the full participant pool plus entry fee
-  if (predictionCount === 0) {
-    return participantPool + marketData.entryFee
-  }
-
-  // Calculate winnings per winner (including the new participant)
-  return Math.floor(participantPool / (predictionCount + 1))
+  // Use the centralized WinningsCalculator for consistent logic
+  return WinningsCalculator.calculatePotentialWinnings(marketData, prediction)
 }
 
 function ActionPanel({ matchData, marketStatus, isMatchStarted, isUserParticipant, selectedTeam, setSelectedTeam, renderButtons, marketAddress, userAddress, marketData, participantData }: {
