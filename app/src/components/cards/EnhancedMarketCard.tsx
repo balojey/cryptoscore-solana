@@ -15,6 +15,7 @@ import { useMatchData } from '../../hooks/useMatchData'
 import { useParticipantData } from '../../hooks/useParticipantData'
 import { formatCurrency, formatSOL, formatWithSOLEquivalent, shortenAddress } from '../../utils/formatters'
 import { determinePredictionOutcome } from '../../utils/prediction-outcome'
+import { PotentialWinningsDisplay } from '../market/PotentialWinningsDisplay'
 
 interface EnhancedMarketCardProps {
   market: Market
@@ -340,6 +341,31 @@ export default function EnhancedMarketCard({ market }: EnhancedMarketCardProps) 
               awayTeam={matchData.awayTeam.name}
             />
           </div>
+
+          {/* Potential Winnings - Show only for non-participants when market is open */}
+          {!market.resolved && !hasJoined && (
+            <div className="mb-4">
+              <PotentialWinningsDisplay 
+                marketData={{
+                  marketAddress: market.marketAddress,
+                  creator: market.creator,
+                  matchId: market.matchId.toString(),
+                  entryFee: Number(market.entryFee),
+                  kickoffTime: 0, // Not needed for potential winnings calculation
+                  endTime: 0, // Not needed for potential winnings calculation
+                  status: market.resolved ? 'Resolved' : 'Open',
+                  outcome: null, // Market is not resolved yet
+                  totalPool: Math.floor(poolSize * 1_000_000_000), // Convert back to lamports
+                  participantCount: Number(market.participantsCount),
+                  homeCount: distribution.home,
+                  drawCount: distribution.draw,
+                  awayCount: distribution.away,
+                  isPublic: market.isPublic,
+                }}
+                className="text-xs"
+              />
+            </div>
+          )}
 
           {/* Market Stats */}
           <div className="space-y-2 mb-4">

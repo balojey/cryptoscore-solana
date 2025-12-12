@@ -18,7 +18,6 @@ import { useWinnings } from '../hooks/useWinnings'
 import { formatCurrency, formatWithSOLEquivalent, shortenAddress } from '../utils/formatters'
 import { CreateSimilarMarketDialog, type CreateSimilarMarketParams } from '../components/CreateSimilarMarketDialog'
 import { WinningsDisplay } from '../components/WinningsDisplay'
-import { WinningsCalculator } from '../utils/winnings-calculator'
 import { PotentialWinningsDisplay } from '../components/market/PotentialWinningsDisplay'
 
 // --- SUB-COMPONENTS ---
@@ -646,8 +645,8 @@ function ActionPanelWinnings({
 }) {
   const { winnings, isLoading } = useWinnings(marketAddress, userAddress)
 
-  // Don't show for concluded markets or if no user
-  if (!userAddress || marketData?.status === 'Resolved') {
+  // Don't show if no user
+  if (!userAddress) {
     return null
   }
 
@@ -661,7 +660,27 @@ function ActionPanelWinnings({
     )
   }
 
-  // Show winnings if available
+  // For resolved markets, show actual winnings if user participated
+  if (marketData?.status === 'Resolved') {
+    if (isUserParticipant && winnings) {
+      return (
+        <div className="mb-4">
+          <WinningsDisplay
+            marketData={marketData}
+            participantData={participantData}
+            userAddress={userAddress}
+            matchData={matchData}
+            winnings={winnings}
+            variant="compact"
+          />
+        </div>
+      )
+    }
+    // Don't show anything for resolved markets if user didn't participate or has no winnings
+    return null
+  }
+
+  // For unresolved markets, show winnings if available
   if (winnings && winnings.type !== 'none') {
     return (
       <div className="mb-4">
@@ -677,7 +696,7 @@ function ActionPanelWinnings({
     )
   }
 
-  // Show potential winnings preview for non-participants
+  // Show potential winnings preview for non-participants in unresolved markets
   if (!isUserParticipant && marketData) {
     const selectedPrediction = selectedTeam === 1 ? 'Home' : selectedTeam === 2 ? 'Away' : selectedTeam === 3 ? 'Draw' : undefined
     
@@ -715,6 +734,18 @@ function ActionPanel({ matchData, marketStatus, isMatchStarted, isUserParticipan
         <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>
           This market is either live or has been resolved. No further predictions can be made.
         </p>
+        
+        {/* Show winnings for resolved markets */}
+        <ActionPanelWinnings 
+          marketAddress={marketAddress}
+          userAddress={userAddress}
+          marketData={marketData}
+          participantData={participantData}
+          matchData={matchData}
+          selectedTeam={selectedTeam}
+          isUserParticipant={isUserParticipant}
+        />
+        
         {renderButtons()}
       </div>
     )
