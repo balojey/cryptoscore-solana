@@ -8,6 +8,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { WinningsCalculator, type WinningsCalculationParams, type WinningsResult } from '../utils/winnings-calculator'
+import { WinningsErrorHandler, type WinningsError } from '../utils/winnings-error-handler'
 import { useMarketData } from './useMarketData'
 import { useParticipantData } from './useParticipantData'
 import { useMatchData } from './useMatchData'
@@ -31,6 +32,17 @@ export interface UseWinningsResult {
     participant: boolean
     match: boolean
   }
+  /** Individual error states for debugging */
+  errorStates: {
+    market: string | null
+    participant: string | null
+    match: string | null
+    calculation: string | null
+  }
+  /** Whether the hook is in a recoverable error state */
+  isRecoverable: boolean
+  /** Structured error information */
+  structuredError: WinningsError | null
 }
 
 /**
@@ -119,11 +131,36 @@ export function useWinnings(
     return isLoadingMarket || isLoadingParticipant || isLoadingMatch
   }, [isLoadingMarket, isLoadingParticipant, isLoadingMatch])
 
-  // Combine all errors
+  // Combine all errors with priority handling
   const error = useMemo(() => {
-    const errors = [marketError, participantError, matchError].filter(Boolean)
-    return errors.length > 0 ? errors.join('; ') : null
+    // Market error is critical - can't calculate without market data
+    if (marketError) return `Market data error: ${String(marketError)}`
+    
+    // Participant and match errors are less critical
+    const nonCriticalErrors = [participantError, matchError].filter(Boolean).map(String)
+    if (nonCriticalErrors.length > 0) {
+      return `Data warning: ${nonCriticalErrors.join('; ')}`
+    }
+    
+    return null
   }, [marketError, participantError, matchError])
+
+  // Determine if errors are recoverable
+  const isRecoverable = useMemo(() => {
+    // Market errors are not recoverable - we need market data
+    if (marketError) return false
+    
+    // Participant and match errors are recoverable - we can show basic info
+    return true
+  }, [marketError])
+
+  // Individual error states for debugging
+  const errorStates = useMemo(() => ({
+    market: marketError ? String(marketError) : null,
+    participant: participantError ? String(participantError) : null,
+    match: matchError ? String(matchError) : null,
+    calculation: null as string | null, // Will be set by the query
+  }), [marketError, participantError, matchError])
 
   // Combined refetch function
   const refetch = useMemo(() => {
@@ -171,6 +208,11 @@ export function useWinnings(
       }
 
       try {
+        // Validate market data before calculation
+        if (!WinningsCalculator.validateMarketData(marketData)) {
+          throw new Error('Invalid market data structure')
+        }
+
         // Use WinningsCalculator to compute winnings
         const result = WinningsCalculator.calculateWinnings(params)
         
@@ -187,23 +229,38 @@ export function useWinnings(
       } catch (calculationError) {
         console.error('[useWinnings] Calculation error:', calculationError)
         
-        // Return error result instead of throwing
-        return {
-          type: 'none',
-          amount: 0,
-          status: 'eligible',
-          message: 'Error calculating winnings',
-          displayVariant: 'error',
-          icon: 'AlertTriangle',
-        }
+        // Use error handler for structured error handling
+        const winningsError = WinningsErrorHandler.classifyError(
+          calculationError as Error,
+          {
+            marketAddress: marketAddress || undefined,
+            userAddress: effectiveUserAddress || undefined,
+            operation: 'winnings_calculation',
+          }
+        )
+        
+        // Note: errorStates will be updated in the return statement
+        
+        // Return appropriate fallback result
+        return WinningsErrorHandler.createFallbackResult(winningsError, marketData)
       }
     },
-    enabled: !!marketData && !isLoading && !error,
+    enabled: !!marketData && !marketError, // Only run if we have market data and no critical errors
     staleTime: 10000, // 10 seconds - same as market data
     gcTime: 300000, // 5 minutes - keep in cache longer for performance
+    retry: (failureCount, error) => {
+      // Don't retry validation errors
+      if (error?.message?.includes('Invalid market data')) {
+        return false
+      }
+      
+      // Retry calculation errors up to 2 times
+      return failureCount < 2
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff
     refetchInterval: (data) => {
-      // Only auto-refetch for active markets or when waiting for resolution
-      if (!data || !marketData) return false
+      // Don't auto-refetch if there are errors
+      if (error || !data || !marketData) return false
       
       // Refetch open markets more frequently
       if (marketData.status === 'Open') {
@@ -218,9 +275,26 @@ export function useWinnings(
       // Don't auto-refetch resolved markets
       return false
     },
+    refetchOnWindowFocus: false, // Prevent excessive refetching
+    refetchOnReconnect: true, // Refetch when network reconnects
   })
 
-  // Return combined result
+  // Create structured error if there's a query error
+  const structuredError = useMemo(() => {
+    if (winningsQuery.error) {
+      return WinningsErrorHandler.classifyError(
+        winningsQuery.error as Error,
+        {
+          marketAddress: marketAddress || undefined,
+          userAddress: effectiveUserAddress || undefined,
+          operation: 'winnings_query',
+        }
+      )
+    }
+    return null
+  }, [winningsQuery.error, marketAddress, effectiveUserAddress])
+
+  // Return combined result with comprehensive error handling
   return useMemo(() => ({
     winnings: winningsQuery.data || null,
     isLoading: isLoading || winningsQuery.isLoading,
@@ -230,6 +304,12 @@ export function useWinnings(
       winningsQuery.refetch()
     },
     loadingStates,
+    errorStates: {
+      ...errorStates,
+      calculation: winningsQuery.error ? String(winningsQuery.error) : errorStates.calculation,
+    },
+    isRecoverable,
+    structuredError,
   }), [
     winningsQuery.data,
     winningsQuery.isLoading,
@@ -239,6 +319,9 @@ export function useWinnings(
     error,
     refetch,
     loadingStates,
+    errorStates,
+    isRecoverable,
+    structuredError,
   ])
 }
 

@@ -23,6 +23,8 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { useCurrency } from '@/contexts/CurrencyContext'
+import { WinningsLoadingSkeleton } from './WinningsLoadingSkeleton'
+import { WinningsErrorBoundary } from './WinningsErrorBoundary'
 import type { WinningsResult } from '@/utils/winnings-calculator'
 import type { MarketData } from '@/hooks/useMarketData'
 import type { ParticipantData } from '@/hooks/useParticipantData'
@@ -88,7 +90,7 @@ export function WinningsDisplay({
   showBreakdown = false,
   className,
 }: WinningsDisplayProps) {
-  const { formatCurrency } = useCurrency()
+  const { formatCurrency, exchangeRates, ratesError } = useCurrency()
 
   // Get icon component
   const IconComponent = ICON_MAP[winnings.icon as keyof typeof ICON_MAP] || Info
@@ -96,24 +98,45 @@ export function WinningsDisplay({
   // Get badge variant
   const badgeVariant = BADGE_VARIANT_MAP[winnings.displayVariant] || 'info'
 
-  // Format main amount
-  const formattedAmount = winnings.amount > 0 
-    ? formatCurrency(winnings.amount)
-    : '—'
+  // Format main amount with error handling
+  const formattedAmount = React.useMemo(() => {
+    if (winnings.amount <= 0) return '—'
+    
+    try {
+      return formatCurrency(winnings.amount)
+    } catch (error) {
+      console.warn('[WinningsDisplay] Currency formatting error:', error)
+      // Fallback to SOL display
+      const solAmount = winnings.amount / 1_000_000_000
+      return `◎${solAmount.toFixed(4)}`
+    }
+  }, [winnings.amount, formatCurrency])
 
-  // Format breakdown amounts if available
-  const formattedBreakdown = winnings.breakdown ? {
-    participantWinnings: winnings.breakdown.participantWinnings 
-      ? formatCurrency(winnings.breakdown.participantWinnings)
-      : undefined,
-    creatorReward: winnings.breakdown.creatorReward 
-      ? formatCurrency(winnings.breakdown.creatorReward)
-      : undefined,
-    totalPool: winnings.breakdown.totalPool 
-      ? formatCurrency(winnings.breakdown.totalPool)
-      : undefined,
-    winnerCount: winnings.breakdown.winnerCount,
-  } : undefined
+  // Show exchange rate warning if needed
+  const showRateWarning = ratesError && !exchangeRates
+
+  // Format breakdown amounts if available with error handling
+  const formattedBreakdown = React.useMemo(() => {
+    if (!winnings.breakdown) return undefined
+
+    const formatSafely = (amount?: number) => {
+      if (!amount) return undefined
+      try {
+        return formatCurrency(amount)
+      } catch (error) {
+        console.warn('[WinningsDisplay] Breakdown formatting error:', error)
+        const solAmount = amount / 1_000_000_000
+        return `◎${solAmount.toFixed(4)}`
+      }
+    }
+
+    return {
+      participantWinnings: formatSafely(winnings.breakdown.participantWinnings),
+      creatorReward: formatSafely(winnings.breakdown.creatorReward),
+      totalPool: formatSafely(winnings.breakdown.totalPool),
+      winnerCount: winnings.breakdown.winnerCount,
+    }
+  }, [winnings.breakdown, formatCurrency])
 
   if (variant === 'compact') {
     return (
@@ -210,6 +233,14 @@ export function WinningsDisplay({
               {winnings.status && (
                 <div className="text-xs text-[var(--text-secondary)] uppercase tracking-wide">
                   Status: {winnings.status.replace('_', ' ')}
+                </div>
+              )}
+              
+              {/* Exchange rate warning */}
+              {showRateWarning && (
+                <div className="flex items-center gap-1 text-xs text-[var(--accent-amber)] mt-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span>Exchange rates unavailable - showing SOL values</span>
                 </div>
               )}
             </div>
@@ -330,7 +361,11 @@ export interface IntegratedWinningsDisplayProps {
   /** Additional CSS classes */
   className?: string
   /** Loading component */
-  LoadingComponent?: React.ComponentType
+  LoadingComponent?: React.ComponentType<{
+    variant?: 'compact' | 'detailed'
+    showBreakdown?: boolean
+    className?: string
+  }>
   /** Error component */
   ErrorComponent?: React.ComponentType<{ error: string }>
 }
@@ -339,38 +374,96 @@ export interface IntegratedWinningsDisplayProps {
  * Integrated winnings display that handles its own data fetching
  */
 export function IntegratedWinningsDisplay({
+  marketAddress,
   userAddress,
   variant = 'detailed',
   showBreakdown = false,
   className,
-  LoadingComponent = DefaultLoadingComponent,
-  ErrorComponent = DefaultErrorComponent,
+  LoadingComponent,
+  ErrorComponent,
 }: IntegratedWinningsDisplayProps) {
-  // This would use the useWinnings hook, but we need to import it
-  // For now, we'll create a placeholder that shows the structure
+  // Import hooks dynamically to avoid circular dependencies
+  const useWinnings = React.useMemo(() => {
+    try {
+      return require('../hooks/useWinnings').useWinnings
+    } catch {
+      return null
+    }
+  }, [])
+
+  const useMarketData = React.useMemo(() => {
+    try {
+      return require('../hooks/useMarketData').useMarketData
+    } catch {
+      return null
+    }
+  }, [])
+
+  const useParticipantData = React.useMemo(() => {
+    try {
+      return require('../hooks/useParticipantData').useParticipantData
+    } catch {
+      return null
+    }
+  }, [])
+
+  const useMatchData = React.useMemo(() => {
+    try {
+      return require('../hooks/useMatchData').useMatchData
+    } catch {
+      return null
+    }
+  }, [])
+
+  // Use hooks if available
+  const winningsResult = useWinnings ? useWinnings(marketAddress, userAddress) : null
+  const marketResult = useMarketData ? useMarketData(marketAddress) : null
+  const participantResult = useParticipantData ? useParticipantData(marketAddress, userAddress) : null
   
-  // const { winnings, isLoading, error } = useWinnings(marketAddress, userAddress)
-  // const { data: marketData } = useMarketData(marketAddress)
-  // const { data: participantData } = useParticipantData(marketAddress, userAddress)
-  // const matchId = marketData?.matchId ? parseInt(marketData.matchId, 10) : undefined
-  // const { data: matchData } = useMatchData(matchId || 0)
+  const matchId = marketResult?.data?.matchId ? parseInt(marketResult.data.matchId, 10) : undefined
+  const matchResult = useMatchData && matchId ? useMatchData(matchId) : null
 
-  // Placeholder implementation
-  const isLoading = false
-  const error = null
-  const winnings = null
-  const marketData = null
-  const participantData = null
-  const matchData = null
+  // Extract data
+  const { winnings, isLoading, error, structuredError, isRecoverable } = winningsResult || {}
+  const marketData = marketResult?.data
+  const participantData = participantResult?.data
+  const matchData = matchResult?.data
 
+  // Show loading state
   if (isLoading) {
-    return <LoadingComponent />
+    const LoadingComp = LoadingComponent || WinningsLoadingSkeleton
+    return <LoadingComp variant={variant} showBreakdown={showBreakdown} className={className} />
   }
 
-  if (error) {
-    return <ErrorComponent error={error} />
+  // Show error state with error boundary
+  if (error || structuredError) {
+    if (ErrorComponent) {
+      return <ErrorComponent error={error || structuredError?.userMessage || 'Unknown error'} />
+    }
+
+    // Use WinningsErrorBoundary for structured error handling
+    return (
+      <WinningsErrorBoundary
+        variant={variant}
+        marketData={marketData ? {
+          entryFee: marketData.entryFee,
+          totalPool: marketData.totalPool,
+          participantCount: marketData.participantCount,
+        } : undefined}
+        showRetry={isRecoverable}
+        errorMessage={structuredError?.userMessage}
+        fallback={
+          <div className={cn('text-center text-[var(--text-secondary)] py-4', className)}>
+            Unable to load winnings data
+          </div>
+        }
+      >
+        <div>Error occurred</div>
+      </WinningsErrorBoundary>
+    )
   }
 
+  // Show empty state
   if (!winnings || !marketData) {
     return (
       <div className={cn('text-center text-[var(--text-secondary)] py-4', className)}>
@@ -379,59 +472,27 @@ export function IntegratedWinningsDisplay({
     )
   }
 
+  // Render winnings display with error boundary
   return (
-    <WinningsDisplay
-      marketData={marketData}
-      participantData={participantData}
-      userAddress={userAddress}
-      matchData={matchData}
-      winnings={winnings}
+    <WinningsErrorBoundary
       variant={variant}
-      showBreakdown={showBreakdown}
-      className={className}
-    />
+      marketData={{
+        entryFee: marketData.entryFee,
+        totalPool: marketData.totalPool,
+        participantCount: marketData.participantCount,
+      }}
+    >
+      <WinningsDisplay
+        marketData={marketData}
+        participantData={participantData}
+        userAddress={userAddress}
+        matchData={matchData}
+        winnings={winnings}
+        variant={variant}
+        showBreakdown={showBreakdown}
+        className={className}
+      />
+    </WinningsErrorBoundary>
   )
 }
 
-/**
- * Default loading component
- */
-function DefaultLoadingComponent() {
-  return (
-    <Card className="w-full">
-      <CardContent className="p-4">
-        <div className="animate-pulse space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-[var(--bg-secondary)] rounded-lg" />
-            <div className="flex-1 space-y-2">
-              <div className="h-4 bg-[var(--bg-secondary)] rounded w-1/3" />
-              <div className="h-3 bg-[var(--bg-secondary)] rounded w-2/3" />
-            </div>
-          </div>
-          <div className="border-t border-[var(--border-default)] pt-3">
-            <div className="h-8 bg-[var(--bg-secondary)] rounded w-1/2 mx-auto" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-/**
- * Default error component
- */
-function DefaultErrorComponent({ error }: { error: string }) {
-  return (
-    <Card className="w-full border-[var(--accent-red)]/20">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3 text-[var(--accent-red)]">
-          <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-          <div>
-            <p className="font-medium">Error loading winnings</p>
-            <p className="text-sm opacity-80">{error}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}

@@ -179,6 +179,124 @@ export class WinningsCalculator {
   }
 
   /**
+   * Validate market data structure and values
+   */
+  static validateMarketData(marketData: MarketData): boolean {
+    try {
+      // Check required fields exist
+      if (!marketData || typeof marketData !== 'object') {
+        return false
+      }
+
+      // Validate numeric fields
+      const numericFields = ['entryFee', 'totalPool', 'participantCount', 'homeCount', 'drawCount', 'awayCount']
+      for (const field of numericFields) {
+        const value = (marketData as any)[field]
+        if (typeof value !== 'number' || value < 0 || !Number.isFinite(value)) {
+          console.warn(`[WinningsCalculator] Invalid ${field}:`, value)
+          return false
+        }
+      }
+
+      // Validate string fields
+      if (!marketData.status || !marketData.creator) {
+        return false
+      }
+
+      // Validate status enum
+      const validStatuses = ['Open', 'Live', 'Resolved', 'Cancelled']
+      if (!validStatuses.includes(marketData.status)) {
+        return false
+      }
+
+      // Validate participant counts match total
+      const calculatedTotal = marketData.homeCount + marketData.drawCount + marketData.awayCount
+      if (calculatedTotal !== marketData.participantCount) {
+        console.warn('[WinningsCalculator] Participant count mismatch:', {
+          calculated: calculatedTotal,
+          reported: marketData.participantCount,
+        })
+        // Allow small discrepancies due to race conditions
+        if (Math.abs(calculatedTotal - marketData.participantCount) > 1) {
+          return false
+        }
+      }
+
+      // Validate pool consistency
+      const expectedPool = marketData.entryFee * marketData.participantCount
+      if (Math.abs(marketData.totalPool - expectedPool) > marketData.entryFee) {
+        console.warn('[WinningsCalculator] Pool amount inconsistency:', {
+          expected: expectedPool,
+          actual: marketData.totalPool,
+        })
+        // Allow for small rounding differences
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error('[WinningsCalculator] Validation error:', error)
+      return false
+    }
+  }
+
+  /**
+   * Create a fallback result when calculation fails
+   */
+  static createFallbackResult(marketData: MarketData, error: Error): WinningsResult {
+    // Determine appropriate fallback based on error type
+    if (error.message.includes('Invalid market data')) {
+      return {
+        type: 'none',
+        amount: 0,
+        status: 'eligible',
+        message: 'Market data is invalid or corrupted',
+        displayVariant: 'error',
+        icon: 'AlertTriangle',
+      }
+    }
+
+    if (error.message.includes('exchange rate') || error.message.includes('currency')) {
+      return {
+        type: 'potential',
+        amount: marketData.entryFee, // Fallback to entry fee as basic estimate
+        status: 'eligible',
+        message: 'Currency conversion unavailable - showing SOL estimate',
+        displayVariant: 'warning',
+        icon: 'AlertTriangle',
+      }
+    }
+
+    // Generic calculation error
+    return {
+      type: 'none',
+      amount: 0,
+      status: 'eligible',
+      message: 'Unable to calculate winnings - please try again',
+      displayVariant: 'error',
+      icon: 'AlertTriangle',
+    }
+  }
+
+  /**
+   * Create a safe calculation result with error boundaries
+   */
+  static safeCalculateWinnings(params: WinningsCalculationParams): WinningsResult {
+    try {
+      // Validate inputs first
+      if (!this.validateMarketData(params.marketData)) {
+        throw new Error('Invalid market data structure')
+      }
+
+      // Perform calculation with additional safety checks
+      return this.calculateWinnings(params)
+    } catch (error) {
+      console.error('[WinningsCalculator] Safe calculation failed:', error)
+      return this.createFallbackResult(params.marketData, error as Error)
+    }
+  }
+
+  /**
    * Determine the market display state based on all parameters
    */
   private static determineMarketDisplayState(
