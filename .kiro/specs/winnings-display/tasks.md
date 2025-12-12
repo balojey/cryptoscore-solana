@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [-] 1. Create core winnings calculation utility
+- [x] 1. Create core winnings calculation utility
   - Implement WinningsCalculator class with all calculation methods
   - Add fee distribution calculations (2% creator, 3% platform, 95% participants)
   - Include helper methods for determining user roles (creator, participant, non-participant)
