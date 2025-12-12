@@ -72,8 +72,28 @@ export function announceToScreenReader(message: string, priority: 'polite' | 'as
  * Format number for screen readers
  */
 export function formatForScreenReader(value: number | string, unit?: string): string {
-  const numValue = typeof value === 'string' ? Number.parseFloat(value) : value
-  const formatted = new Intl.NumberFormat('en-US').format(numValue)
+  // Handle string inputs that might contain currency symbols or formatting
+  let numValue: number
+  
+  if (typeof value === 'string') {
+    // Remove common currency symbols and formatting
+    const cleanValue = value.replace(/[◎$,\s]/g, '')
+    numValue = Number.parseFloat(cleanValue)
+    
+    // If parsing fails, return the original string
+    if (Number.isNaN(numValue)) {
+      return unit ? `${value} ${unit}` : value
+    }
+  } else {
+    numValue = value
+  }
+  
+  // Format for screen readers with proper number pronunciation
+  const formatted = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 4,
+  }).format(numValue)
+  
   return unit ? `${formatted} ${unit}` : formatted
 }
 
@@ -123,4 +143,80 @@ export function getContrastRatio(color1: string, color2: string): number {
  */
 export function meetsWCAGAA(color1: string, color2: string): boolean {
   return getContrastRatio(color1, color2) >= 4.5
+}
+
+/**
+ * Generate unique ID for accessibility labels
+ */
+export function generateAccessibilityId(prefix: string = 'a11y'): string {
+  return `${prefix}-${Math.random().toString(36).substr(2, 9)}`
+}
+
+/**
+ * Get appropriate ARIA role for interactive elements
+ */
+export function getInteractiveRole(
+  isClickable: boolean,
+  isToggleable: boolean = false,
+): string {
+  if (isToggleable) return 'switch'
+  if (isClickable) return 'button'
+  return 'region'
+}
+
+/**
+ * Format currency amount for screen readers with proper pronunciation
+ */
+export function formatCurrencyForScreenReader(
+  amount: number,
+  currency: string = 'SOL',
+): string {
+  const formatted = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  }).format(amount)
+  
+  // Handle special currency pronunciations
+  const currencyPronunciation = {
+    SOL: 'Solana',
+    USD: 'US Dollars',
+    NGN: 'Nigerian Naira',
+    BTC: 'Bitcoin',
+    ETH: 'Ethereum',
+  }[currency] || currency
+  
+  return `${formatted} ${currencyPronunciation}`
+}
+
+/**
+ * Create accessible description for winnings status
+ */
+export function createWinningsStatusDescription(
+  type: 'potential' | 'actual' | 'creator_reward' | 'none',
+  status: string,
+  amount: number,
+): string {
+  const typeDescriptions = {
+    potential: 'Potential winnings if prediction is correct',
+    actual: 'Confirmed winnings from correct prediction',
+    creator_reward: 'Creator reward for market creation',
+    none: 'No winnings available',
+  }
+  
+  const statusDescriptions = {
+    eligible: 'eligible for payout',
+    won: 'successfully won',
+    lost: 'prediction was incorrect',
+    distributed: 'already distributed to wallet',
+    pending: 'awaiting market resolution',
+  }
+  
+  const baseDescription = typeDescriptions[type] || 'Winnings information'
+  const statusDescription = statusDescriptions[status as keyof typeof statusDescriptions] || status
+  
+  if (amount <= 0) {
+    return `${baseDescription}. No amount available.`
+  }
+  
+  return `${baseDescription}. Status: ${statusDescription}.`
 }
