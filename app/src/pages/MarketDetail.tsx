@@ -19,6 +19,7 @@ import { formatCurrency, formatWithSOLEquivalent, shortenAddress } from '../util
 import { CreateSimilarMarketDialog, type CreateSimilarMarketParams } from '../components/CreateSimilarMarketDialog'
 import { WinningsDisplay } from '../components/WinningsDisplay'
 import { WinningsCalculator } from '../utils/winnings-calculator'
+import { PotentialWinningsDisplay } from '../components/market/PotentialWinningsDisplay'
 
 // --- SUB-COMPONENTS ---
 
@@ -676,41 +677,23 @@ function ActionPanelWinnings({
     )
   }
 
-  // Show potential winnings preview for non-participants with selected team
-  if (!isUserParticipant && selectedTeam && marketData) {
-    const prediction = selectedTeam === 1 ? 'Home' : selectedTeam === 2 ? 'Away' : 'Draw'
-    const { formatCurrency } = useCurrency()
-    
-    // Calculate potential winnings for selected prediction
-    const potentialAmount = calculatePotentialWinningsForPrediction(marketData, prediction)
+  // Show potential winnings preview for non-participants
+  if (!isUserParticipant && marketData) {
+    const selectedPrediction = selectedTeam === 1 ? 'Home' : selectedTeam === 2 ? 'Away' : selectedTeam === 3 ? 'Draw' : undefined
     
     return (
-      <div className="mb-4 p-3 rounded-lg border-2" style={{ 
-        background: 'var(--accent-cyan)/10', 
-        borderColor: 'var(--accent-cyan)/20' 
-      }}>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="icon-[mdi--trending-up] w-4 h-4" style={{ color: 'var(--accent-cyan)' }} />
-          <span style={{ color: 'var(--text-secondary)' }}>Potential winnings:</span>
-          <span className="font-semibold" style={{ color: 'var(--accent-cyan)' }}>
-            {formatCurrency(potentialAmount)}
-          </span>
-        </div>
-        <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-          If your {prediction} prediction is correct
-        </p>
-      </div>
+      <PotentialWinningsDisplay 
+        marketData={marketData}
+        selectedPrediction={selectedPrediction}
+        className="mb-4"
+      />
     )
   }
 
   return null
 }
 
-// Helper function to calculate potential winnings for a prediction
-function calculatePotentialWinningsForPrediction(marketData: any, prediction: 'Home' | 'Draw' | 'Away'): number {
-  // Use the centralized WinningsCalculator for consistent logic
-  return WinningsCalculator.calculatePotentialWinnings(marketData, prediction)
-}
+
 
 function ActionPanel({ matchData, marketStatus, isMatchStarted, isUserParticipant, selectedTeam, setSelectedTeam, renderButtons, marketAddress, userAddress, marketData, participantData }: {
   matchData: EnhancedMatchData

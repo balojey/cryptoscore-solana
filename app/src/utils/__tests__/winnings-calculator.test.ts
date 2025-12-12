@@ -174,7 +174,7 @@ describe('WinningsCalculator', () => {
       expect(result.type).toBe('potential')
       expect(result.status).toBe('eligible')
       expect(result.displayVariant).toBe('info')
-      expect(result.message).toContain('Potential winnings if you join')
+      expect(result.message).toContain('Average potential winnings across all predictions')
     })
 
     it('should handle participant viewing open market', () => {

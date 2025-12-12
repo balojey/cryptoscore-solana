@@ -155,6 +155,60 @@ export class WinningsCalculator {
   }
 
   /**
+   * Calculate average potential winnings across all three predictions for non-participants
+   * This gives users a better understanding of expected returns regardless of which prediction they choose
+   * @param marketData - Market data
+   * @returns Object with average winnings and breakdown by prediction
+   */
+  static calculateAveragePotentialWinnings(marketData: MarketData): {
+    average: number
+    breakdown: {
+      Home: number
+      Draw: number
+      Away: number
+    }
+    explanation: string
+  } {
+    if (marketData.participantCount === 0) {
+      return {
+        average: marketData.entryFee,
+        breakdown: {
+          Home: marketData.entryFee,
+          Draw: marketData.entryFee,
+          Away: marketData.entryFee
+        },
+        explanation: "No participants yet - you'd get the full participant pool (95% of total) for any prediction"
+      }
+    }
+
+    // Calculate potential winnings for each prediction
+    const homeWinnings = this.calculatePotentialWinnings(marketData, 'Home', false)
+    const drawWinnings = this.calculatePotentialWinnings(marketData, 'Draw', false)
+    const awayWinnings = this.calculatePotentialWinnings(marketData, 'Away', false)
+
+    const average = Math.floor((homeWinnings + drawWinnings + awayWinnings) / 3)
+
+    // Generate explanation based on current market state
+    const newTotalPool = marketData.totalPool + marketData.entryFee
+    const newParticipantPool = this.calculateParticipantPool(newTotalPool)
+    
+    const explanation = `Average of potential winnings across all predictions. ` +
+      `Total pool after you join: ${(newTotalPool / 1e9).toFixed(3)} SOL. ` +
+      `Participant pool (95%): ${(newParticipantPool / 1e9).toFixed(3)} SOL. ` +
+      `Your winnings depend on how many others chose the same prediction.`
+
+    return {
+      average,
+      breakdown: {
+        Home: homeWinnings,
+        Draw: drawWinnings,
+        Away: awayWinnings
+      },
+      explanation
+    }
+  }
+
+  /**
    * Calculate actual winnings for a participant with correct prediction
    */
   static calculateActualWinnings(
@@ -416,13 +470,17 @@ export class WinningsCalculator {
   // Individual calculation methods for each state
 
   private static calculatePotentialWinningsForNonParticipant(marketData: MarketData): WinningsResult {
-    const potentialWinnings = this.calculatePotentialWinnings(marketData, 'Home') // Show example for Home
+    const averageWinnings = this.calculateAveragePotentialWinnings(marketData)
     
     return {
       type: 'potential',
-      amount: potentialWinnings,
+      amount: averageWinnings.average,
+      breakdown: {
+        participantWinnings: averageWinnings.average,
+        totalPool: marketData.totalPool + marketData.entryFee
+      },
       status: 'eligible',
-      message: 'Potential winnings if you join and predict correctly',
+      message: 'Average potential winnings across all predictions',
       displayVariant: 'info',
       icon: 'TrendingUp'
     }

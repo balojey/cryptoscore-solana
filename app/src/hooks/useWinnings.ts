@@ -374,6 +374,57 @@ export function usePotentialWinnings(
 }
 
 /**
+ * Hook for calculating average potential winnings across all predictions
+ *
+ * Useful for showing users the expected return regardless of which prediction they choose.
+ * Provides better decision-making information for non-participants.
+ *
+ * @param marketAddress - Market address
+ * @returns Average potential winnings and breakdown by prediction
+ *
+ * @example
+ * ```tsx
+ * function MarketOverview({ marketAddress }: Props) {
+ *   const { averageWinnings, breakdown, explanation, isLoading } = useAveragePotentialWinnings(marketAddress)
+ *
+ *   return (
+ *     <div>
+ *       <p>Average Potential Winnings: {averageWinnings} lamports</p>
+ *       <p>Home: {breakdown.Home}, Draw: {breakdown.Draw}, Away: {breakdown.Away}</p>
+ *       <p>{explanation}</p>
+ *     </div>
+ *   )
+ * }
+ * ```
+ */
+export function useAveragePotentialWinnings(marketAddress?: string) {
+  const { data: marketData, isLoading } = useMarketData(marketAddress)
+
+  return useQuery({
+    queryKey: ['average-potential-winnings', marketAddress, marketData?.totalPool, marketData?.participantCount, marketData?.homeCount, marketData?.drawCount, marketData?.awayCount],
+    queryFn: () => {
+      if (!marketData) {
+        return {
+          average: 0,
+          breakdown: { Home: 0, Draw: 0, Away: 0 },
+          explanation: 'Market data not available'
+        }
+      }
+
+      return WinningsCalculator.calculateAveragePotentialWinnings(marketData)
+    },
+    enabled: !!marketData,
+    staleTime: 10000,
+    select: (data) => ({
+      averageWinnings: data.average,
+      breakdown: data.breakdown,
+      explanation: data.explanation,
+      isLoading,
+    }),
+  })
+}
+
+/**
  * Hook for batch winnings calculations across multiple markets
  *
  * Useful for portfolio views or market lists where you need winnings
