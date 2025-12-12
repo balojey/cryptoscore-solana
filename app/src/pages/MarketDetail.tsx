@@ -14,8 +14,10 @@ import { useMarketData } from '../hooks/useMarketData'
 import { useMatchData, type EnhancedMatchData } from '../hooks/useMatchData'
 import { useParticipantData } from '../hooks/useParticipantData'
 import { useResolutionEligibility } from '../hooks/useResolutionEligibility'
+import { useWinnings } from '../hooks/useWinnings'
 import { formatCurrency, formatWithSOLEquivalent, shortenAddress } from '../utils/formatters'
 import { CreateSimilarMarketDialog, type CreateSimilarMarketParams } from '../components/CreateSimilarMarketDialog'
+import { WinningsDisplay } from '../components/WinningsDisplay'
 
 // --- SUB-COMPONENTS ---
 
@@ -187,6 +189,76 @@ function MatchHeader({
   )
 }
 
+function WinningsSection({ 
+  marketAddress, 
+  userAddress, 
+  marketData, 
+  participantData, 
+  matchData 
+}: {
+  marketAddress: string
+  userAddress?: string
+  marketData: any
+  participantData?: any
+  matchData: EnhancedMatchData
+}) {
+  const { winnings, isLoading, error } = useWinnings(marketAddress, userAddress)
+
+  // Don't show section if no winnings data and user is not connected
+  if (!userAddress && !winnings) {
+    return null
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--border-default)' }}>
+        <div className="animate-pulse">
+          <div className="h-4 bg-[var(--bg-secondary)] rounded w-1/3 mb-3" />
+          <div className="h-16 bg-[var(--bg-secondary)] rounded" />
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--border-default)' }}>
+        <h4 className="font-sans text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>
+          Winnings Information
+        </h4>
+        <div className="text-sm text-[var(--accent-red)] p-3 rounded-lg" style={{ background: 'var(--error-bg)' }}>
+          Error loading winnings: {error}
+        </div>
+      </div>
+    )
+  }
+
+  // Don't show if no winnings data
+  if (!winnings) {
+    return null
+  }
+
+  return (
+    <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--border-default)' }}>
+      <h4 className="font-sans text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>
+        Winnings Information
+      </h4>
+      <WinningsDisplay
+        marketData={marketData}
+        participantData={participantData}
+        userAddress={userAddress}
+        matchData={matchData}
+        winnings={winnings}
+        variant="compact"
+        className="p-3 rounded-lg"
+        style={{ background: 'var(--bg-secondary)' }}
+      />
+    </div>
+  )
+}
+
 interface MarketStatsProps {
   marketInfo: any
   poolSize: number
@@ -203,9 +275,13 @@ interface MarketStatsProps {
   entryFeeValue: number
   currency: 'SOL' | 'USD' | 'NGN'
   exchangeRates: { SOL_USD: number, SOL_NGN: number } | null
+  marketAddress: string
+  userAddress?: string
+  marketData: any
+  participantData?: any
 }
 
-function MarketStats({ marketInfo, poolSize, participantsCount, marketStatus, isMatchStarted, winningTeamName, homeCount, awayCount, drawCount, userPrediction, userHasJoined, matchData, entryFeeValue, currency, exchangeRates }: MarketStatsProps) {
+function MarketStats({ marketInfo, poolSize, participantsCount, marketStatus, isMatchStarted, winningTeamName, homeCount, awayCount, drawCount, userPrediction, userHasJoined, matchData, entryFeeValue, currency, exchangeRates, marketAddress, userAddress, marketData, participantData }: MarketStatsProps) {
   const InfoRow = ({ label, value, valueClass, icon }: { label: string, value: React.ReactNode, valueClass?: string, icon: string }) => (
     <div className="info-row">
       <div className="info-label">
@@ -345,6 +421,15 @@ function MarketStats({ marketInfo, poolSize, participantsCount, marketStatus, is
         )}
         {getUserPredictionOutcome()}
       </div>
+
+      {/* Winnings Information */}
+      <WinningsSection 
+        marketAddress={marketAddress}
+        userAddress={userAddress}
+        marketData={marketData}
+        participantData={participantData}
+        matchData={matchData}
+      />
 
       {/* User's Prediction */}
       {userHasJoined && (
@@ -540,7 +625,110 @@ function MarketStats({ marketInfo, poolSize, participantsCount, marketStatus, is
   )
 }
 
-function ActionPanel({ matchData, marketStatus, isMatchStarted, isUserParticipant, selectedTeam, setSelectedTeam, renderButtons }: {
+function ActionPanelWinnings({
+  marketAddress,
+  userAddress,
+  marketData,
+  participantData,
+  matchData,
+  selectedTeam,
+  isUserParticipant
+}: {
+  marketAddress: string
+  userAddress?: string
+  marketData: any
+  participantData?: any
+  matchData: EnhancedMatchData
+  selectedTeam: number | null
+  isUserParticipant: boolean
+}) {
+  const { winnings, isLoading } = useWinnings(marketAddress, userAddress)
+
+  // Don't show for concluded markets or if no user
+  if (!userAddress || marketData?.status === 'Resolved') {
+    return null
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="mb-4 p-3 rounded-lg animate-pulse" style={{ background: 'var(--bg-secondary)' }}>
+        <div className="h-4 bg-[var(--bg-primary)] rounded w-1/2 mb-2" />
+        <div className="h-6 bg-[var(--bg-primary)] rounded w-3/4" />
+      </div>
+    )
+  }
+
+  // Show winnings if available
+  if (winnings && winnings.type !== 'none') {
+    return (
+      <div className="mb-4">
+        <WinningsDisplay
+          marketData={marketData}
+          participantData={participantData}
+          userAddress={userAddress}
+          matchData={matchData}
+          winnings={winnings}
+          variant="compact"
+        />
+      </div>
+    )
+  }
+
+  // Show potential winnings preview for non-participants with selected team
+  if (!isUserParticipant && selectedTeam && marketData) {
+    const prediction = selectedTeam === 1 ? 'Home' : selectedTeam === 2 ? 'Away' : 'Draw'
+    const { formatCurrency } = useCurrency()
+    
+    // Calculate potential winnings for selected prediction
+    const potentialAmount = calculatePotentialWinningsForPrediction(marketData, prediction)
+    
+    return (
+      <div className="mb-4 p-3 rounded-lg border-2" style={{ 
+        background: 'var(--accent-cyan)/10', 
+        borderColor: 'var(--accent-cyan)/20' 
+      }}>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="icon-[mdi--trending-up] w-4 h-4" style={{ color: 'var(--accent-cyan)' }} />
+          <span style={{ color: 'var(--text-secondary)' }}>Potential winnings:</span>
+          <span className="font-semibold" style={{ color: 'var(--accent-cyan)' }}>
+            {formatCurrency(potentialAmount)}
+          </span>
+        </div>
+        <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+          If your {prediction} prediction is correct
+        </p>
+      </div>
+    )
+  }
+
+  return null
+}
+
+// Helper function to calculate potential winnings for a prediction
+function calculatePotentialWinningsForPrediction(marketData: any, prediction: 'Home' | 'Draw' | 'Away'): number {
+  if (!marketData || marketData.participantCount === 0) {
+    return marketData?.entryFee || 0
+  }
+
+  // Calculate participant pool (95% of total pool)
+  const participantPool = Math.floor((marketData.totalPool * 9500) / 10000) // 95%
+  
+  // Get count for the specific prediction
+  const predictionCount = prediction === 'Home' ? marketData.homeCount : 
+                         prediction === 'Away' ? marketData.awayCount : 
+                         marketData.drawCount
+  
+  // If no one has made this prediction yet, return the full participant pool plus entry fee
+  if (predictionCount === 0) {
+    return participantPool + marketData.entryFee
+  }
+
+  // Calculate winnings per winner (including the new participant)
+  return Math.floor(participantPool / (predictionCount + 1))
+}
+
+function ActionPanel({ matchData, marketStatus, isMatchStarted, isUserParticipant, selectedTeam, setSelectedTeam, renderButtons, marketAddress, userAddress, marketData, participantData }: {
   matchData: EnhancedMatchData
   marketStatus: boolean
   isMatchStarted: boolean
@@ -548,6 +736,10 @@ function ActionPanel({ matchData, marketStatus, isMatchStarted, isUserParticipan
   selectedTeam: number | null
   setSelectedTeam: (team: number | null) => void
   renderButtons: () => React.ReactNode
+  marketAddress: string
+  userAddress?: string
+  marketData: any
+  participantData?: any
 }) {
   if (marketStatus || isMatchStarted) {
     return (
@@ -609,6 +801,18 @@ function ActionPanel({ matchData, marketStatus, isMatchStarted, isUserParticipan
           ✓ You have already joined this market.
         </div>
       )}
+      
+      {/* Winnings Preview for Action Panel */}
+      <ActionPanelWinnings 
+        marketAddress={marketAddress}
+        userAddress={userAddress}
+        marketData={marketData}
+        participantData={participantData}
+        matchData={matchData}
+        selectedTeam={selectedTeam}
+        isUserParticipant={isUserParticipant}
+      />
+      
       <div className="flex justify-end">
         {renderButtons()}
       </div>

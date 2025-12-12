@@ -36,7 +36,7 @@
   - Test accessibility features
   - _Requirements: 1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1_
 
-- [ ] 4. Integrate winnings display into MarketDetail page
+- [x] 4. Integrate winnings display into MarketDetail page
   - Update MarketStats component to include winnings information
   - Modify ActionPanel to show winnings alongside action buttons
   - Add winnings display to the main market information section
