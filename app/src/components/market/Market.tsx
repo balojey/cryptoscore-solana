@@ -17,6 +17,9 @@ import {
 import { Input } from '@/components/ui/input'
 import { useMarketActions } from '../../hooks/useMarketActions'
 import { MarqueeText } from '../MarqueeText'
+import { CompactWinningsDisplay } from '../WinningsDisplay'
+import { useWinnings } from '../../hooks/useWinnings'
+import { useMarketData } from '../../hooks/useMarketData'
 
 export function Market({ match, userHasMarket, marketAddress, refetchMarkets }: MarketProps) {
   const { publicKey: userAddress } = useUnifiedWallet()
@@ -169,8 +172,11 @@ export function Market({ match, userHasMarket, marketAddress, refetchMarkets }: 
       {/* Divider */}
       <hr className="my-4" style={{ borderColor: 'var(--border-default)' }} />
 
+      {/* Winnings Preview */}
+      <WinningsPreview marketAddress={effectiveMarketAddress} />
+
       {/* Actions & Form */}
-      <div className="min-h-[140px] flex flex-col justify-center">
+      <div className="min-h-[120px] flex flex-col justify-center">
         {hasMarket && (
           <div className="text-center mb-4">
             <p className="font-sans text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -349,6 +355,75 @@ export function Market({ match, userHasMarket, marketAddress, refetchMarkets }: 
           </Dialog>
         </div>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Compact winnings preview component for market cards
+ * Optimized for performance in list rendering
+ */
+function WinningsPreview({ marketAddress }: { marketAddress?: string }) {
+  const { publicKey: userAddress } = useUnifiedWallet()
+  
+  // Only fetch market data if we have a market address
+  const { data: marketData, isLoading: isLoadingMarket } = useMarketData(marketAddress)
+  
+  // Only fetch winnings if we have market data
+  const { winnings, isLoading: isLoadingWinnings } = useWinnings(
+    marketAddress, 
+    userAddress?.toString()
+  )
+
+  // Don't render anything if no market address (market not created yet)
+  if (!marketAddress) {
+    return (
+      <div className="mb-3 px-3 py-2 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
+        <div className="text-center">
+          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+            Create a market to see potential winnings
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading state
+  if (isLoadingMarket || isLoadingWinnings) {
+    return (
+      <div className="mb-3 px-3 py-2 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
+        <div className="animate-pulse flex items-center gap-2">
+          <div className="w-4 h-4 bg-[var(--text-tertiary)] rounded opacity-20" />
+          <div className="flex-1">
+            <div className="h-3 bg-[var(--text-tertiary)] rounded w-2/3 opacity-20" />
+            <div className="h-2 bg-[var(--text-tertiary)] rounded w-1/2 mt-1 opacity-20" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state or no data
+  if (!marketData || !winnings) {
+    return (
+      <div className="mb-3 px-3 py-2 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
+        <div className="text-center">
+          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+            Winnings data unavailable
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mb-3 px-3 py-2 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
+      <CompactWinningsDisplay
+        marketData={marketData}
+        userAddress={userAddress?.toString()}
+        winnings={winnings}
+        className="text-xs"
+      />
     </div>
   )
 }
