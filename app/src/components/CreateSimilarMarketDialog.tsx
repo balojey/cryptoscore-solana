@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,7 +11,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCurrency } from '@/hooks/useCurrency'
-import { formatCurrency } from '@/utils/formatters'
+
 import type { EnhancedMatchData } from '@/hooks/useMatchData'
 
 export interface CreateSimilarMarketParams {
@@ -35,10 +35,12 @@ export function CreateSimilarMarketDialog({
   onCreateMarket,
   isLoading = false,
 }: CreateSimilarMarketDialogProps) {
-  const { currency, exchangeRates } = useCurrency()
+  const { exchangeRates } = useCurrency()
   const [entryFee, setEntryFee] = useState('')
   const [visibility, setVisibility] = useState<'public' | 'private'>('public')
   const [errors, setErrors] = useState<{ entryFee?: string }>({})
+
+  // Force SOL currency for Create Similar Market dialog - no currency selection allowed
 
   const validateEntryFee = (value: string): string | undefined => {
     const numValue = parseFloat(value)
@@ -48,14 +50,9 @@ export function CreateSimilarMarketDialog({
     if (numValue <= 0) {
       return 'Entry fee must be greater than 0'
     }
-    if (currency === 'SOL' && numValue < 0.001) {
+    // SOL-only validation - minimum 0.001 SOL
+    if (numValue < 0.001) {
       return 'Minimum entry fee is 0.001 SOL'
-    }
-    if (currency === 'USD' && numValue < 0.01) {
-      return 'Minimum entry fee is $0.01'
-    }
-    if (currency === 'NGN' && numValue < 1) {
-      return 'Minimum entry fee is ₦1'
     }
     return undefined
   }
@@ -74,22 +71,9 @@ export function CreateSimilarMarketDialog({
       return
     }
 
-    // Convert entry fee to lamports based on currency
-    let entryFeeInLamports: number
+    // Convert entry fee to lamports - SOL only
     const entryFeeValue = parseFloat(entryFee)
-
-    if (currency === 'SOL') {
-      entryFeeInLamports = Math.round(entryFeeValue * 1_000_000_000) // SOL to lamports
-    } else if (currency === 'USD' && exchangeRates) {
-      const solAmount = entryFeeValue / exchangeRates.SOL_USD
-      entryFeeInLamports = Math.round(solAmount * 1_000_000_000)
-    } else if (currency === 'NGN' && exchangeRates) {
-      const solAmount = entryFeeValue / exchangeRates.SOL_NGN
-      entryFeeInLamports = Math.round(solAmount * 1_000_000_000)
-    } else {
-      // Fallback to treating as SOL
-      entryFeeInLamports = Math.round(entryFeeValue * 1_000_000_000)
-    }
+    const entryFeeInLamports = Math.round(entryFeeValue * 1_000_000_000) // SOL to lamports
 
     try {
       await onCreateMarket({
@@ -145,7 +129,7 @@ export function CreateSimilarMarketDialog({
             </div>
           </div>
 
-          {/* Entry Fee */}
+          {/* Entry Fee - SOL Only */}
           <div className="space-y-2">
             <label className="font-sans text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
               Entry Fee
@@ -153,14 +137,17 @@ export function CreateSimilarMarketDialog({
             <div className="relative">
               <Input
                 type="number"
-                placeholder={`Enter amount in ${currency}`}
+                placeholder="Enter amount in SOL"
                 value={entryFee}
                 onChange={(e) => handleEntryFeeChange(e.target.value)}
-                step={currency === 'SOL' ? '0.001' : currency === 'USD' ? '0.01' : '1'}
-                min={currency === 'SOL' ? '0.001' : currency === 'USD' ? '0.01' : '1'}
+                step="0.001"
+                min="0.001"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
-                {currency}
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                <span className="text-base leading-none">◎</span>
+                <span className="text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
+                  SOL
+                </span>
               </div>
             </div>
             {errors.entryFee && (
@@ -168,18 +155,25 @@ export function CreateSimilarMarketDialog({
                 {errors.entryFee}
               </p>
             )}
-            {entryFee && !errors.entryFee && exchangeRates && currency !== 'SOL' && (
-              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                ≈ {formatCurrency(
-                  currency === 'USD' 
-                    ? parseFloat(entryFee) / exchangeRates.SOL_USD
-                    : parseFloat(entryFee) / exchangeRates.SOL_NGN,
-                  'SOL',
-                  exchangeRates,
-                  { decimals: 4 }
-                )}
-              </p>
+            {entryFee && !errors.entryFee && exchangeRates && (
+              <div className="text-xs space-y-1" style={{ color: 'var(--text-tertiary)' }}>
+                <p>
+                  ≈ ${(parseFloat(entryFee) * exchangeRates.SOL_USD).toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })} USD
+                </p>
+                <p>
+                  ≈ ₦{(parseFloat(entryFee) * exchangeRates.SOL_NGN).toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })} NGN
+                </p>
+              </div>
             )}
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              Entry fees are processed in SOL only for similar markets
+            </p>
           </div>
 
           {/* Visibility */}

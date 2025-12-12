@@ -50,7 +50,7 @@
   - Optimize performance for list rendering
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 6. Update CreateSimilarMarketDialog to enforce SOL-only entry fees
+- [x] 6. Update CreateSimilarMarketDialog to enforce SOL-only entry fees
   - Modify the dialog to disable currency selection
   - Force SOL currency for all entry fee inputs and displays
   - Update validation logic to work with SOL-only constraints
